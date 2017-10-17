@@ -1,0 +1,42 @@
+@prefix wikibase: <http://wikiba.se/ontology-beta#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+# Valid triple
+wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 .
+
+# Item triple, invalid data model
+wd:Q5921 p:P18 pq:I_m_not_a_valid_Item_triple .
+
+# Item triple, valid data model, invalid QID
+wd:RnR p:P18 wds:RnR-583C7277-B344-4C96-8CF2-0557C2D0CD34 .
+
+# Property triple, invalid data model ("pr" instead of "ps" prefix)
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 pr:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> .
+
+# Property triple, valid data model, invalid UUID
+wds:this-is-not-a-uuid ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> .
+
+# Qualifier triple, invalid data model ("p" instead of "pq" prefix)
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 p:P666 "Chuck Berry (2007)"@ca .
+
+# Qualifier triple, valid data model, invalid property
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 pq:Q666 "Chuck Berry (2007)"@ca .
+
+# Reference triple, invalid data model
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 prov:wasDerivedFrom "There should be a reference node here!" .
+
+# Reference triple, valid data model, invalid hash
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 prov:wasDerivedFrom wdref:not_a_hash .
+
+# Reference value triple, invalid data model ("ps" instead of "pr" prefix)
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc ps:P143 wd:Q206855 .
+
+# Reference value triple, valid data model, invalid URL
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 <http://where.am.i.going> .

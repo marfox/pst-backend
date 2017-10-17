@@ -1,0 +1,37 @@
+@prefix wikibase: <http://wikiba.se/ontology-beta#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+
+wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 .
+
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> ;
+	pq:P2096 "Chuck Berry (2007)"@ca ;
+	pq:P88 wd:Q42 ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fb ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fa .
+
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P666 wd:Q206855 .
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fb pr:P854 <https://travisraminproducer.bandcamp.com/> .
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fa pr:P143 <https://phabricator.wikimedia.org/project/view/2788/> .
+
+wd:Q5921 p:P999 wds:Q5921-12345678-ABCD-DCBA-4321-987654321088 .
+
+wds:Q5921-12345678-ABCD-DCBA-4321-987654321088 ps:P999 "Maybelline" ; 
+	pq:P1000 wd:Q123456 ; 
+	pq:P123 "+3469849"^^xsd:decimal ; 
+	pq:P321 "Point(13.383333333333 52.516666666667)"^^geo:wktLiteral ;
+	pq:P777 "1237-01-01T00:00:00Z"^^xsd:dateTime ; 
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457ff ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fe .
+
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457ff pr:P143 wd:Q206855 .
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fe pr:P888 <https://phabricator.wikimedia.org/T172502> .

@@ -1,0 +1,15 @@
+@prefix wikibase: <http://wikiba.se/ontology-beta#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> ;
+	pq:P2096 "Chuck Berry (2007)"@ca ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc .
+
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 .

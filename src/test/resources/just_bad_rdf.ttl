@@ -1,0 +1,21 @@
+@prefix wikibase: <http://wikiba.se/ontology-beta#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+### BEGIN: partially invalid RDF
+#
+# Invalid URI
+wd:Q5921 p:P18 wds:"very bad > URI .
+# Undeclared prefix
+wd:Q5921 p:P18 rnr:let_s_rock .
+#
+### END: partially invalid RDF
+
+# Totally invalid RDF
+OK, I'm a rock'n'roll legend, but I'm not valid RDF .
