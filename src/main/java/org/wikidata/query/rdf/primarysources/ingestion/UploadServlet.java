@@ -6,6 +6,10 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.openrdf.model.Model;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;
@@ -22,34 +26,19 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.Normalizer;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.4
  * Created on Jul 04, 2017.
  */
-@SuppressWarnings("checkstyle:classfanoutcomplexity")
 public class UploadServlet extends HttpServlet {
 
     /**
@@ -85,6 +74,7 @@ public class UploadServlet extends HttpServlet {
      * Blazegraph database instance configuration file name.
      */
     private static final String BLAZEGRAPH_PROPERTIES_FILE_NAME = "RWStore.properties";
+
     private static final Logger log = LoggerFactory.getLogger(UploadServlet.class);
 
     /**
@@ -101,107 +91,8 @@ public class UploadServlet extends HttpServlet {
      * The data provider should not care about this.
      */
     private Properties dataLoaderProperties;
-    /**
-     * Temporary file with the uploaded dataset to be stored in the server local file system.
-     * The uploaded dataset must be saved to the server local file system, before sending it to the Blazegraph bulk load service.
-     * See https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Load_Configuration
-     */
-    private File tempDataset;
-
-    /**
-     * Upload a RDF dataset to Blazegraph, upon Wikidata data model validation.
-     *
-     * @param request  the client HTTP request
-     * @param response the servlet HTTP response
-     * @throws IOException      if an input or output error is detected when the servlet handles the request
-     * @throws ServletException if the request for the POST could not be handled
-     */
-    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        RDFFormat format = null;
-        WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
-        Model validSyntax = null;
-        URI datasetURI = null;
-        String user = null;
-        // Check that we have a file upload request
-        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
-        if (isMultipart) {
-            // Create a new file upload handler
-            ServletFileUpload upload = new ServletFileUpload();
-            // Parse the request
-            FileItemIterator iter;
-            try {
-                iter = upload.getItemIterator(request);
-                while (iter.hasNext()) {
-                    FileItemStream item = iter.next();
-                    String fieldName = item.getFieldName();
-                    InputStream stream = item.openStream();
-                    if (item.isFormField()) {
-                        String formValue = Streams.asString(stream);
-                        switch (fieldName) {
-                        case DATASET_NAME_FORM_FIELD:
-                            log.info("Dataset form field '{}' detected. Will build a sanitized ASCII URI out of value '{}' as the named graph where the " +
-                                "dataset will be stored.", fieldName, formValue);
-                            datasetURI = mintDatasetURI(formValue);
-                            dataLoaderProperties.setProperty("defaultGraph", datasetURI.toString());
-                            break;
-                        case USER_NAME_FORM_FIELD:
-                            log.info("User name form field '{}' detected. Will store the value '{}' as the uploader of the dataset", fieldName, formValue);
-                            user = formValue;
-                            break;
-                        default:
-                            log.error("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", fieldName, formValue);
-                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected form field '" + fieldName + "' with value '" + formValue + "'");
-                            return;
-                        }
-                    } else {
-                        String fileName = item.getName();
-                        log.info("File field '" + fieldName + "' with file name '" + fileName + "' detected.");
-                        /*
-                         * Guess the RDF format based on the file name extension.
-                         * This is the only solution, as the content type is multipart/form-data.
-                         * Fall back to Turtle if the guess fails, as we cannot blame the user for uploading proper content with an arbitrary (or no) extension.
-                         */
-                        format = Rio.getParserFormatForFileName(fileName, DEFAULT_RDF_FORMAT);
-                        // 1. Validate syntax
-                        try {
-                            validSyntax = validator.checkSyntax(stream, BASE_URI, format);
-                        } catch (RDFParseException rpe) {
-                            log.error("The dataset is not valid RDF. Error at line {}, column {}. Will fail with a bad request", rpe.getLineNumber(), rpe
-                                .getColumnNumber());
-                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Your dataset is not valid RDF. Found an error at line " + rpe
-                                .getLineNumber() +
-                                ", " +
-                                "column " + rpe.getColumnNumber() +
-                                ". Please fix it and try again");
-                            return;
-                        }
-                    }
-                }
-            } catch (FileUploadException fue) {
-                log.error("Failed reading/parsing the request or storing files: {}", fue);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, fue.getLocalizedMessage());
-                return;
-            }
-        } else {
-            String actualContentType = request.getContentType();
-            log.error("Not a multipart content type: {} Will fail with a bad request", actualContentType);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "You should upload your dataset as a file using multipart/form-data content type, not " +
-                actualContentType +
-                ". Please fix your HTTP request and try again.");
-            return;
-        }
-
-        // 2. Validate the data model
-        AbstractMap.SimpleImmutableEntry<Model, List<String>> validated = validator.handleDataset(validSyntax);
-        Model toBeUploaded = validated.getKey();
-        List<String> invalid = validated.getValue();
-        upload(request, response, format, datasetURI, user, toBeUploaded, invalid);
-    }
-
-    @Override
-    public void destroy() {
-        tempDataset.delete();
-    }
+    private String user;
+    private String datasetURI;
 
     @Override
     public void init() throws ServletException {
@@ -223,47 +114,174 @@ public class UploadServlet extends HttpServlet {
     }
 
     /**
-     * Upload the dataset to Blazegraph and build the HTTP response.
-     * If there are no valid triples, the request is still correct, but the server does not upload anything to Blazegraph.
+     * Upload a RDF dataset to Blazegraph, upon Wikidata data model validation.
      *
-     * @throws IOException if an input or output error is detected when uploading the dataset
+     * @param request  the client HTTP request
+     * @param response the servlet HTTP response
+     * @throws IOException      if an input or output error is detected when the servlet handles the request
+     * @throws ServletException if the request for the POST could not be handled
      */
-    private void upload(HttpServletRequest request, HttpServletResponse response, RDFFormat format, URI datasetURI, String user, Model toBeUploaded,
-                        List<String> invalid) throws IOException {
-        if (!toBeUploaded.isEmpty()) {
-            // The data loader needs a file to be stored on the server local file system
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
+        Map<String, AbstractMap.SimpleImmutableEntry<RDFFormat, Model>> validRDFDatasets = new HashMap<>();
+        List<File> tempDatasets = new ArrayList<>();
+        Map<String, List<String>> invalidComponents = new HashMap<>();
+        List<String> notUploaded = new ArrayList<>();
+        boolean ok = processRequest(request, response, validator, validRDFDatasets);
+        if (!ok) return;
+        for (String dataset : validRDFDatasets.keySet()) {
+            AbstractMap.SimpleImmutableEntry<RDFFormat, Model> valid = validRDFDatasets.get(dataset);
+            AbstractMap.SimpleImmutableEntry<Model, List<String>> validated = validator.handleDataset(valid.getValue());
+            Model toBeUploaded = validated.getKey();
+            if (toBeUploaded.isEmpty()) {
+                log.warn("Dataset '{}': no content passed the data model validation. It will not be uploaded to Blazegraph", dataset);
+                notUploaded.add(dataset);
+                continue;
+            }
+            invalidComponents.put(dataset, validated.getValue());
+            File tempDataset = writeTempDataset(response, valid.getKey(), toBeUploaded);
+            if (tempDataset == null) return;
+            tempDatasets.add(tempDataset);
+        }
+        if (tempDatasets.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_ACCEPTED, "The request succeeded, but no content complies with the Wikidata RDF data model." +
+                    "Nothing will be uploaded. Please check the " +
+                    "<a href=\"https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model\">documentation</a> and try again.");
+            return;
+        }
+        AbstractMap.SimpleImmutableEntry<Integer, List<String>> dataLoaderResponse = sendDatasetsToDataLoader(request, tempDatasets);
+        boolean added = addUploaderQuad(request, response);
+        if (!added) return;
+        for (File tempDataset : tempDatasets) tempDataset.delete();
+        sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
+    }
+
+    /**
+     * The Blazegraph data loader needs a file to be stored on the server local file system, so use a temporary file.
+     *
+     * @throws IOException if an error is detected when writing the temp
+     */
+    private File writeTempDataset(HttpServletResponse response, RDFFormat format, Model toBeUploaded) throws IOException {
+        File tempDataset;
+        try {
+            tempDataset = File.createTempFile(TEMP_DATASET_FILE_NAME, "." + format.getDefaultFileExtension());
+            Rio.write(toBeUploaded, Files.newBufferedWriter(tempDataset.toPath(), StandardCharsets.UTF_8), format);
+        } catch (RDFHandlerException rhe) {
+            log.error("Failed writing RDF: {}", rhe);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, rhe.getLocalizedMessage());
+            return null;
+        }
+        return tempDataset;
+    }
+
+    /**
+     * Handle the request and check the RDF syntax of the given datasets, firing appropriate error codes when necessary.
+     *
+     * @throws IOException if an error is detected when operating on the form fields.
+     */
+    private boolean processRequest(HttpServletRequest request, HttpServletResponse response, WikibaseDataModelValidator validator, Map<String, AbstractMap
+            .SimpleImmutableEntry<RDFFormat, Model>>
+            validRDFDatasets) throws IOException {
+        boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+        if (isMultipart) {
+            ServletFileUpload upload = new ServletFileUpload();
+            FileItemIterator iter;
             try {
-                // Set a suitable extension based on the RDF format
-                tempDataset = File.createTempFile(TEMP_DATASET_FILE_NAME, "." + format.getDefaultFileExtension());
-                Rio.write(toBeUploaded, Files.newBufferedWriter(tempDataset.toPath(), StandardCharsets.UTF_8), format);
-            } catch (RDFHandlerException rhe) {
-                log.error("Failed writing RDF: {}", rhe);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, rhe.getLocalizedMessage());
-                return;
+                iter = upload.getItemIterator(request);
+                while (iter.hasNext()) {
+                    FileItemStream item = iter.next();
+                    try (InputStream fieldStream = item.openStream()) {
+                        if (item.isFormField()) {
+                            boolean handled = handleFormField(item, fieldStream, response);
+                            if (!handled) return false;
+                        } else {
+                            AbstractMap.SimpleImmutableEntry<RDFFormat, Model> valid = handleFileField(item, fieldStream, response, validator);
+                            if (valid == null) return false;
+                            else validRDFDatasets.put(item.getName(), valid);
+                        }
+                    }
+                }
+            } catch (FileUploadException fue) {
+                log.error("Failed reading/parsing the request or storing files: {}", fue);
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, fue.getLocalizedMessage());
+                return false;
             }
-            // 3. Send the dataset to the Blazegraph bulk load service
-            AbstractMap.SimpleImmutableEntry<Integer, List<String>> dataLoaderResponse = sendDatasetToDataLoader(request);
-            // 4. Add the (user, uploaded, dataset) statement to the metadata named graph
-            int quadAdditionResponseCode = addUploaderQuad(request, user, datasetURI.toString());
-            if (quadAdditionResponseCode == HttpServletResponse.SC_INTERNAL_SERVER_ERROR) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed adding metadata that links your user name to the dataset you uploaded.");
-                return;
-            }
-            // 5. Send the final response, including the list of invalid triples and the response content from the bulk load service
-            sendResponse(response, invalid, dataLoaderResponse);
         } else {
-            log.warn("The request succeeded, but no content passed the data model validation. Nothing will be uploaded to Blazegraph");
-            response.sendError(HttpServletResponse.SC_ACCEPTED, "Your dataset has no content that complies with the Wikidata RDF data model. Nothing will be" +
-                " uploaded. Please check the <a href=\"https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model\">documentation</a> and " +
-                "try again.");
+            String actualContentType = request.getContentType();
+            log.error("Not a multipart content type: {} Will fail with a bad request", actualContentType);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "You should upload your dataset as a file using multipart/form-data content type, not " +
+                    actualContentType + ". Please fix your HTTP request and try again.");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Process a form field uploaded by the client, firing a bad request if it is not expected.
+     *
+     * @throws IOException in case of troubles when reading the field value or sending the bad request
+     */
+    private boolean handleFormField(FileItemStream item, InputStream fieldStream, HttpServletResponse response) throws IOException {
+        String field = item.getFieldName();
+        String value = Streams.asString(fieldStream);
+        switch (field) {
+            case DATASET_NAME_FORM_FIELD:
+                log.info("Dataset form field '{}' detected. Will build a sanitized ASCII URI out of value '{}' as the named graph where the " +
+                        "dataset will be stored.", field, value);
+                datasetURI = mintDatasetURI(value);
+                dataLoaderProperties.setProperty("defaultGraph", datasetURI);
+                return true;
+            case USER_NAME_FORM_FIELD:
+                log.info("User name form field '{}' detected. Will store the value '{}' as the uploader of the dataset", field, value);
+                user = value;
+                return true;
+            default:
+                log.error("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", field, value);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected form field '" + field + "' with value '" + value + "'");
+                return false;
         }
     }
 
     /**
+     * Process a file uploaded by the client, firing a bad request if the format is not recognized as RDF.
+     * If a file looks like RDF, then check its syntax.
+     *
+     * @throws IOException if an error is detected when operating on the file
+     */
+    private AbstractMap.SimpleImmutableEntry<RDFFormat, Model> handleFileField(FileItemStream item, InputStream fieldStream, HttpServletResponse response,
+                                                                               WikibaseDataModelValidator validator) throws IOException {
+        String fieldName = item.getFieldName();
+        String fileName = item.getName();
+        String contentType = item.getContentType();
+        log.info("File field " + fieldName + " with file name " + fileName + " detected.");
+        RDFFormat format = handleFormat(contentType, fileName);
+        Model validSyntax;
+        try {
+            validSyntax = validator.checkSyntax(fieldStream, BASE_URI, format);
+        } catch (RDFParseException rpe) {
+            log.error("The dataset is not valid RDF. Error at line {}, column {}. Will fail with a bad request", rpe.getLineNumber(), rpe
+                    .getColumnNumber());
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Your dataset is not valid RDF. Found an error at line " + rpe.getLineNumber() +
+                    ", column " + rpe.getColumnNumber() + ". Please fix it and try again");
+            return null;
+        }
+        return new AbstractMap.SimpleImmutableEntry<>(format, validSyntax);
+    }
+
+    /**
+     * Try to find a suitable RDF format for a given file name.
+     * If the part has no content type, guess the format based on the file name extension.
+     * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
      * Build a sanitized ASCII URI out of a given dataset name.
      */
-    private URI mintDatasetURI(String datasetName) {
+    private RDFFormat handleFormat(String contentType, String fileName) {
+        // If the content type is not explicilty RDF, still try to guess based on the file name extension
+        if (contentType == null) return Rio.getParserFormatForFileName(fileName, DEFAULT_RDF_FORMAT);
+        else return Rio.getParserFormatForMIMEType(contentType, Rio.getParserFormatForFileName(fileName));
+    }
+
+    private String mintDatasetURI(String datasetName) {
         // Delete any character that is not a letter, a number, or a whitespace, as we want to mint readable URIs
         String onlyLetters = datasetName.replaceAll("[^\\p{L}\\d\\s]", "");
         // Remove diactrics to mint ASCII URIs
@@ -271,35 +289,41 @@ public class UploadServlet extends HttpServlet {
         // Replace whitespaces with a dash
         String clean = noDiacritics.replaceAll("\\s+", "-");
         // A freshly uploaded dataset gets the "/new" state
-        URI datasetURI = URI.create("http://" + clean.toLowerCase(Locale.ENGLISH) + "/new");
+        String datasetURI = "http://" + clean.toLowerCase(Locale.ENGLISH) + "/new";
         log.info("Named graph URI: {}", datasetURI);
         return datasetURI;
     }
 
     /**
-     * @param response           the servlet HTTP response
-     * @param invalid            the list of invalid data
-     * @param dataLoaderResponse the Blazegraph data loader servlet HTTP response
      * @throws IOException if an error occurs while getting the response output writer
      */
-    private void sendResponse(HttpServletResponse response, List<String> invalid, AbstractMap.SimpleImmutableEntry<Integer, List<String>> dataLoaderResponse)
-        throws IOException {
-        // The final response code is the data loader one
+    private void sendResponse(HttpServletResponse response, List<String> notUploaded, Map<String, List<String>> invalid, AbstractMap.SimpleImmutableEntry<Integer, List<String>>
+            dataLoaderResponse)
+            throws IOException {
         int dataLoaderResponseCode = dataLoaderResponse.getKey();
         List<String> dataLoaderResponseContent = dataLoaderResponse.getValue();
+        // The final response code is the data loader one
         response.setStatus(dataLoaderResponseCode);
         response.setContentType("text/plain");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        PrintWriter pw = response.getWriter();
-        for (String invalidComponent : invalid) {
-            pw.println(invalidComponent);
-        }
-        if (!dataLoaderResponseContent.isEmpty()) {
-            for (String dataLoaderResponseLine : dataLoaderResponse.getValue()) {
-                pw.println(dataLoaderResponseLine);
+        try (PrintWriter pw = response.getWriter()) {
+            for (String dataset : notUploaded)
+                pw.println("Dataset '" + dataset + "' was not uploaded, " +
+                        "since no content complied with the Wikidata RDF data model.");
+            for (String dataset : invalid.keySet()) {
+                List<String> invalidComponents = invalid.get(dataset);
+                if (invalidComponents.isEmpty()) {
+                    pw.println("Dataset '" + dataset + "' fully uploaded. Congratulations!");
+                } else {
+                    pw.println("Dataset '" + dataset + "' partially uploaded. The following invalid components were discarded:");
+                    for (String invalidComponent : invalidComponents) pw.println(invalidComponent);
+                }
+            }
+            if (!dataLoaderResponseContent.isEmpty()) {
+                pw.println("Something went internally wrong when uploading the datasets. Reason:");
+                for (String dataLoaderResponseLine : dataLoaderResponseContent) pw.println(dataLoaderResponseLine);
             }
         }
-        pw.close();
     }
 
     /**
@@ -309,71 +333,80 @@ public class UploadServlet extends HttpServlet {
      * B. use a HttpServletRequestWrapper, i.e., wrapper = new HttpServletRequestWrapper(request);
      * C. use a Filter
      *
-     * @param request the client HTTP request
      * @throws IOException if an input or output error is detected when the client sends the request to the data loader servlet
      */
-    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetToDataLoader(HttpServletRequest request) throws IOException {
+    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(HttpServletRequest request, List<File> tempDatasets) throws
+            IOException {
         List<String> responseContent = new ArrayList<>();
-        URL url = new URL(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_DATA_LOADER_ENDPOINT));
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "text/plain");
-        connection.setDoOutput(true);
-        DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
-        dataLoaderProperties.setProperty("fileOrDirs", tempDataset.getPath());
-        dataLoaderProperties.store(dos, "Expected properties for the Blazegraph data loader service");
-        dos.close();
-        // Check that everything went fine
-        int responseCode = connection.getResponseCode();
-        InputStream responseStream;
-        // Get the data loader response only if it went wrong
-        if (responseCode == HttpServletResponse.SC_OK) {
-            log.info("The dataset ingestion into Blazegraph went fine");
-        } else {
-            log.error("Failed ingesting the dataset into Blazegraph, HTTP error code: {}", responseCode);
-            responseStream = connection.getErrorStream();
-            BufferedReader responseReader = new BufferedReader(new InputStreamReader(responseStream, StandardCharsets.UTF_8));
-            String line;
-            while ((line = responseReader.readLine()) != null) {
-                responseContent.add(line);
-            }
-            responseReader.close();
+        StringBuilder datasets = new StringBuilder();
+        for (File tempDataset : tempDatasets) datasets.append(tempDataset.getPath()).append(", ");
+        dataLoaderProperties.setProperty("fileOrDirs", datasets.toString());
+        byte[] props;
+        URI uri;
+        HttpResponse response;
+        int status;
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            dataLoaderProperties.store(bos, "Expected properties for the Blazegraph data loader service");
+            props = bos.toByteArray();
         }
-        connection.disconnect();
-        return new AbstractMap.SimpleImmutableEntry<>(responseCode, responseContent);
+        uri = URI.create(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_DATA_LOADER_ENDPOINT));
+        response = Request.Post(uri)
+                .bodyByteArray(props, ContentType.TEXT_PLAIN)
+                .execute()
+                .returnResponse();
+        status = response.getStatusLine().getStatusCode();
+        // Get the data loader response only if it went wrong
+        if (status == HttpServletResponse.SC_OK) {
+            log.info("The datasets ingestion into Blazegraph went fine");
+        } else {
+            log.error("Failed ingesting one or more datasets into Blazegraph, HTTP error code: {}", status);
+            try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = responseReader.readLine()) != null) {
+                    responseContent.add(line);
+                }
+            }
+        }
+        return new AbstractMap.SimpleImmutableEntry<>(status, responseContent);
     }
 
     /**
      * Add the (user, uploaded, dataset) statement to the metadata named graph.
      *
-     * @param request
-     * @param user
-     * @param dataset
-     * @return
      * @throws IOException if an input or output error is detected when the client sends the request to the SPARQL service
      */
-    private int addUploaderQuad(HttpServletRequest request, String user, String dataset) throws IOException {
+    private boolean addUploaderQuad(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Reliably build the quad
         String wikidataNamespace = WikibaseUris.WIKIDATA.root();
         String primarySourcesNamespace = wikidataNamespace + "/primary-sources";
         ValueFactory vf = ValueFactoryImpl.getInstance();
         org.openrdf.model.URI subject = vf.createURI(wikidataNamespace, "/wiki/User:" + user);
         org.openrdf.model.URI predicate = vf.createURI(primarySourcesNamespace, "/uploaded");
-        org.openrdf.model.URI object = vf.createURI(dataset);
+        org.openrdf.model.URI object = vf.createURI(datasetURI);
         org.openrdf.model.URI context = vf.createURI(primarySourcesNamespace);
-        // Fire the POST
-        URL url = new URL(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_SPARQL_ENDPOINT));
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "text/x-nquads");
-        connection.setDoOutput(true);
-        BufferedWriter bf = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
         String statement = "<" + subject.stringValue() + "> <" + predicate.stringValue() + "> <" + object.stringValue() + "> <" + context.stringValue() + "> .";
-        bf.write(statement);
-        bf.flush();
-        bf.close();
-        int responseCode = connection.getResponseCode();
-        connection.disconnect();
-        return responseCode;
+        // Fire the POST
+        URIBuilder builder = new URIBuilder(URI.create(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_SPARQL_ENDPOINT)));
+        int status = 0;
+        try {
+            status = Request.Post(builder.build())
+                    .bodyString(statement, ContentType.create("text/x-nquads"))
+                    .execute()
+                    .returnResponse()
+                    .getStatusLine()
+                    .getStatusCode();
+        } catch (URISyntaxException use) {
+            log.error("Failed building the Blazegraph SPARQL endpoint URI: {}", use);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
+                            "Reason: failed building the Blazegraph SPARQL endpoint URI.");
+        }
+        if (status != HttpServletResponse.SC_OK) {
+            log.error("Failed sending the metadata quad to Blazegraph, got status code {}", status);
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
+                            "Reason: failed sending the metadata quad to Blazegraph.");
+            return false;
+        } else return true;
     }
 }

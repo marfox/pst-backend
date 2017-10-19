@@ -10,7 +10,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,66 +79,66 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         String expectedDatasetName = "http://parole-esotiche/new";
         CloseableHttpResponse goodResponse = postDatasetUpload(uploadEndpoint, goodDataset, weirdDatasetName);
         List<String> goodResponseContent = readResponse(goodResponse);
-        Assert.assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
-        Assert.assertEquals(new ArrayList<>(), goodResponseContent);
-        Assert.assertTrue(rdfRepository().ask("ask where { wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 pq:P2096 \"Chuck Berry (2007)\"@ca }"));
+        assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
+        assertEquals(1, goodResponseContent.size());
+        assertTrue(rdfRepository().ask("ask where { wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 pq:P2096 \"Chuck Berry (2007)\"@ca }"));
         TupleQueryResult uploadedGraphs = rdfRepository().query("select ?g where { graph ?g { ?s ?p ?o} }");
         Set<String> namedGraphs = new HashSet<>();
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        Assert.assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://parole-esotiche/new> { ?s ?p ?o } }");
         int uploadedCount = 0;
         while (uploadedStatements.hasNext()) {
             uploadedStatements.next();
             uploadedCount++;
         }
-        Assert.assertEquals(4, uploadedCount);
+        assertEquals(4, uploadedCount);
         TupleQueryResult metadata = rdfRepository().query("select * where { graph <http://www.wikidata.org/primary-sources> { ?s ?p ?o } }");
         BindingSet quad = metadata.next();
-        Assert.assertEquals("http://www.wikidata.org/wiki/User:IMDataProvider", quad.getValue("s").stringValue());
-        Assert.assertEquals("http://www.wikidata.org/primary-sources/uploaded", quad.getValue("p").stringValue());
-        Assert.assertEquals(expectedDatasetName, quad.getValue("o").stringValue());
+        assertEquals("http://www.wikidata.org/wiki/User:IMDataProvider", quad.getValue("s").stringValue());
+        assertEquals("http://www.wikidata.org/primary-sources/uploaded", quad.getValue("p").stringValue());
+        assertEquals(expectedDatasetName, quad.getValue("o").stringValue());
     }
 
     @Test
     public void testPartiallyBadDatasetUpload() throws Exception {
         CloseableHttpResponse partiallyBadResponse = postDatasetUpload(uploadEndpoint, partiallyBadDataset, "T3rr|i|Blę  <<>>  & dATaæš#et" +
-            "     4 sure");
+                "     4 sure");
         String expectedDatasetName = "http://t3rrible-dataset-4-sure/new";
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
-        Assert.assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
-        Assert.assertEquals(10, partiallyBadResponseContent.size());
-        Assert.assertTrue(partiallyBadResponseContent.contains("http://www.wikidata.org/prop/qualifier/I_m_not_a_valid_Item_triple"));
-        Assert.assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
+        assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
+        assertEquals(11, partiallyBadResponseContent.size());
+        assertTrue(partiallyBadResponseContent.contains("http://www.wikidata.org/prop/qualifier/I_m_not_a_valid_Item_triple"));
+        assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult uploadedGraphs = rdfRepository().query("select ?g where { graph ?g { ?s ?p ?o} }");
         Set<String> namedGraphs = new HashSet<>();
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        Assert.assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         int uploadedCount = 0;
         while (uploadedStatements.hasNext()) {
             uploadedStatements.next();
             uploadedCount++;
         }
-        Assert.assertEquals(1, uploadedCount);
+        assertEquals(1, uploadedCount);
     }
 
     @Test
     public void testBadDatasetUpload() throws Exception {
         CloseableHttpResponse badResponse = postDatasetUpload(uploadEndpoint, badDataset, "dataset");
-        Assert.assertEquals(HttpServletResponse.SC_ACCEPTED, badResponse.getStatusLine().getStatusCode());
-        Assert.assertFalse(rdfRepository().ask("ask where {?s ?p ?o}"));
-        Assert.assertFalse(rdfRepository().query("select * where {?s ?p ?o}").hasNext());
+        assertEquals(HttpServletResponse.SC_ACCEPTED, badResponse.getStatusLine().getStatusCode());
+        assertFalse(rdfRepository().ask("ask where {?s ?p ?o}"));
+        assertFalse(rdfRepository().query("select * where {?s ?p ?o}").hasNext());
     }
 
     @Test
     public void testBadRDFUpload() throws Exception {
         CloseableHttpResponse badRDFResponse = postDatasetUpload(uploadEndpoint, badRDF, "dataset");
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
     }
 
     // Remove good dataset, add good dataset
@@ -148,16 +147,16 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse goodResponse = postDatasetUpdate(updateEndpoint, goodDataset, goodDataset);
         List<String> goodResponseContent = readResponse(goodResponse);
-        Assert.assertTrue(goodResponseContent.isEmpty());
-        Assert.assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
-        Assert.assertTrue(rdfRepository().ask("ask where { wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 }"));
+        assertTrue(goodResponseContent.isEmpty());
+        assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
+        assertTrue(rdfRepository().ask("ask where { wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
         int updatedCount = 0;
         while (updatedStatements.hasNext()) {
             updatedStatements.next();
             updatedCount++;
         }
-        Assert.assertEquals(4, updatedCount);
+        assertEquals(4, updatedCount);
     }
 
     // Remove good dataset, add partially bad dataset
@@ -166,16 +165,16 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse partiallyBadResponse = postDatasetUpdate(updateEndpoint, goodDataset, partiallyBadDataset);
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
-        Assert.assertEquals(11, partiallyBadResponseContent.size());
-        Assert.assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
-        Assert.assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
+        assertEquals(11, partiallyBadResponseContent.size());
+        assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
+        assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
         int updatedCount = 0;
         while (updatedStatements.hasNext()) {
             updatedStatements.next();
             updatedCount++;
         }
-        Assert.assertEquals(1, updatedCount);
+        assertEquals(1, updatedCount);
     }
 
     // Remove good dataset, add bad dataset
@@ -184,10 +183,10 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse badResponse = postDatasetUpdate(updateEndpoint, goodDataset, badDataset);
         List<String> badResponseContent = readResponse(badResponse);
-        Assert.assertEquals(12, badResponseContent.size());
-        Assert.assertEquals(HttpServletResponse.SC_OK, badResponse.getStatusLine().getStatusCode());
-        Assert.assertFalse(rdfRepository().ask("ask where { graph <http://chuck-berry/new> { ?s ?p ?o } }"));
-        Assert.assertFalse(rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }").hasNext());
+        assertEquals(12, badResponseContent.size());
+        assertEquals(HttpServletResponse.SC_OK, badResponse.getStatusLine().getStatusCode());
+        assertFalse(rdfRepository().ask("ask where { graph <http://chuck-berry/new> { ?s ?p ?o } }"));
+        assertFalse(rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }").hasNext());
     }
 
     // Remove good dataset, add bad RDF
@@ -195,7 +194,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     public void testBadRDFUpdate() throws Exception {
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse badRDFResponse = postDatasetUpdate(updateEndpoint, goodDataset, badRDF);
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
+        assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
         // Check that nothing happened, i.e., that the good dataset is still there
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
         int uploadedCount = 0;
@@ -203,7 +202,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
             uploadedStatements.next();
             uploadedCount++;
         }
-        Assert.assertEquals(4, uploadedCount);
+        assertEquals(4, uploadedCount);
     }
 
     private List<String> readResponse(CloseableHttpResponse response) throws IOException {
