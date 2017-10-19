@@ -1,6 +1,7 @@
 package org.wikidata.query.rdf.primarysources;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.http.client.fluent.Request;
 import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
@@ -16,13 +17,8 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.net.URISyntaxException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,10 +42,10 @@ public class WikibaseDataModelValidator {
      * </ul>
      */
     public static final Map<String, Pattern> TERM_VALIDATORS = ImmutableMap.of(
-        "item", Pattern.compile("^Q\\d+$"),
-        "property", Pattern.compile("^P\\d+$"),
-        "statement", Pattern.compile("^Q\\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
-        "reference", Pattern.compile("^[0-9a-f]{40}$"));
+            "item", Pattern.compile("^Q\\d+$"),
+            "property", Pattern.compile("^P\\d+$"),
+            "statement", Pattern.compile("^Q\\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
+            "reference", Pattern.compile("^[0-9a-f]{40}$"));
 
     /**
      * The set of Wikidata namespaces.
@@ -60,6 +56,10 @@ public class WikibaseDataModelValidator {
      * 3 characters is the maximum value to consider a given resource as invalid due to a typo.
      */
     private static final int EDIT_DISTANCE_THRESHOLD = 3;
+    /**
+     * Timeout in milliseconds when trying to resolve a given URL, see {@link #validateURL(String)}.
+     */
+    private static final int RESOLVE_URL_TIMEOUT = 1000;
     private static final Logger log = LoggerFactory.getLogger(WikibaseDataModelValidator.class);
 
     /**
@@ -140,18 +140,9 @@ public class WikibaseDataModelValidator {
                         log.error("Probably a typo: {}", objectString);
                         invalid.add(objectString);
                     } else {
-                        // The edit distance is above the threshold: probably it's a URL, check if it resolves
-                        int responseCode = 200;
-                        try {
-                            responseCode = resolve(objectString);
-                        } catch (IOException ioe) {
-                            // Doesn't resolve because of lower-level issues
-                            log.error("Not resolvable: {} Reason: {}", objectString, ioe.getClass().getSimpleName());
-                            invalid.add(objectString);
-                        }
-                        // Allow success (2xx) and redirection (3xx) code ranges
-                        if (responseCode >= 400) {
-                            log.error("Not resolvable: {} HTTP error code: {}", objectString, responseCode);
+                        // The edit distance is above the threshold: probably it's a URL, so validate it
+                        boolean isValidURL = validateURL(objectString);
+                        if (!isValidURL) {
                             invalid.add(objectString);
                         }
                     }
@@ -252,18 +243,9 @@ public class WikibaseDataModelValidator {
                     log.error("Probably a typo: {}", object);
                     invalid.add(object);
                 } else {
-                    // The edit distance is above the threshold: probably it's a URL, check if it resolves
-                    int responseCode = 200;
-                    try {
-                        responseCode = resolve(object);
-                    } catch (IOException ioe) {
-                        // Doesn't resolve because of lower-level issues
-                        log.error("Not resolvable: {} Reason: {}", object, ioe.getClass().getSimpleName());
-                        invalid.add(object);
-                    }
-                    // Allow success (2xx) and redirection (3xx) code ranges
-                    if (responseCode >= 400) {
-                        log.error("Not resolvable: {} HTTP error code: {}", object, responseCode);
+                    // The edit distance is above the threshold: probably it's a URL, so validate it
+                    boolean isValidURL = validateURL(object);
+                    if (!isValidURL) {
                         invalid.add(object);
                     }
                 }
@@ -357,15 +339,32 @@ public class WikibaseDataModelValidator {
 
     /**
      * Perform an HTTP GET to check that the given resource is resolvable in the Internet.
-     *
-     * @throws IOException - when there are troubles resolving the resource, typically malformed URLs
      */
-    private int resolve(String resource) throws IOException {
-        URL url = new URL(resource);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.connect();
-        return connection.getResponseCode();
+    @SuppressWarnings("CheckStyle")
+    private boolean validateURL(String resource) {
+        java.net.URI uri;
+        try {
+            uri = new java.net.URI(resource);
+        } catch (URISyntaxException use) {
+            log.error("Malformed URI: {}. Reason: {}", resource, use.getLocalizedMessage());
+            return false;
+        }
+        int status;
+        try {
+            status = Request.Get(uri)
+                    .connectTimeout(RESOLVE_URL_TIMEOUT)
+                    .execute()
+                    .returnResponse().getStatusLine().getStatusCode();
+        } catch (IOException ioe) {
+            log.error("Not resolvable: {}. Reason: {}", resource, ioe.getClass().getSimpleName());
+            return false;
+        }
+        // Allow success (2xx) and redirection (3xx) code ranges
+        if (status >= 400) {
+            log.error("Not resolvable: {}. Reason: HTTP error code {}", resource, status);
+            return false;
+        }
+        return true;
     }
 
     /**
