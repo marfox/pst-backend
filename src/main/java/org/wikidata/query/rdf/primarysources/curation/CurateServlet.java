@@ -54,110 +54,110 @@ public class CurateServlet extends HttpServlet {
 
     // Approve claim + eventual qualifiers
     private static final String CLAIM_APPROVAL_QUERY =
-        "DELETE {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
-            "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-            "           ?pq ?qualifier ." +
-            "  }" +
-            "}" +
-            "INSERT {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/approved> {" +
-            "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-            "           ?pq ?qualifier ." +
-            "  }" +
-            "}" +
-            "WHERE {" +
-            "  ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  OPTIONAL {" +
-            "    ?claim ?pq ?qualifier ." +
-            "    FILTER (?pq != prov:wasDerivedFrom) ." +
-            "  }" +
-            "}";
+            "DELETE {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "           ?pq ?qualifier ." +
+                    "  }" +
+                    "}" +
+                    "INSERT {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/approved> {" +
+                    "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "           ?pq ?qualifier ." +
+                    "  }" +
+                    "}" +
+                    "WHERE {" +
+                    "  ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  OPTIONAL {" +
+                    "    ?claim ?pq ?qualifier ." +
+                    "    FILTER (?pq != prov:wasDerivedFrom) ." +
+                    "  }" +
+                    "}";
     // Reject everything
     private static final String CLAIM_REJECTION_QUERY =
-        "DELETE {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
-            "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-            "             prov:wasDerivedFrom ?ref_node ;" +
-            "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node ?ref_p ?ref_v" +
-            "  }" +
-            "}" +
-            "INSERT {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/rejected> {" +
-            "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-            "             prov:wasDerivedFrom ?ref_node ;" +
-            "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node ?ref_p ?ref_v" +
-            "  }" +
-            "}" +
-            "WHERE {" +
-            "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "  ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-            "  OPTIONAL {" +
-            "    ?st_node prov:wasDerivedFrom ?ref_node ." +
-            "    ?ref_node ?ref_p ?ref_v ." +
-            "  }" +
-            "  OPTIONAL {" +
-            "    ?st_node ?qualif_p ?qualif_v ." +
-            "  }" +
-            "}";
+            "DELETE {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "             prov:wasDerivedFrom ?ref_node ;" +
+                    "             ?qualif_p ?qualif_v ." +
+                    "    ?ref_node ?ref_p ?ref_v" +
+                    "  }" +
+                    "}" +
+                    "INSERT {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/rejected> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "             prov:wasDerivedFrom ?ref_node ;" +
+                    "             ?qualif_p ?qualif_v ." +
+                    "    ?ref_node ?ref_p ?ref_v" +
+                    "  }" +
+                    "}" +
+                    "WHERE {" +
+                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "  ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "  OPTIONAL {" +
+                    "    ?st_node prov:wasDerivedFrom ?ref_node ." +
+                    "    ?ref_node ?ref_p ?ref_v ." +
+                    "  }" +
+                    "  OPTIONAL {" +
+                    "    ?st_node ?qualif_p ?qualif_v ." +
+                    "  }" +
+                    "}";
 
     // Approve/reject everything but main node + sibling qualifiers
     private static final String QUALIFIER_QUERY =
-        "DELETE {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
-            "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
-            "             prov:wasDerivedFrom ?ref_node ." +
-            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  }" +
-            "}" +
-            "INSERT {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
-            "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
-            "             prov:wasDerivedFrom ?ref_node ." +
-            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  }" +
-            "}" +
-            "WHERE {" +
-            "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
-            "  ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  OPTIONAL {" +
-            "    ?st_node prov:wasDerivedFrom ?ref_node ." +
-            "    ?ref_node ?ref_p ?ref_v ." +
-            "  }" +
-            "}";
+            "DELETE {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "             prov:wasDerivedFrom ?ref_node ." +
+                    "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  }" +
+                    "}" +
+                    "INSERT {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "             prov:wasDerivedFrom ?ref_node ." +
+                    "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  }" +
+                    "}" +
+                    "WHERE {" +
+                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
+                    "  ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  OPTIONAL {" +
+                    "    ?st_node prov:wasDerivedFrom ?ref_node ." +
+                    "    ?ref_node ?ref_p ?ref_v ." +
+                    "  }" +
+                    "}";
 
     // Approve/reject everything but main node + sibling references
     private static final String REFERENCE_QUERY =
-        "DELETE {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
-            "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
-            "             prov:wasDerivedFrom ?ref_node ;" +
-            "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  }" +
-            "}" +
-            "INSERT {" +
-            "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
-            "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
-            "             prov:wasDerivedFrom ?ref_node ;" +
-            "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  }" +
-            "}" +
-            "WHERE {" +
-            "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
-            "  ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-            "  OPTIONAL {" +
-            "    ?st_node ?qualif_p ?qualif_v ." +
-            "    FILTER (?qualif_p != prov:wasDerivedFrom) ." +
-            "  }" +
-            "}";
+            "DELETE {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "             prov:wasDerivedFrom ?ref_node ;" +
+                    "             ?qualif_p ?qualif_v ." +
+                    "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  }" +
+                    "}" +
+                    "INSERT {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "             prov:wasDerivedFrom ?ref_node ;" +
+                    "             ?qualif_p ?qualif_v ." +
+                    "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  }" +
+                    "}" +
+                    "WHERE {" +
+                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
+                    "  ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "  OPTIONAL {" +
+                    "    ?st_node ?qualif_p ?qualif_v ." +
+                    "    FILTER (?qualif_p != prov:wasDerivedFrom) ." +
+                    "  }" +
+                    "}";
     private static final Logger log = LoggerFactory.getLogger(CurateServlet.class);
 
     private String qId;
@@ -187,7 +187,7 @@ public class CurateServlet extends HttpServlet {
         } catch (ParseException pe) {
             log.error("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed JSON request body. Parse error at index "
-                + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
+                    + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
             return false;
         }
         String givenQId = (String) body.get(SuggestServlet.QID_PARAMETER);
@@ -273,7 +273,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenType.equals("claim") && !givenType.equals("qualifier") && !givenType.equals("reference")) {
             log.error("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement type: '" + givenType + "'. " +
-                "Must be one of 'claim', 'qualifier', 'reference'.");
+                    "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
         }
         type = givenType;
@@ -285,7 +285,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenState.equals("approved") && !givenState.equals("rejected")) {
             log.error("Invalid statement state: {}. Must be either 'approved' or 'rejected'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement state: '" + givenState + "'. " +
-                "Must be either 'approved' or 'rejected'.");
+                    "Must be either 'approved' or 'rejected'.");
             return false;
         }
         state = givenState;
@@ -307,7 +307,7 @@ public class CurateServlet extends HttpServlet {
         } catch (URISyntaxException use) {
             log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                "Parse error at index " + use.getIndex() + ".");
+                    "Parse error at index " + use.getIndex() + ".");
             return false;
         }
         dataset = givenDataset.replace("/new", "");
@@ -317,50 +317,50 @@ public class CurateServlet extends HttpServlet {
     private JSONObject changeState(HttpServletRequest request) throws IOException {
         String query = null;
         switch (type) {
-        case "claim":
-            query = state.equals("approved") ? CLAIM_APPROVAL_QUERY : CLAIM_REJECTION_QUERY;
-            query = query
-                .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                .replace(STATE_PLACE_HOLDER, state)
-                .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                .replace(PID_PLACE_HOLDER, pId);
-            query = value instanceof org.openrdf.model.URI
-                ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                : query.replace(VALUE_PLACE_HOLDER, value.toString());
-            break;
-        case "qualifier":
-            query = QUALIFIER_QUERY
-                .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                .replace(STATE_PLACE_HOLDER, state)
-                .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                .replace(PID_PLACE_HOLDER, pId);
-            query = value instanceof org.openrdf.model.URI
-                ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                : query.replace(VALUE_PLACE_HOLDER, value.toString());
-            break;
-        case "reference":
-            query = REFERENCE_QUERY
-                .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                .replace(STATE_PLACE_HOLDER, state)
-                .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                .replace(PID_PLACE_HOLDER, pId);
-            query = value instanceof org.openrdf.model.URI
-                ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                : query.replace(VALUE_PLACE_HOLDER, value.toString());
-            break;
+            case "claim":
+                query = state.equals("approved") ? CLAIM_APPROVAL_QUERY : CLAIM_REJECTION_QUERY;
+                query = query
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
+                        .replace(STATE_PLACE_HOLDER, state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
+                        .replace(PID_PLACE_HOLDER, pId);
+                query = value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                break;
+            case "qualifier":
+                query = QUALIFIER_QUERY
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
+                        .replace(STATE_PLACE_HOLDER, state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
+                        .replace(PID_PLACE_HOLDER, pId);
+                query = value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                break;
+            case "reference":
+                query = REFERENCE_QUERY
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
+                        .replace(STATE_PLACE_HOLDER, state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
+                        .replace(PID_PLACE_HOLDER, pId);
+                query = value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                break;
         }
         URI uri = URI.create(request.getRequestURL().toString().replace(request.getServletPath(), UploadServlet.BLAZEGRAPH_SPARQL_ENDPOINT));
         URIBuilder builder = new URIBuilder(uri);
         HttpResponse response;
         try {
             response = Request.Post(builder.build())
-                .setHeader("Accept", SuggestServlet.IO_MIME_TYPE)
-                .bodyForm(Form.form().add("update", query).build())
-                .execute()
-                .returnResponse();
+                    .setHeader("Accept", SuggestServlet.IO_MIME_TYPE)
+                    .bodyForm(Form.form().add("update", query).build())
+                    .execute()
+                    .returnResponse();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             JSONObject toBeReturned = new JSONObject();
@@ -408,33 +408,33 @@ public class CurateServlet extends HttpServlet {
             JSONObject objectValue;
             String stringValue;
             switch (dataValueType) {
-            case "wikibase-entityid":
-                try {
-                    objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
-                } catch (ParseException pe) {
-                    log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
-                    return null;
-                }
-                String id = Long.toString((long) objectValue.get("numeric-id"));
-                return vf.createURI(SuggestServlet.WIKIBASE_URIS.entity(), "Q" + id);
-            case "string":
-                stringValue = (String) dataValue.get("value");
-                try {
-                    // URL
-                    org.openrdf.model.URI uri = vf.createURI(stringValue);
-                    return uri;
-                } catch (IllegalArgumentException iae) {
-                    // String
-                    return vf.createLiteral(stringValue);
-                }
-            case "monolingualtext":
-                try {
-                    objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
-                } catch (ParseException pe) {
-                    log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
-                    return null;
-                }
-                return vf.createLiteral((String) objectValue.get("text"), (String) objectValue.get("language"));
+                case "wikibase-entityid":
+                    try {
+                        objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
+                    } catch (ParseException pe) {
+                        log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
+                        return null;
+                    }
+                    String id = Long.toString((long) objectValue.get("numeric-id"));
+                    return vf.createURI(SuggestServlet.WIKIBASE_URIS.entity(), "Q" + id);
+                case "string":
+                    stringValue = (String) dataValue.get("value");
+                    try {
+                        // URL
+                        org.openrdf.model.URI uri = vf.createURI(stringValue);
+                        return uri;
+                    } catch (IllegalArgumentException iae) {
+                        // String
+                        return vf.createLiteral(stringValue);
+                    }
+                case "monolingualtext":
+                    try {
+                        objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
+                    } catch (ParseException pe) {
+                        log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
+                        return null;
+                    }
+                    return vf.createLiteral((String) objectValue.get("text"), (String) objectValue.get("language"));
             }
         } else return null;
         return null;

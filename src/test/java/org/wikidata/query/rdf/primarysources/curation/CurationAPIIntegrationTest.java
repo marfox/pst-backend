@@ -51,9 +51,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
         multipart.addBinaryBody("dataset", testDataset);
         Request.Post(uploadEndpoint)
-            .body(multipart.build())
-            .execute()
-            .discardContent();
+                .body(multipart.build())
+                .execute()
+                .discardContent();
     }
 
     @Test
@@ -62,9 +62,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         // Test success
         builder.setParameter("qid", TEST_QID);
         String responseContent = Request.Get(builder.build())
-            .execute()
-            .returnContent()
-            .asString();
+                .execute()
+                .returnContent()
+                .asString();
         JSONParser parser = new JSONParser();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
@@ -83,15 +83,15 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
             JSONObject suggestion = (JSONObject) s;
             String type = (String) suggestion.get("type");
             switch (type) {
-            case "claim":
-                actualStatements += 1;
-                break;
-            case "qualifier":
-                actualQualifiers += 1;
-                break;
-            case "reference":
-                actualReferences += 1;
-                break;
+                case "claim":
+                    actualStatements += 1;
+                    break;
+                case "qualifier":
+                    actualQualifiers += 1;
+                    break;
+                case "reference":
+                    actualReferences += 1;
+                    break;
             }
         }
         Assert.assertEquals(expectedStatements, actualStatements);
@@ -100,10 +100,10 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         // Test failure
         builder.setParameter("qid", "Q666");
         int status = Request.Get(builder.build())
-            .execute()
-            .returnResponse()
-            .getStatusLine()
-            .getStatusCode();
+                .execute()
+                .returnResponse()
+                .getStatusLine()
+                .getStatusCode();
         Assert.assertEquals(404, status);
     }
 
@@ -122,9 +122,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "approved");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-            .execute()
-            .discardContent();
+                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+                .execute()
+                .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -152,9 +152,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-            .execute()
-            .discardContent();
+                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+                .execute()
+                .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -191,9 +191,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "approved");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-            .execute()
-            .discardContent();
+                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+                .execute()
+                .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -230,9 +230,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-            .execute()
-            .discardContent();
+                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+                .execute()
+                .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");

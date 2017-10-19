@@ -47,28 +47,28 @@ public class SuggestServlet extends HttpServlet {
     static final String QID_PLACE_HOLDER = "${QID}";
     static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
     private static final String ONE_DATASET_QUERY =
-        "SELECT ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
-            "WHERE {" +
-            "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-            "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
-            "    ?statement ?statement_property ?statement_value ." +
-            "    OPTIONAL {" +
-            "      ?statement_value ?reference_property ?reference_value ." +
-            "    }" +
-            "  }" +
-            "}";
+            "SELECT ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
+                    "WHERE {" +
+                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
+                    "    ?statement ?statement_property ?statement_value ." +
+                    "    OPTIONAL {" +
+                    "      ?statement_value ?reference_property ?reference_value ." +
+                    "    }" +
+                    "  }" +
+                    "}";
     private static final String ALL_DATASETS_QUERY =
-        "SELECT ?dataset ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
-            "WHERE {" +
-            "  GRAPH ?dataset {" +
-            "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
-            "    ?statement ?statement_property ?statement_value ." +
-            "    OPTIONAL {" +
-            "      ?statement_value ?reference_property ?reference_value ." +
-            "    }" +
-            "  }" +
-            "  FILTER STRENDS(str(?dataset), \"new\") ." +
-            "}";
+            "SELECT ?dataset ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
+                    "WHERE {" +
+                    "  GRAPH ?dataset {" +
+                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
+                    "    ?statement ?statement_property ?statement_value ." +
+                    "    OPTIONAL {" +
+                    "      ?statement_value ?reference_property ?reference_value ." +
+                    "    }" +
+                    "  }" +
+                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
+                    "}";
     private static final Logger log = LoggerFactory.getLogger(SuggestServlet.class);
     private static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     private static final Object DEFAULT_ALTITUDE = null;
@@ -111,7 +111,7 @@ public class SuggestServlet extends HttpServlet {
             } catch (URISyntaxException use) {
                 log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                    "Parse error at index " + use.getIndex() + ".");
+                        "Parse error at index " + use.getIndex() + ".");
                 return false;
             }
         }
@@ -126,9 +126,9 @@ public class SuggestServlet extends HttpServlet {
         InputStream results;
         try {
             results = Request.Get(builder.build())
-                .setHeader("Accept", IO_MIME_TYPE)
-                .execute()
-                .returnContent().asStream();
+                    .setHeader("Accept", IO_MIME_TYPE)
+                    .execute()
+                    .returnContent().asStream();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             return null;
@@ -206,7 +206,7 @@ public class SuggestServlet extends HttpServlet {
         JSONObject dataValue = new JSONObject();
         JSONObject finalValue = new JSONObject();
         String referencePid = suggestion.getValue("reference_property").stringValue()
-            .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
+                .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
         Value referenceValue = suggestion.getValue("reference_value");
         String finalValueType = null;
         if (referenceValue instanceof org.openrdf.model.URI) {
@@ -247,7 +247,7 @@ public class SuggestServlet extends HttpServlet {
         if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
         String mainPId = suggestion.getValue("property").stringValue()
-            .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
+                .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
         jsonSuggestion.put("main_property", mainPId);
     }
 
