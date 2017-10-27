@@ -41,8 +41,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
     private static final RDFFormat RDF_FORMAT = RDFFormat.TURTLE;
 
     private static WikibaseDataModelValidator validator;
-    private static InputStream goodDataset;
-    private static InputStream badDataset;
     private static Model goodParsedDataset;
     private static Model badParsedDataset;
 
@@ -50,12 +48,10 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
     public static void setUpOnce() throws RDFParseException, IOException {
         validator = new WikibaseDataModelValidator();
         try (InputStream is = openTestDatasetStream(GOOD_DATASET_FILE_NAME)) {
-            goodDataset = is;
-            goodParsedDataset = Rio.parse(goodDataset, BASE_URI, RDF_FORMAT);
+            goodParsedDataset = Rio.parse(is, BASE_URI, RDF_FORMAT);
         }
         try (InputStream is = openTestDatasetStream(BAD_DATASET_FILE_NAME)) {
-            badDataset = is;
-            badParsedDataset = Rio.parse(badDataset, BASE_URI, RDF_FORMAT);
+            badParsedDataset = Rio.parse(is, BASE_URI, RDF_FORMAT);
         }
     }
 
@@ -129,7 +125,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Value objectWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.value() + "Q" + String.valueOf(randomIntBetween(1,
                 100000)));
         Value objectWithTypo = vf.createURI("http://www.wikidata.orge/entiti/" + "Q" + String.valueOf(randomIntBetween(1, 100000)));
-        Value unresolvableObject = vf.createURI("http://this.leads.to.nowhere");
 
         // Valid triple components
         Resource validSubject = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q666-" + UUID.randomUUID().toString());
@@ -144,7 +139,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidProperty = vf.createStatement(validSubject, propertyWithInvalidNamespace, validObject);
         Statement withInvalidNamespaceObject = vf.createStatement(validSubject, validProperty, objectWithInvalidNamespace);
         Statement withTypoObject = vf.createStatement(validSubject, validProperty, objectWithTypo);
-        Statement withUnresolvableObject = vf.createStatement(validSubject, validProperty, unresolvableObject);
         Statement withInvalidSubjectAndProperty = vf.createStatement(subjectWithInvalidUUID, propertyWithInvalidNamespace, validObject);
         Statement withInvalidPropertyAndObject = vf.createStatement(validSubject, propertyWithInvalidNamespace, objectWithInvalidNamespace);
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidUUID, validProperty, objectWithInvalidNamespace);
@@ -156,7 +150,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validatePropertyTriple(withTypoObject));
-        assertEquals(Arrays.asList(unresolvableObject.stringValue()), validator.validatePropertyTriple(withUnresolvableObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
                 withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
@@ -260,7 +253,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Value objectWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.entityData() + "Q" + String.valueOf(randomIntBetween(1,
                 100000)));
         Value objectWithTypo = vf.createURI("http://wwww.wikidata.org/entit/" + "Q" + String.valueOf(randomIntBetween(1, 100000)));
-        Value unresolvableObject = vf.createURI("http://road.to.nowhere");
 
         // Valid triple components
         Resource validSubject = createValidReferenceNode(vf);
@@ -275,7 +267,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidProperty = vf.createStatement(validSubject, propertyWithInvalidNamespace, validObject);
         Statement withInvalidNamespaceObject = vf.createStatement(validSubject, validProperty, objectWithInvalidNamespace);
         Statement withTypoObject = vf.createStatement(validSubject, validProperty, objectWithTypo);
-        Statement withUnresolvableObject = vf.createStatement(validSubject, validProperty, unresolvableObject);
         Statement withInvalidSubjectAndProperty = vf.createStatement(subjectWithInvalidHash, propertyWithInvalidNamespace, validObject);
         Statement withInvalidPropertyAndObject = vf.createStatement(validSubject, propertyWithInvalidNamespace, objectWithInvalidNamespace);
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidHash, validProperty, objectWithInvalidNamespace);
@@ -287,7 +278,6 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validateReferenceValueTriple(withTypoObject));
-        assertEquals(Arrays.asList(unresolvableObject.stringValue()), validator.validateReferenceValueTriple(withUnresolvableObject));
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(
                 withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator

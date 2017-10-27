@@ -139,12 +139,6 @@ public class WikibaseDataModelValidator {
                     if (distance <= EDIT_DISTANCE_THRESHOLD) {
                         log.error("Probably a typo: {}", objectString);
                         invalid.add(objectString);
-                    } else {
-                        // The edit distance is above the threshold: probably it's a URL, so validate it
-                        boolean isValidURL = validateURL(objectString);
-                        if (!isValidURL) {
-                            invalid.add(objectString);
-                        }
                     }
                 }
             }
@@ -242,12 +236,6 @@ public class WikibaseDataModelValidator {
                 if (distance <= EDIT_DISTANCE_THRESHOLD) {
                     log.error("Probably a typo: {}", object);
                     invalid.add(object);
-                } else {
-                    // The edit distance is above the threshold: probably it's a URL, so validate it
-                    boolean isValidURL = validateURL(object);
-                    if (!isValidURL) {
-                        invalid.add(object);
-                    }
                 }
             }
         }

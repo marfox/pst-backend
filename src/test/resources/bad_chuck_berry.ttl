@@ -35,5 +35,5 @@ wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 prov:wasDerivedFrom wdref:not_a_h
 # Reference value triple, invalid data model ("ps" instead of "pr" prefix)
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc ps:P143 wd:Q206855 .
 
-# Reference value triple, valid data model, invalid URL
-wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 <http://where.am.i.going> .
+# Reference value triple, valid data model, typo in URL
+wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 <http://ww.wikidata.orge/entitu/Q999> .
