@@ -21,7 +21,6 @@ import org.wikidata.query.rdf.common.uri.GeoSparql;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
-import org.wikidata.query.rdf.primarysources.ingestion.UploadServlet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -32,6 +31,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -85,7 +86,7 @@ public class SuggestServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         boolean ok = processRequest(request, response);
         if (!ok) return;
-        TupleQueryResult suggestions = getSuggestions(request);
+        TupleQueryResult suggestions = getSuggestions();
         sendResponse(response, suggestions);
     }
 
@@ -118,21 +119,27 @@ public class SuggestServlet extends HttpServlet {
         return true;
     }
 
-    private TupleQueryResult getSuggestions(HttpServletRequest request) throws IOException {
+    private TupleQueryResult getSuggestions() throws IOException {
         String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
-        URI uri = URI.create(request.getRequestURL().toString().replace(request.getServletPath(), UploadServlet.BLAZEGRAPH_SPARQL_ENDPOINT));
-        URIBuilder builder = new URIBuilder(uri);
-        builder.setParameter("query", query);
-        InputStream results;
+        URIBuilder builder = new URIBuilder();
+        URI uri;
         try {
-            results = Request.Get(builder.build())
-                    .setHeader("Accept", IO_MIME_TYPE)
-                    .execute()
-                    .returnContent().asStream();
+            uri = builder
+                    .setScheme("http")
+                    .setHost(BLAZEGRAPH_HOST)
+                    .setPort(BLAZEGRAPH_PORT)
+                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
+                    .setParameter("query", query)
+                    .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             return null;
         }
+        InputStream results;
+        results = Request.Get(uri)
+                .setHeader("Accept", IO_MIME_TYPE)
+                .execute()
+                .returnContent().asStream();
         try {
             return QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(IO_MIME_TYPE));
         } catch (QueryResultParseException qrpe) {
@@ -148,10 +155,8 @@ public class SuggestServlet extends HttpServlet {
         JSONArray jsonSuggestions = formatSuggestions(suggestions);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
-            return;
         } else if (jsonSuggestions.isEmpty()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + qId + " .");
-            return;
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);

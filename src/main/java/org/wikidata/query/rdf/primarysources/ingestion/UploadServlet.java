@@ -45,6 +45,9 @@ public class UploadServlet extends HttpServlet {
      * Endpoint name of the Blazegraph SPARQL service.
      */
     public static final String BLAZEGRAPH_SPARQL_ENDPOINT = "/sparql";
+    public static final String BLAZEGRAPH_HOST = System.getProperty("org.wikidata.primarysources.blazegraph.host");
+    public static final int BLAZEGRAPH_PORT = Integer.parseInt(System.getProperty("org.wikidata.primarysources.blazegraph.port"));
+    public static final String BLAZEGRAPH_CONTEXT = System.getProperty("org.wikidata.primarysources.blazegraph.context");
     /**
      * The data provider should not care about the base URI. A constant is used instead.
      */
@@ -150,8 +153,9 @@ public class UploadServlet extends HttpServlet {
                     "<a href=\"https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model\">documentation</a> and try again.");
             return;
         }
-        AbstractMap.SimpleImmutableEntry<Integer, List<String>> dataLoaderResponse = sendDatasetsToDataLoader(request, tempDatasets);
-        boolean added = addUploaderQuad(request, response);
+        AbstractMap.SimpleImmutableEntry<Integer, List<String>> dataLoaderResponse = sendDatasetsToDataLoader(tempDatasets, response);
+        if (dataLoaderResponse == null) return;
+        boolean added = addUploaderQuad(response);
         if (!added) return;
         for (File tempDataset : tempDatasets) tempDataset.delete();
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
@@ -335,32 +339,46 @@ public class UploadServlet extends HttpServlet {
      *
      * @throws IOException if an input or output error is detected when the client sends the request to the data loader servlet
      */
-    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(HttpServletRequest request, List<File> tempDatasets) throws
+    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(List<File> tempDatasets, HttpServletResponse response) throws
             IOException {
         List<String> responseContent = new ArrayList<>();
         StringBuilder datasets = new StringBuilder();
         for (File tempDataset : tempDatasets) datasets.append(tempDataset.getPath()).append(", ");
         dataLoaderProperties.setProperty("fileOrDirs", datasets.toString());
         byte[] props;
-        URI uri;
-        HttpResponse response;
+        HttpResponse dataLoaderResponse;
         int status;
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             dataLoaderProperties.store(bos, "Expected properties for the Blazegraph data loader service");
             props = bos.toByteArray();
         }
-        uri = URI.create(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_DATA_LOADER_ENDPOINT));
-        response = Request.Post(uri)
+        URIBuilder builder = new URIBuilder();
+        URI uri;
+        try {
+            uri = builder
+                    .setScheme("http")
+                    .setHost(BLAZEGRAPH_HOST)
+                    .setPort(BLAZEGRAPH_PORT)
+                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
+                    .build();
+        } catch (URISyntaxException use) {
+            log.error("Failed building the Blazegraph data loader URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Something went wrong while uploading the datasets. " +
+                            "Reason: failed building the Blazegraph data loader URI.");
+            return null;
+        }
+        dataLoaderResponse = Request.Post(uri)
                 .bodyByteArray(props, ContentType.TEXT_PLAIN)
                 .execute()
                 .returnResponse();
-        status = response.getStatusLine().getStatusCode();
+        status = dataLoaderResponse.getStatusLine().getStatusCode();
         // Get the data loader response only if it went wrong
         if (status == HttpServletResponse.SC_OK) {
             log.info("The datasets ingestion into Blazegraph went fine");
         } else {
             log.error("Failed ingesting one or more datasets into Blazegraph, HTTP error code: {}", status);
-            try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))) {
+            try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(dataLoaderResponse.getEntity().getContent(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = responseReader.readLine()) != null) {
                     responseContent.add(line);
@@ -375,7 +393,7 @@ public class UploadServlet extends HttpServlet {
      *
      * @throws IOException if an input or output error is detected when the client sends the request to the SPARQL service
      */
-    private boolean addUploaderQuad(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean addUploaderQuad(HttpServletResponse response) throws IOException {
         // Reliably build the quad
         String wikidataNamespace = WikibaseUris.WIKIDATA.root();
         String primarySourcesNamespace = wikidataNamespace + "/primary-sources";
@@ -386,21 +404,28 @@ public class UploadServlet extends HttpServlet {
         org.openrdf.model.URI context = vf.createURI(primarySourcesNamespace);
         String statement = "<" + subject.stringValue() + "> <" + predicate.stringValue() + "> <" + object.stringValue() + "> <" + context.stringValue() + "> .";
         // Fire the POST
-        URIBuilder builder = new URIBuilder(URI.create(request.getRequestURL().toString().replace(request.getServletPath(), BLAZEGRAPH_SPARQL_ENDPOINT)));
-        int status = 0;
+        URIBuilder builder = new URIBuilder();
+        URI uri;
         try {
-            status = Request.Post(builder.build())
-                    .bodyString(statement, ContentType.create("text/x-nquads"))
-                    .execute()
-                    .returnResponse()
-                    .getStatusLine()
-                    .getStatusCode();
+            uri = builder
+                    .setScheme("http")
+                    .setHost(BLAZEGRAPH_HOST)
+                    .setPort(BLAZEGRAPH_PORT)
+                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
+                    .build();
         } catch (URISyntaxException use) {
-            log.error("Failed building the Blazegraph SPARQL endpoint URI: {}", use);
+            log.error("Failed building the Blazegraph SPARQL endpoint URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
                             "Reason: failed building the Blazegraph SPARQL endpoint URI.");
+            return false;
         }
+        int status = Request.Post(uri)
+                .bodyString(statement, ContentType.create("text/x-nquads"))
+                .execute()
+                .returnResponse()
+                .getStatusLine()
+                .getStatusCode();
         if (status != HttpServletResponse.SC_OK) {
             log.error("Failed sending the metadata quad to Blazegraph, got status code {}", status);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,

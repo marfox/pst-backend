@@ -18,7 +18,6 @@ import org.wikidata.query.rdf.common.WikibaseDate;
 import org.wikidata.query.rdf.common.WikibasePoint;
 import org.wikidata.query.rdf.common.uri.GeoSparql;
 import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
-import org.wikidata.query.rdf.primarysources.ingestion.UploadServlet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -31,6 +30,8 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -174,7 +175,7 @@ public class CurateServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         boolean ok = processRequest(request, response);
         if (!ok) return;
-        JSONObject blazegraphError = changeState(request);
+        JSONObject blazegraphError = changeState();
         sendResponse(response, blazegraphError);
     }
 
@@ -214,7 +215,7 @@ public class CurateServlet extends HttpServlet {
         mainPId = givenMainPId;
         JSONObject mwApiObject = (JSONObject) body.get(MW_API_OBJECT);
         Object jsonValue;
-        Value rdfValue = null;
+        Value rdfValue;
         if (mwApiObject.containsKey("snaks")) {
             JSONObject snaks = (JSONObject) mwApiObject.get("snaks");
             Object[] pIds = snaks.keySet().toArray();
@@ -314,7 +315,7 @@ public class CurateServlet extends HttpServlet {
         return true;
     }
 
-    private JSONObject changeState(HttpServletRequest request) throws IOException {
+    private JSONObject changeState() throws IOException {
         String query = null;
         switch (type) {
             case "claim":
@@ -352,21 +353,27 @@ public class CurateServlet extends HttpServlet {
                         : query.replace(VALUE_PLACE_HOLDER, value.toString());
                 break;
         }
-        URI uri = URI.create(request.getRequestURL().toString().replace(request.getServletPath(), UploadServlet.BLAZEGRAPH_SPARQL_ENDPOINT));
-        URIBuilder builder = new URIBuilder(uri);
-        HttpResponse response;
+        URIBuilder builder = new URIBuilder();
+        URI uri;
         try {
-            response = Request.Post(builder.build())
-                    .setHeader("Accept", SuggestServlet.IO_MIME_TYPE)
-                    .bodyForm(Form.form().add("update", query).build())
-                    .execute()
-                    .returnResponse();
+            uri = builder
+                    .setScheme("http")
+                    .setHost(BLAZEGRAPH_HOST)
+                    .setPort(BLAZEGRAPH_PORT)
+                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
+                    .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             JSONObject toBeReturned = new JSONObject();
             toBeReturned.put("error_message", "Failed building the URI to query Blazegraph: " + use.getInput() + ". Parse error at index " + use.getIndex());
             return toBeReturned;
         }
+        HttpResponse response;
+        response = Request.Post(uri)
+                .setHeader("Accept", SuggestServlet.IO_MIME_TYPE)
+                .bodyForm(Form.form().add("update", query).build())
+                .execute()
+                .returnResponse();
         int status = response.getStatusLine().getStatusCode();
         // Get the SPARQL update response only if it went wrong
         if (status == HttpServletResponse.SC_OK) {
@@ -421,8 +428,7 @@ public class CurateServlet extends HttpServlet {
                     stringValue = (String) dataValue.get("value");
                     try {
                         // URL
-                        org.openrdf.model.URI uri = vf.createURI(stringValue);
-                        return uri;
+                        return vf.createURI(stringValue);
                     } catch (IllegalArgumentException iae) {
                         // String
                         return vf.createLiteral(stringValue);
@@ -453,8 +459,7 @@ public class CurateServlet extends HttpServlet {
                 // Yes, values explicitly typed as strings may also be URLs, nice!
                 try {
                     // URL
-                    org.openrdf.model.URI uri = vf.createURI(stringValue);
-                    return uri;
+                    return vf.createURI(stringValue);
                 } catch (IllegalArgumentException iae) {
                     // String
                     return vf.createLiteral(stringValue);
