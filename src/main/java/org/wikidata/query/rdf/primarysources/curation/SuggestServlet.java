@@ -105,7 +105,7 @@ public class SuggestServlet extends HttpServlet {
             return false;
         }
         String datasetParameter = request.getParameter(DATASET_PARAMETER);
-        if (datasetParameter == null) {
+        if (datasetParameter == null || datasetParameter.isEmpty()) {
             dataset = "all";
         } else {
             try {
@@ -161,6 +161,7 @@ public class SuggestServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
+            response.setHeader("Access-Control-Allow-Origin", "*");
             response.setContentType(IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 jsonSuggestions.writeJSONString(pw);
@@ -179,22 +180,25 @@ public class SuggestServlet extends HttpServlet {
         try {
             while (suggestions.hasNext()) {
                 BindingSet suggestion = suggestions.next();
+                Value datasetValue = suggestion.getValue("dataset");
+                String currentDataset = datasetValue == null ? dataset : datasetValue.stringValue();
                 String mainProperty = suggestion.getValue("property").stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
                 String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
                 Value statementValue = suggestion.getValue("statement_value");
+                String qsKey = statementUuid + "|" + currentDataset;
                 // Statement
                 if (statementProperty.startsWith(WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
-                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     quickStatements.put(
-                            statementUuid,
+                            qsKey,
                             quickStatement.insert(0, qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
-                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     quickStatements.put(
-                            statementUuid,
+                            qsKey,
                             quickStatement
                                     .append("\t")
                                     .append(statementProperty.substring(qualifierPrefix.length()))
@@ -205,9 +209,9 @@ public class SuggestServlet extends HttpServlet {
                 else if (statementProperty.equals(referencePrefix)) {
                     String referenceProperty = suggestion.getValue("reference_property").stringValue();
                     Value referenceValue = suggestion.getValue("reference_value");
-                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     quickStatements.put(
-                            statementUuid,
+                            qsKey,
                             quickStatement
                                     .append("\t")
                                     .append(referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S"))
@@ -219,11 +223,13 @@ public class SuggestServlet extends HttpServlet {
             log.error("Failed evaluating the suggestion query: {}", qee.getMessage());
             return null;
         }
-        for (String statementUuid : quickStatements.keySet()) {
+        for (String key : quickStatements.keySet()) {
             JSONObject jsonSuggestion = new JSONObject();
+            String[] keyParts = key.split("\\|");
+            jsonSuggestion.put("dataset", keyParts[1]);
             jsonSuggestion.put("format", "QuickStatement");
-            jsonSuggestion.put("state", "unapproved");
-            jsonSuggestion.put("statement", quickStatements.get(statementUuid).toString());
+            jsonSuggestion.put("state", "new");
+            jsonSuggestion.put("statement", quickStatements.get(key).toString());
             jsonSuggestions.add(jsonSuggestion);
         }
         return jsonSuggestions;
@@ -284,8 +290,8 @@ public class SuggestServlet extends HttpServlet {
         if (value instanceof org.openrdf.model.URI) {
             org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
             // Item
-            if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName().replaceFirst("^Q", "");
-                // URL
+            if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName();
+            // URL
             else return "\"" + value.stringValue() + "\"";
         } else if (value instanceof Literal) {
             Literal literal = (Literal) value;
