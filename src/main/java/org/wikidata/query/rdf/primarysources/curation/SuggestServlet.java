@@ -310,7 +310,7 @@ public class SuggestServlet extends HttpServlet {
             }
             // Time
             else if (dataType.equals(XMLSchema.DATETIME)) {
-                WikibaseDate date = WikibaseDate.fromString(literal.getLabel()).cleanWeirdStuff();
+                WikibaseDate date = WikibaseDate.fromString(literal.getLabel());
                 if (date.day() != 0) return date.toString() + "/11";
                 else if (date.month() != 0) return date.toString() + "/10";
                 else return date.toString() + "/9";
