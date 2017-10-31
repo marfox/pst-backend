@@ -154,6 +154,7 @@ public class SuggestServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions) throws IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
         JSONArray jsonSuggestions = formatSuggestions(suggestions);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
@@ -161,7 +162,6 @@ public class SuggestServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setHeader("Access-Control-Allow-Origin", "*");
             response.setContentType(IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 jsonSuggestions.writeJSONString(pw);
