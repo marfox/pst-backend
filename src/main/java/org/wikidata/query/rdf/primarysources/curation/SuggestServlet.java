@@ -31,6 +31,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -48,22 +50,22 @@ public class SuggestServlet extends HttpServlet {
     static final String QID_PLACE_HOLDER = "${QID}";
     static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
     private static final String ONE_DATASET_QUERY =
-            "SELECT ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
+            "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
-                    "    ?statement ?statement_property ?statement_value ." +
+                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement_node ." +
+                    "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
                     "  }" +
                     "}";
     private static final String ALL_DATASETS_QUERY =
-            "SELECT ?dataset ?property ?statement_property ?statement_value ?reference_property ?reference_value " +
+            "SELECT ?dataset ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH ?dataset {" +
-                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement ." +
-                    "    ?statement ?statement_property ?statement_value ." +
+                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement_node ." +
+                    "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
@@ -171,33 +173,58 @@ public class SuggestServlet extends HttpServlet {
 
     private JSONArray formatSuggestions(TupleQueryResult suggestions) {
         JSONArray jsonSuggestions = new JSONArray();
-        String statementPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT);
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
+        String referencePrefix = Provenance.WAS_DERIVED_FROM;
+        Map<String, StringBuilder> quickStatements = new HashMap<>();
         try {
             while (suggestions.hasNext()) {
-                JSONObject jsonSuggestion = null;
                 BindingSet suggestion = suggestions.next();
+                String mainProperty = suggestion.getValue("property").stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
+                String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
+                Value statementValue = suggestion.getValue("statement_value");
                 // Statement
-                if (statementProperty.startsWith(statementPrefix)) {
-                    jsonSuggestion = handleStatement(suggestion, statementPrefix, statementProperty);
-                    jsonSuggestion.put("type", "claim");
+                if (statementProperty.startsWith(WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
+                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    quickStatements.put(
+                            statementUuid,
+                            quickStatement.insert(0, qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
-                    jsonSuggestion = handleStatement(suggestion, qualifierPrefix, statementProperty);
-                    jsonSuggestion.put("type", "qualifier");
+                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    quickStatements.put(
+                            statementUuid,
+                            quickStatement
+                                    .append("\t")
+                                    .append(statementProperty.substring(qualifierPrefix.length()))
+                                    .append("\t")
+                                    .append(rdfValueToQuickStatement(statementValue)));
                 }
                 // Reference
-                else if (statementProperty.equals(Provenance.WAS_DERIVED_FROM)) {
-                    jsonSuggestion = handleReference(suggestion);
-                    jsonSuggestion.put("type", "reference");
+                else if (statementProperty.equals(referencePrefix)) {
+                    String referenceProperty = suggestion.getValue("reference_property").stringValue();
+                    Value referenceValue = suggestion.getValue("reference_value");
+                    StringBuilder quickStatement = quickStatements.getOrDefault(statementUuid, new StringBuilder());
+                    quickStatements.put(
+                            statementUuid,
+                            quickStatement
+                                    .append("\t")
+                                    .append(referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S"))
+                                    .append("\t")
+                                    .append(rdfValueToQuickStatement(referenceValue)));
                 }
-                if (jsonSuggestion != null) jsonSuggestions.add(jsonSuggestion);
             }
         } catch (QueryEvaluationException qee) {
             log.error("Failed evaluating the suggestion query: {}", qee.getMessage());
             return null;
+        }
+        for (String statementUuid : quickStatements.keySet()) {
+            JSONObject jsonSuggestion = new JSONObject();
+            jsonSuggestion.put("format", "QuickStatement");
+            jsonSuggestion.put("state", "unapproved");
+            jsonSuggestion.put("statement", quickStatements.get(statementUuid).toString());
+            jsonSuggestions.add(jsonSuggestion);
         }
         return jsonSuggestions;
     }
@@ -223,7 +250,7 @@ public class SuggestServlet extends HttpServlet {
             finalValueType = literal.getLanguage() == null ? "string" : "monolingualtext";
         }
         finalValue.put("type", finalValueType);
-        finalValue.put("value", RdfValueToWikidataJson(referenceValue));
+        finalValue.put("value", rdfValueToWikidataJson(referenceValue));
         dataValue.put("snaktype", "value");
         dataValue.put("property", referencePid);
         dataValue.put("datavalue", finalValue);
@@ -242,7 +269,7 @@ public class SuggestServlet extends HttpServlet {
         forMediaWikiApi.put("property", pId);
         forMediaWikiApi.put("snaktype", "value");
         Value value = suggestion.getValue("statement_value");
-        String stringJsonValue = RdfValueToWikidataJson(value);
+        String stringJsonValue = rdfValueToWikidataJson(value);
         forMediaWikiApi.put("value", stringJsonValue);
         jsonSuggestion.put("for_mw_api", forMediaWikiApi);
         return jsonSuggestion;
@@ -251,9 +278,43 @@ public class SuggestServlet extends HttpServlet {
     private void addCommonKeys(BindingSet suggestion, JSONObject jsonSuggestion) {
         if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
-        String mainPId = suggestion.getValue("property").stringValue()
-                .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
-        jsonSuggestion.put("main_property", mainPId);
+    }
+
+    private String rdfValueToQuickStatement(Value value) {
+        if (value instanceof org.openrdf.model.URI) {
+            org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
+            // Item
+            if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName().replaceFirst("^Q", "");
+                // URL
+            else return "\"" + value.stringValue() + "\"";
+        } else if (value instanceof Literal) {
+            Literal literal = (Literal) value;
+            org.openrdf.model.URI dataType = literal.getDatatype();
+            String language = literal.getLanguage();
+            // String
+            if (dataType == null && language == null) return "\"" + literal.stringValue() + "\"";
+                // Monolingual text
+            else if (language != null) return language + ":\"" + literal.getLabel() + "\"";
+                // Globe coordinate
+            else if (dataType.toString().equals(GeoSparql.WKT_LITERAL)) {
+                WikibasePoint point = new WikibasePoint(literal.getLabel());
+                String latitude = point.getLatitude();
+                String longitude = point.getLongitude();
+                return "@" + latitude + "/" + longitude;
+            }
+            // Time
+            else if (dataType.equals(XMLSchema.DATETIME)) {
+                WikibaseDate date = WikibaseDate.fromString(literal.getLabel()).cleanWeirdStuff();
+                if (date.day() != 0) return date.toString() + "/11";
+                else if (date.month() != 0) return date.toString() + "/10";
+                else return date.toString() + "/9";
+            }
+            // Quantity
+            else if (dataType.equals(XMLSchema.DECIMAL)) {
+                return literal.getLabel();
+            }
+        }
+        return null;
     }
 
     /**
@@ -262,7 +323,7 @@ public class SuggestServlet extends HttpServlet {
      *
      * @return the value as a String
      */
-    private String RdfValueToWikidataJson(Value value) {
+    private String rdfValueToWikidataJson(Value value) {
         JSONObject jsonValue = new JSONObject();
         if (value instanceof org.openrdf.model.URI) {
             org.openrdf.model.URI uri = (org.openrdf.model.URI) value;

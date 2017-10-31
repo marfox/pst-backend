@@ -19,6 +19,8 @@ import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTes
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -69,7 +71,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        Assert.assertEquals(13, suggestions.size());
+        Assert.assertEquals(2, suggestions.size());
         TupleQueryResult statements = rdfRepository().query("select (count(?s) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?s . filter contains(str(?p), \"statement/\") . } }");
         TupleQueryResult qualifiers = rdfRepository().query("select (count(?q) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?q . filter contains(str(?p), \"qualifier/\") . } }");
         TupleQueryResult references = rdfRepository().query("select (count(?r) as ?count) where { graph <http://chuck-berry/new> { ?x prov:wasDerivedFrom ?r . } }");
@@ -80,18 +82,14 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         int actualQualifiers = 0;
         int actualReferences = 0;
         for (Object s : suggestions) {
+            actualStatements += 1;
             JSONObject suggestion = (JSONObject) s;
-            String type = (String) suggestion.get("type");
-            switch (type) {
-                case "claim":
-                    actualStatements += 1;
-                    break;
-                case "qualifier":
-                    actualQualifiers += 1;
-                    break;
-                case "reference":
-                    actualReferences += 1;
-                    break;
+            String quickStatement = (String) suggestion.get("statement");
+            List<String> parts = Arrays.asList(quickStatement.split("\t"));
+            List<String> qualifierAndReferences = parts.subList(3, parts.size());
+            for (String part : qualifierAndReferences) {
+                if (part.matches("^P\\d+$")) actualQualifiers += 1;
+                else if (part.matches("^S\\d+$")) actualReferences += 1;
             }
         }
         Assert.assertEquals(expectedStatements, actualStatements);
