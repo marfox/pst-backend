@@ -10,28 +10,35 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix geo: <http://www.opengis.net/ont/geosparql#> .
 
-wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 .
+wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 ;
+  p:P18 wds:Q5921-AEE261A6-603B-45F4-B758-963D1B479239 ;
+  p:P18 wds:Q5921-C0E25877-E28B-4647-A2E2-CB75620DA294 .
 
 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> ;
 	pq:P2096 "Chuck Berry (2007)"@ca ;
 	pq:P88 wd:Q42 ;
-	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc ;
-	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fb ;
 	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fa .
+wds:Q5921-AEE261A6-603B-45F4-B758-963D1B479239 ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> ;
+	pq:P123 "+3469849"^^xsd:decimal ; 
+  prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fb . 
+wds:Q5921-C0E25877-E28B-4647-A2E2-CB75620DA294  ps:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg> ;
+  prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc .
 
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P666 wd:Q206855 .
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457fb pr:P854 <https://travisraminproducer.bandcamp.com/> .
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457fa pr:P143 <https://phabricator.wikimedia.org/project/view/2788/> .
 
-wd:Q5921 p:P999 wds:Q5921-12345678-ABCD-DCBA-4321-987654321088 .
+wd:Q5921 p:P999 wds:Q5921-12345678-ABCD-DCBA-4321-987654321088 ;
+  p:P999 wds:Q5921-7E167D14-D3AF-45C7-BA4C-E525CFA4213F .
 
 wds:Q5921-12345678-ABCD-DCBA-4321-987654321088 ps:P999 "Maybelline" ; 
-	pq:P1000 wd:Q123456 ; 
-	pq:P123 "+3469849"^^xsd:decimal ; 
+	pq:P1000 wd:Q123456 ;
 	pq:P321 "Point(13.383333333333 52.516666666667)"^^geo:wktLiteral ;
-	pq:P777 "1237-01-01T00:00:00Z"^^xsd:dateTime ; 
-	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457ff ;
+	pq:P777 "1237-01-01T00:00:00Z"^^xsd:dateTime ;
 	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457fe .
+
+wds:Q5921-7E167D14-D3AF-45C7-BA4C-E525CFA4213F ps:P999 "Maybelline" ;
+	prov:wasDerivedFrom wdref:288ab581e7d2d02995a26dfa8b091d96e78457ff .
 
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457ff pr:P143 wd:Q206855 .
 wdref:288ab581e7d2d02995a26dfa8b091d96e78457fe pr:P888 <https://phabricator.wikimedia.org/T172502> .
