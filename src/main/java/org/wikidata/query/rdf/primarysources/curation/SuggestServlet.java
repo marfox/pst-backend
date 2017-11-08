@@ -31,8 +31,12 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -49,6 +53,7 @@ public class SuggestServlet extends HttpServlet {
     static final String DATASET_PLACE_HOLDER = "${DATASET}";
     static final String QID_PLACE_HOLDER = "${QID}";
     static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
+    static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     private static final String ONE_DATASET_QUERY =
             "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
@@ -73,7 +78,6 @@ public class SuggestServlet extends HttpServlet {
                     "  FILTER STRENDS(str(?dataset), \"new\") ." +
                     "}";
     private static final Logger log = LoggerFactory.getLogger(SuggestServlet.class);
-    private static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     private static final Object DEFAULT_ALTITUDE = null;
     private static final int DEFAULT_TIMEZONE = 0;
     private static final int DEFAULT_TIME_BEFORE = 0;
@@ -224,13 +228,26 @@ public class SuggestServlet extends HttpServlet {
             return null;
         }
         for (String key : quickStatements.keySet()) {
-            JSONObject jsonSuggestion = new JSONObject();
-            String[] keyParts = key.split("\\|");
-            jsonSuggestion.put("dataset", keyParts[1]);
-            jsonSuggestion.put("format", "QuickStatement");
-            jsonSuggestion.put("state", "new");
-            jsonSuggestion.put("statement", quickStatements.get(key).toString());
-            jsonSuggestions.add(jsonSuggestion);
+            String dataset = key.split("\\|")[1];
+            String qs = quickStatements.get(key).toString();
+            // The front end always thinks there is only 1 reference, so mint 1 QuickStatement per reference
+            Pattern pattern = Pattern.compile("\tS\\d+\t[^\t]+");
+            Matcher matcher = pattern.matcher(qs);
+            List<String> references = new ArrayList<>();
+            while (matcher.find()) {
+                String reference = matcher.group();
+                references.add(reference);
+                qs = qs.replace(reference, "");
+            }
+            for (String ref : references) {
+                String statement = qs + ref;
+                JSONObject jsonSuggestion = new JSONObject();
+                jsonSuggestion.put("dataset", dataset);
+                jsonSuggestion.put("format", "QuickStatement");
+                jsonSuggestion.put("state", "new");
+                jsonSuggestion.put("statement", statement);
+                jsonSuggestions.add(jsonSuggestion);
+            }
         }
         return jsonSuggestions;
     }
@@ -291,7 +308,7 @@ public class SuggestServlet extends HttpServlet {
             org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
             // Item
             if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName();
-            // URL
+                // URL
             else return "\"" + value.stringValue() + "\"";
         } else if (value instanceof Literal) {
             Literal literal = (Literal) value;
@@ -311,8 +328,10 @@ public class SuggestServlet extends HttpServlet {
             // Time
             else if (dataType.equals(XMLSchema.DATETIME)) {
                 WikibaseDate date = WikibaseDate.fromString(literal.getLabel());
-                if (date.day() != 0) return date.toString() + "/11";
-                else if (date.month() != 0) return date.toString() + "/10";
+                // The Blazegraph data loader converts '00' to '01'
+                // Guess precision based on '01' values
+                if (date.day() > 1) return date.toString() + "/11";
+                else if (date.month() > 1) return date.toString() + "/10";
                 else return date.toString() + "/9";
             }
             // Quantity
