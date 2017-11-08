@@ -8,6 +8,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.openrdf.model.Literal;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;
@@ -30,6 +31,10 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -47,11 +52,19 @@ public class CurateServlet extends HttpServlet {
     private static final String STATEMENT_TYPE_KEY = "type";
     private static final String STATE_KEY = "state";
     private static final String USER_KEY = "user";
+    private static final String QUICKSTATEMENT_KEY = "qs";
 
     private static final String MAIN_PID_PLACE_HOLDER = "${MAIN_PID}";
     private static final String PID_PLACE_HOLDER = "${PID}";
     private static final String VALUE_PLACE_HOLDER = "${VALUE}";
     private static final String STATE_PLACE_HOLDER = "${STATE}";
+
+    private static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
+    // Value data types matchers
+    private static final Pattern TIME = Pattern.compile("^[+-]\\d+-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ/\\d+$");
+    private static final Pattern LOCATION = Pattern.compile("^@([+\\-]?\\d+(?:.\\d+)?)/([+\\-]?\\d+(?:.\\d+))?$");
+    private static final Pattern QUANTITY = Pattern.compile("^[+-]\\d+(\\.\\d+)?$");
+    private static final Pattern MONOLINGUAL_TEXT = Pattern.compile("^(\\w+):(\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")$");
 
     // Approve claim + eventual qualifiers
     private static final String CLAIM_APPROVAL_QUERY =
@@ -74,7 +87,7 @@ public class CurateServlet extends HttpServlet {
                     "    FILTER (?pq != prov:wasDerivedFrom) ." +
                     "  }" +
                     "}";
-    // Reject everything
+    // Reject everything. Note that the state may be one of 'rejected', 'duplicate', or 'blacklisted'
     private static final String CLAIM_REJECTION_QUERY =
             "DELETE {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
@@ -86,7 +99,7 @@ public class CurateServlet extends HttpServlet {
                     "  }" +
                     "}" +
                     "INSERT {" +
-                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/rejected> {" +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
                     "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
                     "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
                     "             prov:wasDerivedFrom ?ref_node ;" +
@@ -132,10 +145,11 @@ public class CurateServlet extends HttpServlet {
                     "  }" +
                     "}";
 
-    // Approve/reject everything but main node + sibling references
+    // Approve/reject everything but sibling references
     private static final String REFERENCE_QUERY =
             "DELETE {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
                     "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
                     "             prov:wasDerivedFrom ?ref_node ;" +
                     "             ?qualif_p ?qualif_v ." +
@@ -144,6 +158,7 @@ public class CurateServlet extends HttpServlet {
                     "}" +
                     "INSERT {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
                     "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
                     "             prov:wasDerivedFrom ?ref_node ;" +
                     "             ?qualif_p ?qualif_v ." +
@@ -152,7 +167,8 @@ public class CurateServlet extends HttpServlet {
                     "}" +
                     "WHERE {" +
                     "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
+                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "           prov:wasDerivedFrom ?ref_node ." +
                     "  ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
                     "  OPTIONAL {" +
                     "    ?st_node ?qualif_p ?qualif_v ." +
@@ -167,20 +183,91 @@ public class CurateServlet extends HttpServlet {
     private Value value;
     private String type;
     private String state;
-    // todo use this field for https://phabricator.wikimedia.org/T170820
+    // TODO use this field for https://phabricator.wikimedia.org/T170820
     private String user;
     private String dataset;
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        boolean ok = processRequest(request, response);
+        boolean ok = processQuickStatementRequest(request, response);
         if (!ok) return;
         JSONObject blazegraphError = changeState();
         sendResponse(response, blazegraphError);
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
+    private boolean processQuickStatementRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        JSONObject body;
+        try (BufferedReader requestReader = request.getReader()) {
+            JSONParser parser = new JSONParser();
+            body = (JSONObject) parser.parse(requestReader);
+        } catch (ParseException pe) {
+            log.error("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed JSON request body. Parse error at index "
+                    + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
+            return false;
+        }
+        String givenState = (String) body.get(STATE_KEY);
+        if (givenState == null) {
+            log.error("No state given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required state, either 'approved' or 'rejected'.");
+            return false;
+        } else if (!givenState.equals("approved") && !givenState.equals("rejected") && !givenState.equals("duplicate") && !givenState.equals("blacklisted")) {
+            log.error("Invalid statement state: {}. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement state: '" + givenState + "'. " +
+                    "Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
+            return false;
+        }
+        state = givenState;
+        String givenUser = (String) body.get(USER_KEY);
+        if (givenUser == null) {
+            log.error("No user name given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
+            return false;
+        }
+        user = givenUser;
+        String givenDataset = (String) body.get(SuggestServlet.DATASET_PARAMETER);
+        if (givenDataset == null) {
+            log.error("No dataset URI given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required dataset URI.");
+            return false;
+        }
+        try {
+            new URI(givenDataset);
+        } catch (URISyntaxException use) {
+            log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
+                    "Parse error at index " + use.getIndex() + ".");
+            return false;
+        }
+        dataset = givenDataset.replace("/new", "");
+        String givenType = (String) body.get(STATEMENT_TYPE_KEY);
+        if (givenType == null) {
+            log.error("No statement type (claim | qualifier | reference) given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required statement type, one of 'claim', 'qualifier', 'reference'.");
+            return false;
+        } else if (!givenType.equals("claim") && !givenType.equals("qualifier") && !givenType.equals("reference")) {
+            log.error("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement type: '" + givenType + "'. " +
+                    "Must be one of 'claim', 'qualifier', 'reference'.");
+            return false;
+        }
+        type = givenType;
+        String givenQuickStatement = (String) body.get(QUICKSTATEMENT_KEY);
+        if (givenQuickStatement == null) {
+            log.error("No QuickStatement given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required QuickStatement.");
+            return false;
+        }
+        boolean parsed = parseQuickStatement(givenQuickStatement);
+        if (!parsed) {
+            log.error("Could not parse the given QuickStatement: {}", givenQuickStatement);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed QuickStatement: " + givenQuickStatement);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean processMwApiBodyRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         JSONObject body;
         try (BufferedReader requestReader = request.getReader()) {
             JSONParser parser = new JSONParser();
@@ -196,7 +283,7 @@ public class CurateServlet extends HttpServlet {
             log.error("No QID given. Will fail with a bad request.");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required QID.");
             return false;
-        } else if (!validator.isValidTerm(givenQId, "item")) {
+        } else if (!VALIDATOR.isValidTerm(givenQId, "item")) {
             log.error("Invalid QID: {}. Will fail with a bad request.", givenQId);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + givenQId + "'");
             return false;
@@ -207,7 +294,7 @@ public class CurateServlet extends HttpServlet {
             log.error("No main PID given. will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required main PID.");
             return false;
-        } else if (!validator.isValidTerm(givenMainPId, "property")) {
+        } else if (!VALIDATOR.isValidTerm(givenMainPId, "property")) {
             log.error("Invalid main PID: {}. Will fail with a bad request.", givenMainPId);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid main PID: '" + givenMainPId + "'");
             return false;
@@ -225,7 +312,7 @@ public class CurateServlet extends HttpServlet {
                 log.error("No PID given. will fail with a bad request");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required PID.");
                 return false;
-            } else if (!validator.isValidTerm(givenPId, "property")) {
+            } else if (!VALIDATOR.isValidTerm(givenPId, "property")) {
                 log.error("Invalid PID: {}. Will fail with a bad request.", givenPId);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + givenPId + "'");
                 return false;
@@ -246,7 +333,7 @@ public class CurateServlet extends HttpServlet {
                 log.error("No PID given. will fail with a bad request");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required PID.");
                 return false;
-            } else if (!validator.isValidTerm(givenPId, "property")) {
+            } else if (!VALIDATOR.isValidTerm(givenPId, "property")) {
                 log.error("Invalid PID: {}. Will fail with a bad request.", givenPId);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + givenPId + "'");
                 return false;
@@ -394,6 +481,7 @@ public class CurateServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, JSONObject blazegraphResponse) throws IOException {
+        response.setHeader("Access-Control-Allow-Origin", "*");
         if (blazegraphResponse == null) response.setStatus(HttpServletResponse.SC_OK);
         else {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -401,6 +489,90 @@ public class CurateServlet extends HttpServlet {
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             try (PrintWriter pw = response.getWriter()) {
                 blazegraphResponse.writeJSONString(pw);
+            }
+        }
+    }
+
+    private boolean parseQuickStatement(String quickStatement) {
+        String[] elements = quickStatement.split("\t");
+        if (elements.length < 3) {
+            log.error("Malformed QuickStatement: {}", quickStatement);
+            return false;
+        }
+        String subject = elements[0];
+        String mainProperty = elements[1];
+        if (!VALIDATOR.isValidTerm(subject, "item")) {
+            log.error("Invalid subject QID: {}", subject);
+            return false;
+        }
+        if (!VALIDATOR.isValidTerm(mainProperty, "property")) {
+            log.error("Invalid main property PID: {}", mainProperty);
+            return false;
+        }
+        qId = subject;
+        mainPId = mainProperty;
+        List<String> qualifierOrReference = Arrays.asList(elements).subList(3, elements.length);
+        switch (type) {
+            case "claim":
+                pId = mainProperty;
+                value = quickStatementValueToRdf(elements[2]);
+                break;
+            case "qualifier":
+                pId = qualifierOrReference.get(0);
+                value = quickStatementValueToRdf(qualifierOrReference.get(1));
+                break;
+            case "reference":
+                pId = qualifierOrReference.get(0).replace('S', 'P');
+                value = quickStatementValueToRdf(qualifierOrReference.get(1));
+                break;
+        }
+        return true;
+    }
+
+    private Value quickStatementValueToRdf(String qsValue) {
+        ValueFactory vf = ValueFactoryImpl.getInstance();
+        if (VALIDATOR.isValidTerm(qsValue, "item")) {
+            org.openrdf.model.URI item = vf.createURI(SuggestServlet.WIKIBASE_URIS.entity(), qsValue);
+            log.debug("Item value. From QuickStatement [{}] to RDF [{}]", qsValue, item);
+            return item;
+        } else if (qsValue.matches(MONOLINGUAL_TEXT.pattern())) {
+            Matcher matcher = MONOLINGUAL_TEXT.matcher(qsValue);
+            matcher.matches();
+            Literal monolingual = vf.createLiteral(matcher.group(2).replace("\"", ""), matcher.group(1));
+            log.debug("Monolingual text value. From QuickStatement [{}] to RDF [{}]", qsValue, monolingual);
+            return monolingual;
+        } else if (qsValue.matches(TIME.pattern())) {
+            String[] elements = qsValue.split("/");
+            WikibaseDate wbTime = WikibaseDate.fromString(elements[0]);
+            Literal time = vf.createLiteral(wbTime.toString(WikibaseDate.ToStringFormat.DATE_TIME), XMLSchema.DATETIME);
+            log.debug("Time value. From QuickStatement [{}] to RDF [{}]", qsValue, time);
+            return time;
+        } else if (qsValue.matches(LOCATION.pattern())) {
+            Matcher matcher = LOCATION.matcher(qsValue);
+            matcher.matches();
+            String[] latLong = new String[2];
+            latLong[0] = matcher.group(1);
+            latLong[1] = matcher.group(2);
+            WikibasePoint point = new WikibasePoint(latLong, SuggestServlet.DEFAULT_GLOBE);
+            Literal location = vf.createLiteral(point.toString(), GeoSparql.WKT_LITERAL);
+            log.debug("Location value. From QuickStatement [{}] to RDF [{}]", qsValue, location);
+            return location;
+        } else if (qsValue.matches(QUANTITY.pattern())) {
+            Literal quantity = vf.createLiteral(qsValue, XMLSchema.DECIMAL);
+            log.debug("Quantity value. From QuickStatement [{}] to RDF [{}]", qsValue, quantity);
+            return quantity;
+        } else {
+            String noQuotes = qsValue.replace("\"", "");
+            try {
+                // URL
+                org.openrdf.model.URI url = vf.createURI(noQuotes);
+                log.debug("URL value. From QuickStatement [{}] to RDF [{}]", qsValue, url);
+                return url;
+            } catch (IllegalArgumentException iae) {
+                // Plain string
+                Literal plain = vf.createLiteral(noQuotes);
+                log.debug("Plain string value. From QuickStatement [{}] to RDF [{}]", qsValue, plain);
+                return plain;
             }
         }
     }
