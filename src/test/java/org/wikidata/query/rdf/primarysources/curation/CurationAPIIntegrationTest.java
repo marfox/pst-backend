@@ -71,7 +71,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        Assert.assertEquals(2, suggestions.size());
+        assertEquals(5, suggestions.size());
         TupleQueryResult statements = rdfRepository().query("select (count(?s) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?s . filter contains(str(?p), \"statement/\") . } }");
         TupleQueryResult qualifiers = rdfRepository().query("select (count(?q) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?q . filter contains(str(?p), \"qualifier/\") . } }");
         TupleQueryResult references = rdfRepository().query("select (count(?r) as ?count) where { graph <http://chuck-berry/new> { ?x prov:wasDerivedFrom ?r . } }");
@@ -92,9 +92,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
                 else if (part.matches("^S\\d+$")) actualReferences += 1;
             }
         }
-        Assert.assertEquals(expectedStatements, actualStatements);
-        Assert.assertEquals(expectedQualifers, actualQualifiers);
-        Assert.assertEquals(expectedReferences, actualReferences);
+        assertEquals(expectedStatements, actualStatements);
+        assertEquals(expectedQualifers, actualQualifiers);
+        assertEquals(expectedReferences, actualReferences);
         // Test failure
         builder.setParameter("qid", "Q666");
         int status = Request.Get(builder.build())
@@ -102,19 +102,13 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
                 .returnResponse()
                 .getStatusLine()
                 .getStatusCode();
-        Assert.assertEquals(404, status);
+        assertEquals(404, status);
     }
 
     @Test
     public void testApproveClaim() throws Exception {
         JSONObject curated = new JSONObject();
-        curated.put("qid", TEST_QID);
-        curated.put("main_property", "P999");
-        JSONObject forMWAPI = new JSONObject();
-        forMWAPI.put("property", "P999");
-        forMWAPI.put("snaktype", "value");
-        forMWAPI.put("value", "Maybelline");
-        curated.put("for_mw_api", forMWAPI);
+        curated.put("qs", TEST_QID + "\tP999\t\"Maybelline\"");
         curated.put("type", "claim");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "approved");
@@ -129,22 +123,21 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         int approved = Integer.valueOf(approvedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
-        Assert.assertEquals(total - stillNew, approved);
-        Assert.assertEquals(5, approved);
-        Assert.assertEquals(total - approved, stillNew);
-        Assert.assertEquals(15, stillNew);
+        assertEquals(total - stillNew, approved);
+        /* Approve statement and qualifiers, NOT references:
+           1 statement (wds:xxx ps:P999 "Maybelline") + 3 qualifiers, exclude 1 reference node
+           + 1 twin statement needed for another reference (wds:yyy ps:P999 "Maybelline") + 0 qualifiers, exclude 1 reference node
+           Total approved = 5
+         */
+        assertEquals(5, approved);
+        assertEquals(total - approved, stillNew);
+        assertEquals(21, stillNew);
     }
 
     @Test
     public void testRejectClaim() throws Exception {
         JSONObject curated = new JSONObject();
-        curated.put("qid", TEST_QID);
-        curated.put("main_property", "P999");
-        JSONObject forMWAPI = new JSONObject();
-        forMWAPI.put("property", "P999");
-        forMWAPI.put("snaktype", "value");
-        forMWAPI.put("value", "Maybelline");
-        curated.put("for_mw_api", forMWAPI);
+        curated.put("qs", TEST_QID + "\tP999\t\"Maybelline\"");
         curated.put("type", "claim");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "rejected");
@@ -159,31 +152,22 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         int rejected = Integer.valueOf(rejectedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
-        Assert.assertEquals(total - stillNew, rejected);
-        Assert.assertEquals(10, rejected);
-        Assert.assertEquals(total - rejected, stillNew);
-        Assert.assertEquals(10, stillNew);
+        assertEquals(total - stillNew, rejected);
+        /* Reject everything:
+           1 main node (wd:Q5921 p:P999 wds:xxx) + 1 statement (wds:xxx ps:P999 "Maybelline") + 3 qualifiers + 1 reference node + 1 reference value
+           + 1 twin main node (wd:Q5921 p:P999 wds:yyy) + 1 twin statement (wds:yyy ps:P999 "Maybelline") needed for another reference + 1 reference node + 1 reference value
+           Total rejected = 11
+         */
+        assertEquals(11, rejected);
+        assertEquals(total - rejected, stillNew);
+        assertEquals(15, stillNew);
     }
 
     @Test
     public void testApproveReference() throws Exception {
+        // {"qs":"Q322794\tP27\tQ161885\tS854\t\"http://collection.britishmuseum.org/id/person-institution/162540\"","state":"rejected","dataset":"http://10k/new","type":"reference","user":"Hjfocs"}
         JSONObject curated = new JSONObject();
-        curated.put("qid", TEST_QID);
-        curated.put("main_property", "P18");
-        JSONObject forMWAPI = new JSONObject();
-        JSONObject snaks = new JSONObject();
-        JSONArray values = new JSONArray();
-        JSONObject value = new JSONObject();
-        JSONObject datavalue = new JSONObject();
-        datavalue.put("type", "string");
-        datavalue.put("value", "https://travisraminproducer.bandcamp.com/");
-        value.put("datavalue", datavalue);
-        value.put("property", "P854");
-        value.put("snaktype", "value");
-        values.add(value);
-        snaks.put("P854", values);
-        forMWAPI.put("snaks", snaks);
-        curated.put("for_mw_api", forMWAPI);
+        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
         curated.put("type", "reference");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "approved");
@@ -198,31 +182,20 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         int approved = Integer.valueOf(approvedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
-        Assert.assertEquals(total - stillNew, approved);
-        Assert.assertEquals(5, approved);
-        Assert.assertEquals(total - approved, stillNew);
-        Assert.assertEquals(15, stillNew);
+        assertEquals(total - stillNew, approved);
+        /* Approve everything:
+           1 main node (wd:Q5921 p:P18 wds:xxx) + 1 statement (wds:xxx ps:P18 URL) + 1 qualifier + 1 reference node + reference value
+           Total approved = 5
+         */
+        assertEquals(5, approved);
+        assertEquals(total - approved, stillNew);
+        assertEquals(21, stillNew);
     }
 
     @Test
     public void testRejectReference() throws Exception {
         JSONObject curated = new JSONObject();
-        curated.put("qid", TEST_QID);
-        curated.put("main_property", "P18");
-        JSONObject forMWAPI = new JSONObject();
-        JSONObject snaks = new JSONObject();
-        JSONArray values = new JSONArray();
-        JSONObject value = new JSONObject();
-        JSONObject datavalue = new JSONObject();
-        datavalue.put("type", "string");
-        datavalue.put("value", "https://travisraminproducer.bandcamp.com/");
-        value.put("datavalue", datavalue);
-        value.put("property", "P854");
-        value.put("snaktype", "value");
-        values.add(value);
-        snaks.put("P854", values);
-        forMWAPI.put("snaks", snaks);
-        curated.put("for_mw_api", forMWAPI);
+        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
         curated.put("type", "reference");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "rejected");
@@ -237,9 +210,13 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         int rejected = Integer.valueOf(rejectedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
-        Assert.assertEquals(total - stillNew, rejected);
-        Assert.assertEquals(5, rejected);
-        Assert.assertEquals(total - rejected, stillNew);
-        Assert.assertEquals(15, stillNew);
+        assertEquals(total - stillNew, rejected);
+        /* Reject everything:
+           1 main node (wd:Q5921 p:P18 wds:xxx) + 1 statement (wds:xxx ps:P18 URL) + 1 qualifier + 1 reference node + reference value
+           Total rejected = 5
+         */
+        assertEquals(5, rejected);
+        assertEquals(total - rejected, stillNew);
+        assertEquals(21, stillNew);
     }
 }
