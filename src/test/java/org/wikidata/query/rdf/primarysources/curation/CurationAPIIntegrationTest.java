@@ -1,6 +1,7 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
 import com.google.common.io.Resources;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -36,6 +37,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     private static URI uploadEndpoint;
     private static URI suggestEndpoint;
     private static URI curateEndpoint;
+    private static URI searchEndpoint;
     private static File testDataset;
 
     @BeforeClass
@@ -43,6 +45,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         uploadEndpoint = URI.create(BASE_ENDPOINT + "/upload");
         suggestEndpoint = URI.create(BASE_ENDPOINT + "/suggest");
         curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
+        searchEndpoint = URI.create(BASE_ENDPOINT + "/search");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
     }
 
@@ -103,6 +106,50 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
                 .getStatusLine()
                 .getStatusCode();
         assertEquals(404, status);
+    }
+
+    @Test
+    public void testSearch() throws Exception {
+        URIBuilder builder = new URIBuilder(searchEndpoint);
+        // Test default behavior
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        JSONParser parser = new JSONParser();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray suggestions = (JSONArray) parsed;
+        // Default limit = 50, test dataset = 16 triples, 5 QuickStatements
+        assertEquals(5, suggestions.size());
+        // Test explicit limit
+        builder.setParameter("limit", "12");
+        responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        suggestions = (JSONArray) parsed;
+        assertEquals(3, suggestions.size());
+        // Test explicit offset
+        builder.clearParameters();
+        builder.setParameter("offset", "10");
+        responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        suggestions = (JSONArray) parsed;
+        assertEquals(4, suggestions.size());
+        // Test failure, i.e., offset beyond the dataset size
+        builder.clearParameters();
+        builder.setParameter("offset", "20");
+        HttpResponse response = Request.Get(builder.build())
+                .execute()
+                .returnResponse();
+        assertEquals(404, response.getStatusLine().getStatusCode());
     }
 
     @Test
