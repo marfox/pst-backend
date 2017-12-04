@@ -127,6 +127,10 @@ public class SuggestServlet extends HttpServlet {
 
     private TupleQueryResult getSuggestions() throws IOException {
         String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
+        return runSparqlQuery(query);
+    }
+
+    static TupleQueryResult runSparqlQuery(String query) throws IOException {
         URIBuilder builder = new URIBuilder();
         URI uri;
         try {
@@ -303,7 +307,7 @@ public class SuggestServlet extends HttpServlet {
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
     }
 
-    private String rdfValueToQuickStatement(Value value) {
+    static String rdfValueToQuickStatement(Value value) {
         if (value instanceof org.openrdf.model.URI) {
             org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
             // Item
