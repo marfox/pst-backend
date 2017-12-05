@@ -12,7 +12,6 @@ import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,8 +36,10 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  */
 public class SearchServlet extends HttpServlet {
     private static final String PROPERTY_PLACE_HOLDER = "${PROPERTY}";
+    private static final String VALUE_PLACE_HOLDER = "${ITEM_VALUE}";
     private static final String OFFSET_PLACE_HOLDER = "${OFFSET}";
     private static final String LIMIT_PLACE_HOLDER = "${LIMIT}";
+
     private static final String ONE_DATASET_QUERY =
             "SELECT * " +
                     "WHERE {" +
@@ -53,6 +54,27 @@ public class SearchServlet extends HttpServlet {
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
                     "LIMIT " + LIMIT_PLACE_HOLDER;
+
+    private static final String ONE_DATASET_VALUE_QUERY =
+            "SELECT * " +
+                    "WHERE {" +
+                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    {" +
+                    "      SELECT ?statement_node WHERE {" +
+                    "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
+                    "      }" +
+                    "    }" +
+                    "    ?statement_node ?statement_property ?statement_value ." +
+                    "    OPTIONAL {" +
+                    "      ?statement_value ?reference_property ?reference_value ." +
+                    "    }" +
+                    "  }" +
+                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
+                    "}" +
+                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
+                    "LIMIT " + LIMIT_PLACE_HOLDER;
+
     private static final String ALL_DATASETS_QUERY =
             "SELECT * " +
                     "WHERE {" +
@@ -68,19 +90,43 @@ public class SearchServlet extends HttpServlet {
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
                     "LIMIT " + LIMIT_PLACE_HOLDER;
+
+    private static final String ALL_DATASETS_VALUE_QUERY =
+            "SELECT * " +
+                    "WHERE {" +
+                    "  GRAPH ?dataset {" +
+                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    {" +
+                    "      SELECT ?statement_node WHERE {" +
+                    "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
+                    "      }" +
+                    "    }" +
+                    "    ?statement_node ?statement_property ?statement_value ." +
+                    "    OPTIONAL {" +
+                    "      ?statement_value ?reference_property ?reference_value ." +
+                    "    }" +
+                    "  }" +
+                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
+                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
+                    "}" +
+                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
+                    "LIMIT " + LIMIT_PLACE_HOLDER;
     private static final String OFFSET_PARAMETER = "offset";
     private static final String LIMIT_PARAMETER = "limit";
     private static final String PROPERTY_PARAMETER = "property";
+    private static final String VALUE_PARAMETER = "value";
+    private static final int DEFAULT_OFFSET = 0;
+    private static final int DEFAULT_LIMIT = 50;
     private String dataset;
     private String property;
-    // N.B.: SPARQL offset and limit values are function of these, see #getSuggestions
-    private int offset = 0;
-    private int limit = 50;
+    private String value;
+    private int offset;
+    private int limit;
 
     private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         boolean ok = processRequest(request, response);
         if (!ok) return;
         TupleQueryResult suggestions = getSuggestions();
@@ -112,9 +158,23 @@ public class SearchServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + propertyParameter + "'");
                 return false;
             }
+            property = propertyParameter;
+        }
+        String valueParameter = request.getParameter(VALUE_PARAMETER);
+        if (valueParameter == null || valueParameter.isEmpty()) {
+            value = null;
+        } else {
+            if (!validator.isValidTerm(valueParameter, "item")) {
+                log.error("Invalid QID: {}. The value must be a Wikidata item. Will fail with a bad request.", valueParameter);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + valueParameter + "'" +
+                        "The value must be a Wikidata item.");
+                return false;
+            }
+            value = valueParameter;
         }
         String offsetParameter = request.getParameter(OFFSET_PARAMETER);
-        if (offsetParameter != null && !offsetParameter.isEmpty()) {
+        if (offsetParameter == null || offsetParameter.isEmpty()) offset = DEFAULT_OFFSET;
+        else {
             try {
                 offset = Integer.parseInt(offsetParameter);
             } catch (NumberFormatException nfe) {
@@ -125,7 +185,8 @@ public class SearchServlet extends HttpServlet {
             }
         }
         String limitParameter = request.getParameter(LIMIT_PARAMETER);
-        if (limitParameter != null && !limitParameter.isEmpty()) {
+        if (limitParameter == null || limitParameter.isEmpty()) limit = DEFAULT_LIMIT;
+        else {
             try {
                 limit = Integer.parseInt(limitParameter);
             } catch (NumberFormatException nfe) {
@@ -159,7 +220,14 @@ public class SearchServlet extends HttpServlet {
 
     private TupleQueryResult getSuggestions() throws IOException {
         String query;
-        query = dataset.equals("all") ? ALL_DATASETS_QUERY : ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
+        if (dataset.equals("all")) {
+            if (value == null) query = ALL_DATASETS_QUERY;
+            else query = ALL_DATASETS_VALUE_QUERY.replace(VALUE_PLACE_HOLDER, value);
+        } else {
+            if (value == null) query = ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
+            else
+                query = ONE_DATASET_VALUE_QUERY.replace(DATASET_PLACE_HOLDER, dataset).replace(VALUE_PLACE_HOLDER, value);
+        }
         query = query.replace(OFFSET_PLACE_HOLDER, String.valueOf(offset)).replace(LIMIT_PLACE_HOLDER, String.valueOf(limit));
         query = property.equals("all") ? query.replace(PROPERTY_PLACE_HOLDER, "?property") : query.replace(PROPERTY_PLACE_HOLDER, "p:" + property);
         return runSparqlQuery(query);

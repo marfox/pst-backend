@@ -111,45 +111,85 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     @Test
     public void testSearch() throws Exception {
         URIBuilder builder = new URIBuilder(searchEndpoint);
-        // Test default behavior
+        JSONParser parser = new JSONParser();
+        testSearchDefaultBehavior(builder, parser);
+        // Test offset beyond the dataset size
+        testSearchFailure(builder);
+        testSearchWithLimit(builder, parser);
+        testSearchWithOffset(builder, parser);
+        testSearchWithProperty(builder, parser);
+        testSearchWithValue(builder);
+    }
+
+    private void testSearchWithValue(URIBuilder builder) throws Exception {
+        builder.clearParameters();
+        builder.setParameter("value", "Q666");
+        HttpResponse response = Request.Get(builder.build())
+                .execute()
+                .returnResponse();
+        // No statement with value Q666 exists in the test dataset
+        assertEquals(404, response.getStatusLine().getStatusCode());
+    }
+
+    private void testSearchWithProperty(URIBuilder builder, JSONParser parser) throws Exception {
+        builder.clearParameters();
+        builder.setParameter("property", "P999");
         String responseContent = Request.Get(builder.build())
                 .execute()
                 .returnContent()
                 .asString();
-        JSONParser parser = new JSONParser();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        // Default limit = 50, test dataset = 16 triples, 5 QuickStatements
-        assertEquals(5, suggestions.size());
-        // Test explicit limit
-        builder.setParameter("limit", "12");
-        responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
-        parsed = parser.parse(responseContent);
-        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
-        suggestions = (JSONArray) parsed;
-        assertEquals(3, suggestions.size());
-        // Test explicit offset
-        builder.clearParameters();
-        builder.setParameter("offset", "10");
-        responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
-        parsed = parser.parse(responseContent);
-        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
-        suggestions = (JSONArray) parsed;
-        assertEquals(4, suggestions.size());
-        // Test failure, i.e., offset beyond the dataset size
+        assertEquals(2, suggestions.size());
+    }
+
+    private void testSearchFailure(URIBuilder builder) throws Exception {
         builder.clearParameters();
         builder.setParameter("offset", "20");
         HttpResponse response = Request.Get(builder.build())
                 .execute()
                 .returnResponse();
         assertEquals(404, response.getStatusLine().getStatusCode());
+    }
+
+    private void testSearchWithOffset(URIBuilder builder, JSONParser parser) throws Exception {
+        builder.clearParameters();
+        builder.setParameter("offset", "10");
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray suggestions = (JSONArray) parsed;
+        assertEquals(4, suggestions.size());
+    }
+
+    private void testSearchDefaultBehavior(URIBuilder builder, JSONParser parser) throws Exception {
+        builder.clearParameters();
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray suggestions = (JSONArray) parsed;
+        // Default limit = 50, test dataset = 16 triples, 5 QuickStatements
+        assertEquals(5, suggestions.size());
+    }
+
+    private void testSearchWithLimit(URIBuilder builder, JSONParser parser) throws Exception {
+        builder.clearParameters();
+        builder.setParameter("limit", "12");
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray suggestions = (JSONArray) parsed;
+        assertEquals(3, suggestions.size());
     }
 
     @Test
