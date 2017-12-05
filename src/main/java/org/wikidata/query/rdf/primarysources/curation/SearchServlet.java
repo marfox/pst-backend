@@ -15,7 +15,6 @@ import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -117,13 +116,12 @@ public class SearchServlet extends HttpServlet {
     private static final String VALUE_PARAMETER = "value";
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_LIMIT = 50;
+    private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
     private String dataset;
     private String property;
     private String value;
     private int offset;
     private int limit;
-
-    private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
