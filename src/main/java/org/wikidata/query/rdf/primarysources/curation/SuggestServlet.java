@@ -54,7 +54,7 @@ public class SuggestServlet extends HttpServlet {
     static final String QID_PLACE_HOLDER = "${QID}";
     static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
     static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
-    private static final String ONE_DATASET_QUERY =
+    static final String ONE_DATASET_QUERY =
             "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
@@ -65,7 +65,7 @@ public class SuggestServlet extends HttpServlet {
                     "    }" +
                     "  }" +
                     "}";
-    private static final String ALL_DATASETS_QUERY =
+    static final String ALL_DATASETS_QUERY =
             "SELECT ?dataset ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH ?dataset {" +
