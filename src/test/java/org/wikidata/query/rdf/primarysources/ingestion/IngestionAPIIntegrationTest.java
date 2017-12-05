@@ -109,7 +109,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         String expectedDatasetName = "http://t3rrible-dataset-4-sure/new";
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
-        assertEquals(11, partiallyBadResponseContent.size());
+        assertEquals(10, partiallyBadResponseContent.size());
         assertTrue(partiallyBadResponseContent.contains("http://www.wikidata.org/prop/qualifier/I_m_not_a_valid_Item_triple"));
         assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult uploadedGraphs = rdfRepository().query("select ?g where { graph ?g { ?s ?p ?o} }");
@@ -124,7 +124,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
             uploadedStatements.next();
             uploadedCount++;
         }
-        assertEquals(1, uploadedCount);
+        assertEquals(2, uploadedCount);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse partiallyBadResponse = postDatasetUpdate(updateEndpoint, goodDataset, partiallyBadDataset);
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
-        assertEquals(11, partiallyBadResponseContent.size());
+        assertEquals(10, partiallyBadResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
@@ -174,7 +174,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
             updatedStatements.next();
             updatedCount++;
         }
-        assertEquals(1, updatedCount);
+        assertEquals(2, updatedCount);
     }
 
     // Remove good dataset, add bad dataset
