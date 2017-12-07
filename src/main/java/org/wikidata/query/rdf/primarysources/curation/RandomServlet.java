@@ -2,6 +2,8 @@ package org.wikidata.query.rdf.primarysources.curation;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.openrdf.model.Value;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.QueryEvaluationException;
@@ -14,10 +16,14 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,23 +36,7 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  * Created on Dec 05, 2017.
  */
 public class RandomServlet extends HttpServlet {
-    private static final String ONE_DATASET_SUBJECT_LIST_QUERY =
-            "SELECT DISTINCT ?subject " +
-                    "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    ?subject ?property ?value ." +
-                    "    FILTER STRSTARTS(str(?subject), \"http://www.wikidata.org/entity/Q\") ." +
-                    "  }" +
-                    "}";
-    private static final String ALL_DATASETS_SUBJECT_LIST_QUERY =
-            "SELECT DISTINCT ?subject " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?subject ?property ?value ." +
-                    "    FILTER STRSTARTS(str(?subject), \"http://www.wikidata.org/entity/Q\") ." +
-                    "  }" +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}";
+    public static final Path CACHED_SUBJECTS = Paths.get(System.getProperty("org.wikidata.primarysources.subjects"));
     private static final Logger log = LoggerFactory.getLogger(RandomServlet.class);
     private String dataset;
     private String qId;
@@ -55,31 +45,33 @@ public class RandomServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         boolean ok = processRequest(request, response);
         if (!ok) return;
-        List<String> items = getSubjectList();
+        Set<String> items = readCachedSubjectSet();
         if (items == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving the list of subject items.");
             return;
         }
-        qId = pickRandomItem(items);
+        qId = pickRandomItem(new ArrayList<>(items));
         TupleQueryResult suggestions = getSuggestions();
         sendResponse(response, suggestions);
     }
 
-    private List<String> getSubjectList() throws IOException {
-        List<String> subjectList = new ArrayList<>();
-        String query = dataset.equals("all") ? ALL_DATASETS_SUBJECT_LIST_QUERY : ONE_DATASET_SUBJECT_LIST_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
-        TupleQueryResult results = runSparqlQuery(query);
-        try {
-            while (results.hasNext()) {
-                BindingSet result = results.next();
-                String subject = result.getValue("subject").stringValue();
-                subjectList.add(subject.substring(WIKIBASE_URIS.entity().length()));
+    private Set<String> readCachedSubjectSet() throws IOException {
+        Set<String> subjectSet = new HashSet<>();
+        JSONParser parser = new JSONParser();
+        Object parsed;
+        try (BufferedReader reader = Files.newBufferedReader(CACHED_SUBJECTS)) {
+            try {
+                parsed = parser.parse(reader);
+            } catch (ParseException pe) {
+                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), CACHED_SUBJECTS);
+                return null;
             }
-        } catch (QueryEvaluationException qee) {
-            log.error("Failed evaluating the suggestion query: {}", qee.getMessage());
-            return null;
         }
-        return subjectList;
+        JSONObject subjects = (JSONObject) parsed;
+        if (dataset.equals("all"))
+            for (String ds : (Set<String>) subjects.keySet()) subjectSet.addAll((JSONArray) subjects.get(ds));
+        else subjectSet.addAll((JSONArray) subjects.get(dataset));
+        return subjectSet;
     }
 
     private String pickRandomItem(List<String> items) {

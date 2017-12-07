@@ -38,6 +38,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     private static URI suggestEndpoint;
     private static URI curateEndpoint;
     private static URI searchEndpoint;
+    private static URI randomEndpoint;
     private static File testDataset;
 
     @BeforeClass
@@ -46,6 +47,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         suggestEndpoint = URI.create(BASE_ENDPOINT + "/suggest");
         curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
         searchEndpoint = URI.create(BASE_ENDPOINT + "/search");
+        randomEndpoint = URI.create(BASE_ENDPOINT + "/random");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
     }
 
@@ -62,9 +64,36 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     }
 
     @Test
+    public void testRandom() throws Exception {
+        URIBuilder builder = new URIBuilder(randomEndpoint);
+        JSONParser parser = new JSONParser();
+        // Default behavior
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray suggestions = (JSONArray) parsed;
+        // The test dataset has 1 subject item with 5 references
+        // TODO implement the subject cache creation after upload
+        assertEquals(5, suggestions.size());
+        // Dataset parameter
+        builder.setParameter("dataset", "http://chuck-berry/new");
+        responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        suggestions = (JSONArray) parsed;
+        assertEquals(5, suggestions.size());
+    }
+
+    @Test
     public void testSuggest() throws Exception {
         URIBuilder builder = new URIBuilder(suggestEndpoint);
-        // Test success
+        // Success
         builder.setParameter("qid", TEST_QID);
         String responseContent = Request.Get(builder.build())
                 .execute()
@@ -98,7 +127,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         assertEquals(expectedStatements, actualStatements);
         assertEquals(expectedQualifers, actualQualifiers);
         assertEquals(expectedReferences, actualReferences);
-        // Test failure
+        // Failure
         builder.setParameter("qid", "Q666");
         int status = Request.Get(builder.build())
                 .execute()
@@ -113,7 +142,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         URIBuilder builder = new URIBuilder(searchEndpoint);
         JSONParser parser = new JSONParser();
         testSearchDefaultBehavior(builder, parser);
-        // Test offset beyond the dataset size
+        // Offset beyond the dataset size
         testSearchFailure(builder);
         testSearchWithLimit(builder, parser);
         testSearchWithOffset(builder, parser);
@@ -252,7 +281,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @Test
     public void testApproveReference() throws Exception {
-        // {"qs":"Q322794\tP27\tQ161885\tS854\t\"http://collection.britishmuseum.org/id/person-institution/162540\"","state":"rejected","dataset":"http://10k/new","type":"reference","user":"Hjfocs"}
         JSONObject curated = new JSONObject();
         curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
         curated.put("type", "reference");
