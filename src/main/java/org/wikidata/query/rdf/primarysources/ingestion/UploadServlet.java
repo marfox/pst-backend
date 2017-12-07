@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -98,7 +99,7 @@ public class UploadServlet extends HttpServlet {
     private String datasetURI;
 
     @Override
-    public void init() throws ServletException {
+    public void init() {
         try {
             blazegraphPropertiesLocation = Resources.getResource(BLAZEGRAPH_PROPERTIES_FILE_NAME).toURI().getPath();
         } catch (URISyntaxException use) {
@@ -125,7 +126,7 @@ public class UploadServlet extends HttpServlet {
      * @throws ServletException if the request for the POST could not be handled
      */
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
         Map<String, AbstractMap.SimpleImmutableEntry<RDFFormat, Model>> validRDFDatasets = new HashMap<>();
         List<File> tempDatasets = new ArrayList<>();
@@ -158,6 +159,7 @@ public class UploadServlet extends HttpServlet {
         boolean added = addUploaderQuad(response);
         if (!added) return;
         for (File tempDataset : tempDatasets) tempDataset.delete();
+        SubjectsCache.cacheDatasetSubjects(datasetURI);
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
     }
 

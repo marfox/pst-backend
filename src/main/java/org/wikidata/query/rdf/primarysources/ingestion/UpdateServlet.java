@@ -20,6 +20,7 @@ import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -129,7 +130,7 @@ public class UpdateServlet extends HttpServlet {
     private Model addDatasetWithValidSyntax;
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
         /*
@@ -204,6 +205,7 @@ public class UpdateServlet extends HttpServlet {
                     "https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model");
             return;
         }
+        SubjectsCache.cacheDatasetSubjects(targetDatasetURI.toString());
         /*
          * Build the final response
          */
