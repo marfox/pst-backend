@@ -50,9 +50,9 @@ public class SuggestServlet extends HttpServlet {
     static final String QID_PARAMETER = "qid";
     static final String DATASET_PARAMETER = "dataset";
     static final String IO_MIME_TYPE = "application/json";
-    static final String DATASET_PLACE_HOLDER = "${DATASET}";
+    public static final String DATASET_PLACE_HOLDER = "${DATASET}";
     static final String QID_PLACE_HOLDER = "${QID}";
-    static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
+    public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
     static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     static final String ONE_DATASET_QUERY =
             "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
@@ -89,7 +89,7 @@ public class SuggestServlet extends HttpServlet {
     private String qId;
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         boolean ok = processRequest(request, response);
         if (!ok) return;
         TupleQueryResult suggestions = getSuggestions();
@@ -125,12 +125,12 @@ public class SuggestServlet extends HttpServlet {
         return true;
     }
 
-    private TupleQueryResult getSuggestions() throws IOException {
+    private TupleQueryResult getSuggestions() {
         String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
         return runSparqlQuery(query);
     }
 
-    static TupleQueryResult runSparqlQuery(String query) throws IOException {
+    public static TupleQueryResult runSparqlQuery(String query) {
         URIBuilder builder = new URIBuilder();
         URI uri;
         try {
@@ -146,17 +146,25 @@ public class SuggestServlet extends HttpServlet {
             return null;
         }
         InputStream results;
-        results = Request.Get(uri)
-                .setHeader("Accept", IO_MIME_TYPE)
-                .execute()
-                .returnContent().asStream();
+        try {
+            results = Request.Get(uri)
+                    .setHeader("Accept", IO_MIME_TYPE)
+                    .execute()
+                    .returnContent().asStream();
+        } catch (IOException ioe) {
+            log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: {}. Stack trace: {}", query, ioe.getStackTrace());
+            return null;
+        }
         try {
             return QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(IO_MIME_TYPE));
         } catch (QueryResultParseException qrpe) {
-            log.error("Syntax error at line {}, column {} in the suggestion query: {}", query, qrpe.getLineNumber(), qrpe.getColumnNumber());
+            log.error("Syntax error at line {}, column {} in the SPARQL query: {}", query, qrpe.getLineNumber(), qrpe.getColumnNumber());
             return null;
         } catch (TupleQueryResultHandlerException tqrhe) {
-            log.error("Something went wrong when handling the suggestion query: {}. Reason: {}", query, tqrhe.getMessage());
+            log.error("Something went wrong when handling the SPARQL query: {}. Stack trace: {}", query, tqrhe.getStackTrace());
+            return null;
+        } catch (IOException ioe) {
+            log.error("An I/O error occurred while reading the SPARQL results. Query: {}. Stack trace: {}", query, ioe.getStackTrace());
             return null;
         }
     }
