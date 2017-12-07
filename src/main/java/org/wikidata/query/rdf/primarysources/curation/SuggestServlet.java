@@ -152,7 +152,7 @@ public class SuggestServlet extends HttpServlet {
                     .execute()
                     .returnContent().asStream();
         } catch (IOException ioe) {
-            log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: {}. Stack trace: {}", query, ioe.getStackTrace());
+            log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: " + query, ioe);
             return null;
         }
         try {
@@ -161,10 +161,10 @@ public class SuggestServlet extends HttpServlet {
             log.error("Syntax error at line {}, column {} in the SPARQL query: {}", query, qrpe.getLineNumber(), qrpe.getColumnNumber());
             return null;
         } catch (TupleQueryResultHandlerException tqrhe) {
-            log.error("Something went wrong when handling the SPARQL query: {}. Stack trace: {}", query, tqrhe.getStackTrace());
+            log.error("Something went wrong when handling the SPARQL query: " + query, tqrhe);
             return null;
         } catch (IOException ioe) {
-            log.error("An I/O error occurred while reading the SPARQL results. Query: {}. Stack trace: {}", query, ioe.getStackTrace());
+            log.error("An I/O error occurred while reading the SPARQL results. Query: " + query, ioe);
             return null;
         }
     }
