@@ -46,9 +46,9 @@ public class UploadServlet extends HttpServlet {
      * Endpoint name of the Blazegraph SPARQL service.
      */
     public static final String BLAZEGRAPH_SPARQL_ENDPOINT = "/sparql";
-    public static final String BLAZEGRAPH_HOST = System.getProperty("org.wikidata.primarysources.blazegraph.host");
-    public static final int BLAZEGRAPH_PORT = Integer.parseInt(System.getProperty("org.wikidata.primarysources.blazegraph.port"));
-    public static final String BLAZEGRAPH_CONTEXT = System.getProperty("org.wikidata.primarysources.blazegraph.context");
+    public static final String BLAZEGRAPH_HOST = System.getenv("HOST");
+    public static final int BLAZEGRAPH_PORT = Integer.parseInt(System.getenv("PORT"));
+    public static final String BLAZEGRAPH_CONTEXT = "/" + System.getenv("CONTEXT");
     /**
      * The data provider should not care about the base URI. A constant is used instead.
      */
