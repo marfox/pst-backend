@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
+import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -22,8 +23,6 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +35,6 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  * Created on Dec 05, 2017.
  */
 public class RandomServlet extends HttpServlet {
-    public static final Path CACHED_SUBJECTS = Paths.get(System.getProperty("org.wikidata.primarysources.subjects"));
     private static final Logger log = LoggerFactory.getLogger(RandomServlet.class);
     private String dataset;
     private String qId;
@@ -59,11 +57,11 @@ public class RandomServlet extends HttpServlet {
         Set<String> subjectSet = new HashSet<>();
         JSONParser parser = new JSONParser();
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(CACHED_SUBJECTS)) {
+        try (BufferedReader reader = Files.newBufferedReader(SubjectsCache.CACHE_PATH)) {
             try {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), CACHED_SUBJECTS);
+                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), SubjectsCache.CACHE_PATH);
                 return null;
             }
         }
