@@ -1,5 +1,7 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.google.common.io.Resources;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -14,8 +16,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.SubjectsCacheIntegrationTest;
 
 import java.io.File;
 import java.net.URI;
@@ -28,13 +32,14 @@ import java.util.List;
  * @since 0.2.4
  * Created on Oct 10, 2017.
  */
+@RunWith(RandomizedRunner.class)
 public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegrationTestBase {
 
-    private static final String BASE_ENDPOINT = "http://localhost:9999/bigdata";
-    private static final String TEST_DATASET_FILE_NAME = "chuck_berry_for_curation.ttl";
-    private static final String TEST_QID = "Q5921";
+    public static final String BASE_ENDPOINT = "http://localhost:9999/bigdata";
+    public static final URI UPLOAD_ENDPOINT = URI.create(BASE_ENDPOINT + "/upload");
+    public static final String TEST_DATASET_FILE_NAME = "chuck_berry_for_curation.ttl";
+    public static final String TEST_QID = "Q5921";
 
-    private static URI uploadEndpoint;
     private static URI suggestEndpoint;
     private static URI curateEndpoint;
     private static URI searchEndpoint;
@@ -43,7 +48,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @BeforeClass
     public static void setUpOnce() throws URISyntaxException {
-        uploadEndpoint = URI.create(BASE_ENDPOINT + "/upload");
         suggestEndpoint = URI.create(BASE_ENDPOINT + "/suggest");
         curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
         searchEndpoint = URI.create(BASE_ENDPOINT + "/search");
@@ -57,7 +61,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         multipart.addTextBody("name", "chuck berry", ContentType.TEXT_PLAIN);
         multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
         multipart.addBinaryBody("dataset", testDataset);
-        Request.Post(uploadEndpoint)
+        Request.Post(UPLOAD_ENDPOINT)
                 .body(multipart.build())
                 .execute()
                 .discardContent();
@@ -76,7 +80,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
         // The test dataset has 1 subject item with 5 references
-        // TODO implement the subject cache creation after upload
         assertEquals(5, suggestions.size());
         // Dataset parameter
         builder.setParameter("dataset", "http://chuck-berry/new");
