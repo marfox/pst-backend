@@ -13,12 +13,11 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.*;
 
-import static org.wikidata.query.rdf.primarysources.curation.RandomServlet.CACHED_SUBJECTS;
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
 
 /**
@@ -27,6 +26,13 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  * Created on Dec 07, 2017.
  */
 public class SubjectsCache {
+
+    /*
+     An environment variable is needed for tests. A system property would not be read when testing.
+     IMPORTANT: SUBJECTS_CACHE should always be exported, otherwise integration tests can't run:
+     when Jetty is fired up, the listener SubjectsCacheUpdater looks for that variable.
+      */
+    public static final Path CACHE_PATH = Paths.get(System.getenv("SUBJECTS_CACHE"));
 
     private static final String ONE_DATASET_SUBJECT_LIST_QUERY =
             "SELECT ?subject " +
@@ -54,14 +60,7 @@ public class SubjectsCache {
         service.submit(() -> dumpDatasetSubjects(dataset));
     }
 
-    // Run when the cache expires
-    // TODO set the cache expiry and use this method elsewhere
-    public static void updateCache() {
-        ExecutorService service = ForkJoinPool.commonPool();
-        service.submit(() -> dumpAllSubjects());
-    }
-
-    private static void dumpAllSubjects() {
+    static void dumpAllSubjects() {
         /*
          The task runs on an indpendent thread, so prevent it from dying quietly if something goes wrong.
          Log anything that may be thrown.
@@ -69,33 +68,41 @@ public class SubjectsCache {
         try {
             JSONObject subjects = fetchAllSubjects();
             if (subjects == null) return;
-            try (BufferedWriter writer = Files.newBufferedWriter(CACHED_SUBJECTS)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(CACHE_PATH)) {
                 subjects.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping all the subjects to '" + CACHED_SUBJECTS + "'.", ioe);
+                log.error("Something went wrong when dumping all the subjects to '" + CACHE_PATH + "'.", ioe);
+                return;
             }
         } catch (Throwable t) {
             log.error("Something went wrong while caching all the subjects", t);
+            return;
         }
+        log.info("Successfully cached all the subjects in the database");
     }
 
     private static JSONObject fetchAllSubjects() {
-        JSONObject subjects = new JSONObject();
+        JSONObject subjectsJson = new JSONObject();
+        Map<String, Set<String>> subjectsMap = new HashMap<>();
         TupleQueryResult results = runSparqlQuery(ALL_DATASETS_SUBJECT_LIST_QUERY);
         try {
             while (results.hasNext()) {
                 BindingSet result = results.next();
                 String subject = result.getValue("subject").stringValue();
                 String dataset = result.getValue("dataset").stringValue();
-                Set<String> datasetSubjects = (Set<String>) subjects.getOrDefault(dataset, new HashSet<>());
+                Set<String> datasetSubjects = subjectsMap.getOrDefault(dataset, new HashSet<>());
                 datasetSubjects.add(subject.substring(WIKIBASE_URIS.entity().length()));
-                subjects.put(dataset, datasetSubjects);
+                subjectsMap.put(dataset, datasetSubjects);
             }
         } catch (QueryEvaluationException qee) {
             log.error("Failed evaluating the SPARQL query that fetches subject items: '" + ALL_DATASETS_SUBJECT_LIST_QUERY + "'", qee);
             return null;
         }
-        return subjects;
+        for (String dataset : subjectsMap.keySet()) {
+            // Lists are needed to properly serialize the JSON (invalid JSON with Sets)
+            subjectsJson.put(dataset, new ArrayList<>(subjectsMap.get(dataset)));
+        }
+        return subjectsJson;
     }
 
     private static void dumpDatasetSubjects(String dataset) {
@@ -106,25 +113,27 @@ public class SubjectsCache {
         try {
             JSONParser parser = new JSONParser();
             Object parsed = null;
-            try (BufferedReader reader = Files.newBufferedReader(CACHED_SUBJECTS)) {
+            try (BufferedReader reader = Files.newBufferedReader(CACHE_PATH)) {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), CACHED_SUBJECTS);
+                log.error("The subjects cache is malformed JSON. Parse error at index {}. Will overwrite '{}'", pe.getPosition(), CACHE_PATH);
             } catch (IOException ioe) {
-                log.error("Something went wrong while loading subjects from '" + CACHED_SUBJECTS + "'", ioe);
+                log.error("Something went wrong while loading the subjects cache. Will overwrite '" + CACHE_PATH + "'", ioe);
             }
             JSONObject oldSubjects = parsed == null ? new JSONObject() : (JSONObject) parsed;
             JSONObject newSubjects = fetchDatasetSubjects(dataset, oldSubjects);
             if (newSubjects == null) return;
-            try (BufferedWriter writer = Files.newBufferedWriter(CACHED_SUBJECTS)) {
-                // FIXME doesn't dump the array of subjects properly --> {"http:\/\/chuck-berry\/new":[Q5921]}
+            try (BufferedWriter writer = Files.newBufferedWriter(CACHE_PATH)) {
                 newSubjects.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping subjects of dataset '" + dataset + "' to '" + CACHED_SUBJECTS + "'", ioe);
+                log.error("Something went wrong when dumping subjects of dataset '" + dataset + "' to '" + CACHE_PATH + "'", ioe);
+                return;
             }
         } catch (Throwable t) {
             log.error("Something went wrong while caching subjects of dataset " + dataset, t);
+            return;
         }
+        log.info("Successfully cached the subjects of dataset <{}>", dataset);
     }
 
     private static JSONObject fetchDatasetSubjects(String dataset, JSONObject oldSubjects) {
@@ -141,7 +150,7 @@ public class SubjectsCache {
             log.error("Failed evaluating the SPARQL query that fetches subject items: '" + query + "'", qee);
             return null;
         }
-        oldSubjects.put(dataset, subjectSet);
+        oldSubjects.put(dataset, new ArrayList<>(subjectSet));
         return oldSubjects;
     }
 }
