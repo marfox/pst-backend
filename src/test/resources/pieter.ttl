@@ -1,0 +1,261 @@
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+wd:Q2094286 p:P106 wds:Q2094286-45d3b5ec-7970-4793-b1cf-7dac9938e209,
+        wds:Q2094286-5456a032-d194-477a-b6af-99e8488bb874,
+        wds:Q2094286-ace4b54f-2ba9-45f8-9794-1ffe36484aab ;
+    p:P1559 wds:Q2094286-36f96039-901d-4902-9d21-9e19da2173c9,
+        wds:Q2094286-46a9abb8-6b10-4f1c-899f-aa4600f960cd,
+        wds:Q2094286-4ffe368b-5ef8-40d9-85f6-440eeae7beae,
+        wds:Q2094286-595c386f-77ef-4434-9358-fc012f1c880f,
+        wds:Q2094286-5cf193a2-bf0a-400b-b3b4-c43a59d281b7,
+        wds:Q2094286-5e0abce8-84c0-4af6-9ebd-8496d1d8584b,
+        wds:Q2094286-63db608a-ebe0-4da5-8be2-9ae8d88403d6,
+        wds:Q2094286-65bbac56-69c1-4b69-ae75-16a905d995e6,
+        wds:Q2094286-75ee1f27-32cf-4ed7-873e-227961d6a510,
+        wds:Q2094286-8138e6af-b468-494e-8109-48ecc3c2327f,
+        wds:Q2094286-967c7728-181b-4727-9e95-acd6f8460904,
+        wds:Q2094286-981e3f31-de58-4ce8-897d-831ca895530b,
+        wds:Q2094286-a525d420-7fca-49ef-9980-ce3b927bf2f9,
+        wds:Q2094286-b2c856f5-38dd-46ac-ba62-023fe15ef26a,
+        wds:Q2094286-db093e99-5ca0-4116-8020-74a30119443e,
+        wds:Q2094286-f01aa33d-5c30-40fa-8d81-b04cbbdd9a81,
+        wds:Q2094286-f409ba5e-10a6-47c4-8a63-e205d466fee7,
+        wds:Q2094286-f559883c-3138-432d-96fa-6c7f0d95dc41,
+        wds:Q2094286-f8274605-c50d-4e0c-bb63-afa8b22c5a80 ;
+    p:P21 wds:Q2094286-62e93f80-820a-4b48-855a-a5a39b9dc4b3,
+        wds:Q2094286-733f0b7e-0fce-4fa3-869c-d891b6a4c4df,
+        wds:Q2094286-87985192-061f-4961-86f1-dae5de262026 ;
+    p:P569 wds:Q2094286-4b930066-11ae-458c-9f62-f4006bfd59a1,
+        wds:Q2094286-506f2b97-d25c-453b-96b3-4968c1ae860a,
+        wds:Q2094286-74337d96-f6e0-447b-ad3a-2c4c9f9e7546,
+        wds:Q2094286-9c5f812e-6596-43bb-bd37-6ab548da3b3f ;
+    p:P570 wds:Q2094286-1532018b-d376-47bf-9851-811783818a43,
+        wds:Q2094286-2181a6f2-5788-496b-a007-a680220cc888,
+        wds:Q2094286-23564593-bd22-4e3b-890f-2685b0502a25,
+        wds:Q2094286-41d7ec29-0449-443e-a869-42f1e77f8f75 ;
+    p:P734 wds:Q2094286-bf86e8cc-ab72-4285-bff8-489cd2cf5ccd ;
+    p:P735 wds:Q2094286-c5c504be-6dc1-4688-aa35-83e17272d011 ;
+    p:P742 wds:Q2094286-3399f155-f02a-40cc-ad21-38017e959b03,
+        wds:Q2094286-987be70e-52bf-405f-9c4b-e5c8b67d9443,
+        wds:Q2094286-a777cb65-fe93-4649-9b00-116dfa6c16d6,
+        wds:Q2094286-b203f5b3-63d2-47a1-804e-9fc146f94c9d,
+        wds:Q2094286-bd10a488-ad91-4eee-8d6c-8772c442ba38,
+        wds:Q2094286-fa90a8ae-3f51-4b9a-a8bd-0b11176e9ced .
+
+wds:Q2094286-1532018b-d376-47bf-9851-811783818a43 prov:wasDerivedFrom <http://www.wikidata.org/reference/54c4678116a5c6870953ff9d07e31fdd5137fc29> ;
+    ps:P570 "1608-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-2181a6f2-5788-496b-a007-a680220cc888 prov:wasDerivedFrom wdref:b2ef291807c6d9b16bc929953b311a195b0f58a7 ;
+    ps:P570 "1608-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-23564593-bd22-4e3b-890f-2685b0502a25 prov:wasDerivedFrom <http://www.wikidata.org/reference/0053d52bb050f30a17e0551fc25d906f2395896c> ;
+    ps:P570 "1608-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-3399f155-f02a-40cc-ad21-38017e959b03 prov:wasDerivedFrom <http://www.wikidata.org/reference/11c46c409e596e21ab294315b9c639105a173e7f> ;
+    ps:P742 "Pierre, Peeter vander Borcht"@en .
+
+wds:Q2094286-36f96039-901d-4902-9d21-9e19da2173c9 prov:wasDerivedFrom wdref:f303bfa3aa95f2dd47fcfcf7147f2eb2bbfe3473 ;
+    ps:P1559 "Pieter Borcht"@en .
+
+wds:Q2094286-41d7ec29-0449-443e-a869-42f1e77f8f75 prov:wasDerivedFrom wdref:b17c97e6b1a42a81b27a31fc57201fcab20d15d3 ;
+    ps:P570 "1608-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-45d3b5ec-7970-4793-b1cf-7dac9938e209 prov:wasDerivedFrom wdref:e5c7eb4761dac8a1084d44992026d19740ce6e34 ;
+    ps:P106 wd:Q1028181 .
+
+wds:Q2094286-46a9abb8-6b10-4f1c-899f-aa4600f960cd prov:wasDerivedFrom <http://www.wikidata.org/reference/6d8c9eb9b6a9df33c84b82d1c9296baafdf47d50> ;
+    ps:P1559 "Pièrre Verborcht"@en .
+
+wds:Q2094286-4b930066-11ae-458c-9f62-f4006bfd59a1 prov:wasDerivedFrom <http://www.wikidata.org/reference/58e71de8b70be5e92b8a0cefa9634bfa57d2c431> ;
+    ps:P569 "1540-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-4ffe368b-5ef8-40d9-85f6-440eeae7beae prov:wasDerivedFrom wdref:eb213163221edac2a5edf2761594c77d33a9d87c ;
+    ps:P1559 "Peter Borght"@en .
+
+wds:Q2094286-506f2b97-d25c-453b-96b3-4968c1ae860a prov:wasDerivedFrom <http://www.wikidata.org/reference/455e5b72e52f20fdba82607c29ba961c6d3f916d> ;
+    ps:P569 "1535-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-5456a032-d194-477a-b6af-99e8488bb874 prov:wasDerivedFrom <http://www.wikidata.org/reference/5aaf6688a2e381e37e2e390ac07de0c4c5a90453> ;
+    ps:P106 wd:Q11569986 .
+
+wds:Q2094286-595c386f-77ef-4434-9358-fc012f1c880f prov:wasDerivedFrom <http://www.wikidata.org/reference/2694a33df09750fed4c223bd2dfba7508bfb6523> ;
+    ps:P1559 "Pierre Borcht"@en .
+
+wds:Q2094286-5cf193a2-bf0a-400b-b3b4-c43a59d281b7 prov:wasDerivedFrom <http://www.wikidata.org/reference/3f611961a939e72a3289d829348211bed46335d2> ;
+    ps:P1559 "Pièrre Borght"@en .
+
+wds:Q2094286-5e0abce8-84c0-4af6-9ebd-8496d1d8584b prov:wasDerivedFrom <http://www.wikidata.org/reference/1bae93de7e0327a3468894373d6a49bcad88e7b6> ;
+    ps:P1559 "Pieter Borcht"@en .
+
+wds:Q2094286-62e93f80-820a-4b48-855a-a5a39b9dc4b3 prov:wasDerivedFrom <http://www.wikidata.org/reference/011aeea7890188768a8400ebb8f2fe907cb3d773> ;
+    ps:P21 wd:Q6581097 .
+
+wds:Q2094286-63db608a-ebe0-4da5-8be2-9ae8d88403d6 prov:wasDerivedFrom <http://www.wikidata.org/reference/2941cad23357204f41c778ba3b1ac736e9ab3542> ;
+    ps:P1559 "Peter Borcht"@en .
+
+wds:Q2094286-65bbac56-69c1-4b69-ae75-16a905d995e6 prov:wasDerivedFrom <http://www.wikidata.org/reference/91541264c0b7127debbfa4b2d16bb8c0b44281ef> ;
+    ps:P1559 "Pieter Borght"@en .
+
+wds:Q2094286-733f0b7e-0fce-4fa3-869c-d891b6a4c4df prov:wasDerivedFrom wdref:aa3c075ef9155b3012a0c79b910c4d478729325e ;
+    ps:P21 wd:Q6581097 .
+
+wds:Q2094286-74337d96-f6e0-447b-ad3a-2c4c9f9e7546 prov:wasDerivedFrom wdref:d87f7e64da2304502c7549c1f7b3da1870674634 ;
+    ps:P569 "1540-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-75ee1f27-32cf-4ed7-873e-227961d6a510 prov:wasDerivedFrom <http://www.wikidata.org/reference/16fd54f8b8d0fb93733e128d485d530dfb50c89b> ;
+    ps:P1559 "Peter Borcht"@en .
+
+wds:Q2094286-8138e6af-b468-494e-8109-48ecc3c2327f prov:wasDerivedFrom <http://www.wikidata.org/reference/78d194adefde34ad093f1c74515a229ec90c9971> ;
+    ps:P1559 "Pieter Verborcht"@en .
+
+wds:Q2094286-87985192-061f-4961-86f1-dae5de262026 prov:wasDerivedFrom wdref:b10971d4ff31affd956bb8745e994ddd196bccc4 ;
+    ps:P21 wd:Q6581097 .
+
+wds:Q2094286-967c7728-181b-4727-9e95-acd6f8460904 prov:wasDerivedFrom wdref:a674e4ca246f146f6312f24c0d1be4057a564f30 ;
+    ps:P1559 "Pieter Borght"@en .
+
+wds:Q2094286-981e3f31-de58-4ce8-897d-831ca895530b prov:wasDerivedFrom wdref:d5a096ea8d3acc1e4063489657008e0c3af5d237 ;
+    ps:P1559 "Pieter Borcht"@en .
+
+wds:Q2094286-987be70e-52bf-405f-9c4b-e5c8b67d9443 prov:wasDerivedFrom <http://www.wikidata.org/reference/2fe7ad02859370fd8840987f5edc3776fc576874> ;
+    ps:P742 "Eyckens, Pierre"@en .
+
+wds:Q2094286-9c5f812e-6596-43bb-bd37-6ab548da3b3f prov:wasDerivedFrom <http://www.wikidata.org/reference/70e8e1a1593cb36c9df7055bc9212c7ff405b480> ;
+    ps:P569 "1540-00-00T00:00:00Z"^^xsd:dateTime .
+
+wds:Q2094286-a525d420-7fca-49ef-9980-ce3b927bf2f9 prov:wasDerivedFrom <http://www.wikidata.org/reference/9c648f313a3f2e8d27d9601d3bad8f3c3ca5a9f4> ;
+    ps:P1559 "Pièrre Borcht"@en .
+
+wds:Q2094286-a777cb65-fe93-4649-9b00-116dfa6c16d6 prov:wasDerivedFrom <http://www.wikidata.org/reference/76b7c1f77bf62c9d990ef4cd84bdacffe3184360> ;
+    ps:P742 "P., Petrus"@en .
+
+wds:Q2094286-ace4b54f-2ba9-45f8-9794-1ffe36484aab prov:wasDerivedFrom <http://www.wikidata.org/reference/996612a59a921022713dee4ea65fdd87807bd333> ;
+    ps:P106 wd:Q1028181 .
+
+wds:Q2094286-b203f5b3-63d2-47a1-804e-9fc146f94c9d prov:wasDerivedFrom wdref:cdcac7323117e7032e9588416575dda388b30d78 ;
+    ps:P742 "Borcht, Pieter van der"@en .
+
+wds:Q2094286-b2c856f5-38dd-46ac-ba62-023fe15ef26a prov:wasDerivedFrom <http://www.wikidata.org/reference/01f0e8012b8ba70685206e82e274282582ec1929> ;
+    ps:P1559 "Peter Borght"@en .
+
+wds:Q2094286-bd10a488-ad91-4eee-8d6c-8772c442ba38 prov:wasDerivedFrom wdref:dfdf8bb0d82fee1aa7b4d27ac9d06431334b0348 ;
+    ps:P742 "van der Borcht, Pieter"@en .
+
+wds:Q2094286-bf86e8cc-ab72-4285-bff8-489cd2cf5ccd prov:wasDerivedFrom <http://www.wikidata.org/reference/5bee3fcb9f567b661d51ed024140abe93acab422> ;
+    ps:P734 "Borcht"@en .
+
+wds:Q2094286-c5c504be-6dc1-4688-aa35-83e17272d011 prov:wasDerivedFrom <http://www.wikidata.org/reference/0626e83216a37d1d5b7258c1f859fb5f2b113643> ;
+    ps:P735 "Peter OR Pieter van der"@en .
+
+wds:Q2094286-db093e99-5ca0-4116-8020-74a30119443e prov:wasDerivedFrom <http://www.wikidata.org/reference/5e6196a58c166e5b2110b3034fd566bc0ca38a1e> ;
+    ps:P1559 "Pieter Verborcht"@en .
+
+wds:Q2094286-f01aa33d-5c30-40fa-8d81-b04cbbdd9a81 prov:wasDerivedFrom <http://www.wikidata.org/reference/7fa909df018c5a0850fe5d8a634fd43a7deeafa5> ;
+    ps:P1559 "Pierre Elder"@en .
+
+wds:Q2094286-f409ba5e-10a6-47c4-8a63-e205d466fee7 prov:wasDerivedFrom <http://www.wikidata.org/reference/8131a36a0438c5c79556ebf03c10b8e7269914c1> ;
+    ps:P1559 "Peter Borcht"@en .
+
+wds:Q2094286-f559883c-3138-432d-96fa-6c7f0d95dc41 prov:wasDerivedFrom wdref:bfb4ea5e3236733ee077a05d1c965c9269eedd2c ;
+    ps:P1559 "Pièrre Verborcht"@en .
+
+wds:Q2094286-f8274605-c50d-4e0c-bb63-afa8b22c5a80 prov:wasDerivedFrom <http://www.wikidata.org/reference/6408ec938f53e8f2108f6693054e8c224718e056> ;
+    ps:P1559 "Peter Borcht"@en .
+
+wds:Q2094286-fa90a8ae-3f51-4b9a-a8bd-0b11176e9ced prov:wasDerivedFrom wdref:de16913a7e081332213295ef656404b9cacbb6b2 ;
+    ps:P742 "Borcht, Peeter van der"@en .
+
+<http://www.wikidata.org/reference/0053d52bb050f30a17e0551fc25d906f2395896c> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/011aeea7890188768a8400ebb8f2fe907cb3d773> pr:P854 <http://collection.britishmuseum.org/id/person-institution/152231> .
+
+<http://www.wikidata.org/reference/01f0e8012b8ba70685206e82e274282582ec1929> pr:P854 <http://rkd.nl/explore/artists/142570> .
+
+<http://www.wikidata.org/reference/0626e83216a37d1d5b7258c1f859fb5f2b113643> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/11c46c409e596e21ab294315b9c639105a173e7f> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/16fd54f8b8d0fb93733e128d485d530dfb50c89b> pr:P854 <http://rkd.nl/explore/artists/458524> .
+
+<http://www.wikidata.org/reference/1bae93de7e0327a3468894373d6a49bcad88e7b6> pr:P854 <http://rkd.nl/explore/artists/142569> .
+
+<http://www.wikidata.org/reference/2694a33df09750fed4c223bd2dfba7508bfb6523> pr:P854 <http://rkd.nl/explore/artists/474021> .
+
+<http://www.wikidata.org/reference/2941cad23357204f41c778ba3b1ac736e9ab3542> pr:P854 <http://www.bbc.co.uk/arts/yourpaintings/artists/peter-van-der-borcht> .
+
+<http://www.wikidata.org/reference/2fe7ad02859370fd8840987f5edc3776fc576874> pr:P854 <http://collection.britishmuseum.org/id/person-institution/152231> .
+
+<http://www.wikidata.org/reference/3f611961a939e72a3289d829348211bed46335d2> pr:P854 <http://rkd.nl/explore/artists/142571> .
+
+<http://www.wikidata.org/reference/455e5b72e52f20fdba82607c29ba961c6d3f916d> pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+<http://www.wikidata.org/reference/54c4678116a5c6870953ff9d07e31fdd5137fc29> pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+<http://www.wikidata.org/reference/58e71de8b70be5e92b8a0cefa9634bfa57d2c431> pr:P854 <http://vocab.getty.edu/ulan/500010418> .
+
+<http://www.wikidata.org/reference/5aaf6688a2e381e37e2e390ac07de0c4c5a90453> pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+<http://www.wikidata.org/reference/5bee3fcb9f567b661d51ed024140abe93acab422> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/5e6196a58c166e5b2110b3034fd566bc0ca38a1e> pr:P854 <http://rkd.nl/explore/artists/142589> .
+
+<http://www.wikidata.org/reference/6408ec938f53e8f2108f6693054e8c224718e056> pr:P854 <http://rkd.nl/explore/artists/142567> .
+
+<http://www.wikidata.org/reference/6d8c9eb9b6a9df33c84b82d1c9296baafdf47d50> pr:P854 <http://rkd.nl/explore/artists/142573> .
+
+<http://www.wikidata.org/reference/70e8e1a1593cb36c9df7055bc9212c7ff405b480> pr:P854 <http://www.bbc.co.uk/arts/yourpaintings/artists/peter-van-der-borcht> .
+
+<http://www.wikidata.org/reference/76b7c1f77bf62c9d990ef4cd84bdacffe3184360> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/78d194adefde34ad093f1c74515a229ec90c9971> pr:P854 <http://rkd.nl/explore/artists/142574> .
+
+<http://www.wikidata.org/reference/7fa909df018c5a0850fe5d8a634fd43a7deeafa5> pr:P854 <http://collection.britishmuseum.org/id/person-institution/152231> .
+
+<http://www.wikidata.org/reference/8131a36a0438c5c79556ebf03c10b8e7269914c1> pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+<http://www.wikidata.org/reference/91541264c0b7127debbfa4b2d16bb8c0b44281ef> pr:P854 <http://rkd.nl/explore/artists/142572> .
+
+<http://www.wikidata.org/reference/996612a59a921022713dee4ea65fdd87807bd333> pr:P854 <http://collection.britishmuseum.org/id/person-institution/152231> .
+
+<http://www.wikidata.org/reference/9c648f313a3f2e8d27d9601d3bad8f3c3ca5a9f4> pr:P854 <http://rkd.nl/explore/artists/142568> .
+
+wdref:a674e4ca246f146f6312f24c0d1be4057a564f30 pr:P854 <http://rkd.nl/explore/artists/142584> .
+
+wdref:aa3c075ef9155b3012a0c79b910c4d478729325e pr:P854 <http://vocab.getty.edu/ulan/500010418> .
+
+wdref:b10971d4ff31affd956bb8745e994ddd196bccc4 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+wdref:b17c97e6b1a42a81b27a31fc57201fcab20d15d3 pr:P854 <http://www.bbc.co.uk/arts/yourpaintings/artists/peter-van-der-borcht> .
+
+wdref:b2ef291807c6d9b16bc929953b311a195b0f58a7 pr:P854 <http://vocab.getty.edu/ulan/500010418> .
+
+wdref:bfb4ea5e3236733ee077a05d1c965c9269eedd2c pr:P854 <http://rkd.nl/explore/artists/142586> .
+
+wdref:cdcac7323117e7032e9588416575dda388b30d78 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+wdref:d5a096ea8d3acc1e4063489657008e0c3af5d237 pr:P854 <http://vocab.getty.edu/ulan/500010418> .
+
+wdref:d87f7e64da2304502c7549c1f7b3da1870674634 pr:P854 <http://www.uni-stuttgart.de/hi/gnt/dsi2/index.php?table_name=dsi&function=details&where_field=id&where_value=406> .
+
+wdref:de16913a7e081332213295ef656404b9cacbb6b2 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+wdref:dfdf8bb0d82fee1aa7b4d27ac9d06431334b0348 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+wdref:e5c7eb4761dac8a1084d44992026d19740ce6e34 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+
+wdref:eb213163221edac2a5edf2761594c77d33a9d87c pr:P854 <http://rkd.nl/explore/artists/142580> .
+
+wdref:f303bfa3aa95f2dd47fcfcf7147f2eb2bbfe3473 pr:P854 <http://collection.britishmuseum.org/id/person-institution/20262> .
+

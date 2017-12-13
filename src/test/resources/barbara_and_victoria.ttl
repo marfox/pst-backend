@@ -1,0 +1,52 @@
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix p: <http://www.wikidata.org/prop/> .
+@prefix pq: <http://www.wikidata.org/prop/qualifier/> .
+@prefix pr: <http://www.wikidata.org/prop/reference/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix ps: <http://www.wikidata.org/prop/statement/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wdref: <http://www.wikidata.org/reference/> .
+@prefix wds: <http://www.wikidata.org/entity/statement/> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+wd:Q21462724 p:P1559 wds:Q21462724-33101a31-3f9e-4944-a24f-9af5f7442f4d ;
+    p:P569 wds:Q21462724-da54df8d-81fa-49ec-8ac4-7c9adc1ce396 .
+
+wd:Q22672029 p:P1559 wds:Q22672029-4719160d-e568-4531-855b-e0eea4ec32b0,
+        wds:Q22672029-8f938e22-7934-4d5f-9326-3e74d66ca4ff ;
+    p:P21 wds:Q22672029-d44adb95-b446-4336-8071-da24ed61a3a7 ;
+    p:P569 wds:Q22672029-9726cc99-74c6-4594-8cfa-2edb67e6a1a6 .
+
+wds:Q21462724-33101a31-3f9e-4944-a24f-9af5f7442f4d prov:wasDerivedFrom wdref:b48b494f8acd12ac8c768c53567b5ba07bd741ed ;
+    ps:P1559 "Victoria Achache"@en .
+
+wds:Q21462724-da54df8d-81fa-49ec-8ac4-7c9adc1ce396 prov:wasDerivedFrom <http://www.wikidata.org/reference/80702131dc8e57ae6a62bda5c1dcb4844ea70fd2> ;
+    ps:P569 "1952-01-01T00:00:00Z"^^xsd:dateTime .
+
+wds:Q22672029-4719160d-e568-4531-855b-e0eea4ec32b0 prov:wasDerivedFrom wdref:f4871e155eb746244b2620b9f8acd98bdeac188e ;
+    ps:P1559 "Barbara Schmidt-Heins"@en .
+
+wds:Q22672029-8f938e22-7934-4d5f-9326-3e74d66ca4ff prov:wasDerivedFrom <http://www.wikidata.org/reference/176b2cebd4b0d2a2f7cd2d693138fba273c10860> ;
+    ps:P1559 "Barbara Heins"@en .
+
+wds:Q22672029-9726cc99-74c6-4594-8cfa-2edb67e6a1a6 prov:wasDerivedFrom <http://www.wikidata.org/reference/8ba6829310e3a5b040a11edc55afc1246a27716a> ;
+    ps:P569 "1949-01-01T00:00:00Z"^^xsd:dateTime .
+
+wds:Q22672029-d44adb95-b446-4336-8071-da24ed61a3a7 prov:wasDerivedFrom <http://www.wikidata.org/reference/8f559e486408389b7f2f8ae79a7652033113f90e> ;
+    ps:P21 wd:Q6581072 .
+
+<http://www.wikidata.org/reference/176b2cebd4b0d2a2f7cd2d693138fba273c10860> pr:P854 <http://rkd.nl/explore/artists/326411> .
+
+<http://www.wikidata.org/reference/80702131dc8e57ae6a62bda5c1dcb4844ea70fd2> pr:P854 <http://www.bbc.co.uk/arts/yourpaintings/artists/victoria-achache> .
+
+<http://www.wikidata.org/reference/8ba6829310e3a5b040a11edc55afc1246a27716a> pr:P854 <http://vocab.getty.edu/ulan/500107914> .
+
+<http://www.wikidata.org/reference/8f559e486408389b7f2f8ae79a7652033113f90e> pr:P854 <http://vocab.getty.edu/ulan/500107914> .
+
+wdref:b48b494f8acd12ac8c768c53567b5ba07bd741ed pr:P854 <http://www.bbc.co.uk/arts/yourpaintings/artists/victoria-achache> .
+
+wdref:f4871e155eb746244b2620b9f8acd98bdeac188e pr:P854 <http://vocab.getty.edu/ulan/500107914> .
+
