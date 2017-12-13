@@ -44,6 +44,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     private static URI curateEndpoint;
     private static URI searchEndpoint;
     private static URI randomEndpoint;
+    private static URI datasetsEndpoint;
     private static File testDataset;
 
     @BeforeClass
@@ -52,6 +53,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
         searchEndpoint = URI.create(BASE_ENDPOINT + "/search");
         randomEndpoint = URI.create(BASE_ENDPOINT + "/random");
+        datasetsEndpoint = URI.create(BASE_ENDPOINT + "/datasets");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
     }
 
@@ -65,6 +67,20 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
                 .body(multipart.build())
                 .execute()
                 .discardContent();
+    }
+
+    @Test
+    public void testDatasets() throws Exception {
+        URIBuilder builder = new URIBuilder(datasetsEndpoint);
+        JSONParser parser = new JSONParser();
+        String responseContent = Request.Get(builder.build())
+                .execute()
+                .returnContent()
+                .asString();
+        Object parsed = parser.parse(responseContent);
+        Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
+        JSONArray datasets = (JSONArray) parsed;
+        assertEquals(datasets.get(0), "http://chuck-berry/new");
     }
 
     @Test
