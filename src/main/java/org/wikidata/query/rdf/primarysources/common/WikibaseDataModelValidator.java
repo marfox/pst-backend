@@ -1,4 +1,4 @@
-package org.wikidata.query.rdf.primarysources;
+package org.wikidata.query.rdf.primarysources.common;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.client.fluent.Request;

@@ -20,9 +20,8 @@ import org.wikidata.query.rdf.common.WikibasePoint;
 import org.wikidata.query.rdf.common.uri.GeoSparql;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
-import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

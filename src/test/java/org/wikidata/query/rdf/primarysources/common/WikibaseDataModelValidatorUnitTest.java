@@ -1,4 +1,4 @@
-package org.wikidata.query.rdf.primarysources;
+package org.wikidata.query.rdf.primarysources.common;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.carrotsearch.randomizedtesting.RandomizedTest;

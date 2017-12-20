@@ -18,9 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.WikibaseDate;
 import org.wikidata.query.rdf.common.WikibasePoint;
 import org.wikidata.query.rdf.common.uri.GeoSparql;
-import org.wikidata.query.rdf.primarysources.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -188,7 +187,7 @@ public class CurateServlet extends HttpServlet {
     private String dataset;
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         boolean ok = processQuickStatementRequest(request, response);
         if (!ok) return;
         JSONObject blazegraphError = changeState();
