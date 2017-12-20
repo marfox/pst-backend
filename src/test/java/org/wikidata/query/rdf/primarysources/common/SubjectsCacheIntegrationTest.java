@@ -10,10 +10,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
 
@@ -53,6 +50,11 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         thirdDataset = new File(Resources.getResource(THIRD_TEST_DATASET_FILE_NAME).toURI());
     }
 
+    @AfterClass
+    public static void deleteCache() throws IOException {
+        Files.deleteIfExists(CACHE_PATH);
+    }
+
     private void purgeCache() throws Exception {
         Files.deleteIfExists(CACHE_PATH);
         JSONObject empty = new JSONObject();
@@ -67,13 +69,13 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         JSONParser parser = new JSONParser();
         uploadDataset("chuck berry", firstDataset);
         // The cache updater runs on a separate thread, so wait a bit after the upload
-        sleep(200);
+        sleep(500);
         firstDatasetCache = parseCache(parser);
         uploadDataset("pieter", secondDataset);
-        sleep(200);
+        sleep(500);
         secondDatasetCache = parseCache(parser);
         uploadDataset("b and v", thirdDataset);
-        sleep(200);
+        sleep(500);
         thirdDatasetCache = parseCache(parser);
         purgeCache();
     }
