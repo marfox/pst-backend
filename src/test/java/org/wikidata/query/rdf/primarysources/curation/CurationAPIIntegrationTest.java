@@ -12,20 +12,21 @@ import org.hamcrest.Matchers;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
 import org.wikidata.query.rdf.primarysources.common.SubjectsCacheIntegrationTest;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.CACHE_PATH;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -55,6 +56,11 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         randomEndpoint = URI.create(BASE_ENDPOINT + "/random");
         datasetsEndpoint = URI.create(BASE_ENDPOINT + "/datasets");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
+    }
+
+    @AfterClass
+    public static void deleteCache() throws IOException {
+        Files.deleteIfExists(CACHE_PATH);
     }
 
     @Before

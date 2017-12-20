@@ -9,10 +9,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
@@ -25,10 +22,13 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.CACHE_PATH;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -62,6 +62,10 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         badRDF = new File(Resources.getResource(BAD_RDF_FILE_NAME).toURI());
     }
 
+    @AfterClass
+    public static void deleteCache() throws IOException {
+        Files.deleteIfExists(CACHE_PATH);
+    }
 
     @Before
     public void setUp() throws Exception {
