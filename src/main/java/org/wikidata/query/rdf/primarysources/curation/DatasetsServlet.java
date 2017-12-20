@@ -1,6 +1,8 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.openrdf.query.BindingSet;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
@@ -22,8 +24,8 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runS
  */
 public class DatasetsServlet extends HttpServlet {
 
-    // Blazegraph happily ignores FILTER clauses with this query, which will get all the named graphs
-    private static final String QUERY = "SELECT ?dataset WHERE { GRAPH ?dataset {} }";
+    private static final String METADATA_GRAPH = "http://www.wikidata.org/primary-sources";
+    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_GRAPH + "> { ?user ?operation ?dataset } }";
     private static final Logger log = LoggerFactory.getLogger(DatasetsServlet.class);
 
     @Override
@@ -32,39 +34,43 @@ public class DatasetsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No parameters accepted.");
             return;
         }
-        TupleQueryResult allNamedGraphs = runSparqlQuery(QUERY);
-        sendResponse(response, allNamedGraphs);
+        TupleQueryResult datasetsAndUsers = runSparqlQuery(QUERY);
+        sendResponse(response, datasetsAndUsers);
     }
 
-    private void sendResponse(HttpServletResponse response, TupleQueryResult namedGraphs) throws IOException {
+    private void sendResponse(HttpServletResponse response, TupleQueryResult datasetsAndUsers) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        JSONArray datasets = formatNamedGraphs(namedGraphs);
-        if (datasets == null) {
+        JSONArray output = formatOutput(datasetsAndUsers);
+        if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving datasets.");
-        } else if (datasets.isEmpty()) {
+        } else if (output.isEmpty()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Sorry, no datasets available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
-                datasets.writeJSONString(pw);
+                output.writeJSONString(pw);
             }
         }
     }
 
-    private JSONArray formatNamedGraphs(TupleQueryResult namedGraphs) {
-        JSONArray datasets = new JSONArray();
+    private JSONArray formatOutput(TupleQueryResult datasetsAndUsers) {
+        JSONArray output = new JSONArray();
         try {
-            while (namedGraphs.hasNext()) {
-                String namedGraph = namedGraphs.next().getValue("dataset").stringValue();
-                // Only add datasets that need curation
-                if (namedGraph.endsWith("new")) datasets.add(namedGraph);
+            while (datasetsAndUsers.hasNext()) {
+                JSONObject datasetAndUser = new JSONObject();
+                BindingSet result = datasetsAndUsers.next();
+                String dataset = result.getValue("dataset").stringValue();
+                String user = result.getValue("user").stringValue();
+                datasetAndUser.put("dataset", dataset);
+                datasetAndUser.put("user", user);
+                output.add(datasetAndUser);
             }
         } catch (QueryEvaluationException qee) {
             log.error("Failed evaluating the datsets query. The stack trace follows.", qee);
             return null;
         }
-        return datasets;
+        return output;
     }
 
 }

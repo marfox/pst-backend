@@ -80,7 +80,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray datasets = (JSONArray) parsed;
-        assertEquals(datasets.get(0), "http://chuck-berry/new");
+        JSONObject testDatasetAndUser = (JSONObject) datasets.get(0);
+        assertEquals(testDatasetAndUser.get("dataset"), "http://chuck-berry/new");
+        assertEquals(testDatasetAndUser.get("user"), "http://www.wikidata.org/wiki/User:IMDataProvider");
     }
 
     @Test
