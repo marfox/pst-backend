@@ -57,11 +57,11 @@ public class RandomServlet extends HttpServlet {
         Set<String> subjectSet = new HashSet<>();
         JSONParser parser = new JSONParser();
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(SubjectsCache.CACHE_PATH)) {
+        try (BufferedReader reader = Files.newBufferedReader(SubjectsCache.SUBJECTS_CACHE_PATH)) {
             try {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), SubjectsCache.CACHE_PATH);
+                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), SubjectsCache.SUBJECTS_CACHE_PATH);
                 return null;
             }
         }
@@ -169,9 +169,6 @@ public class RandomServlet extends HttpServlet {
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);
-            try (PrintWriter pw = response.getWriter()) {
-                jsonSuggestions.writeJSONString(pw);
-            }
             try (PrintWriter pw = response.getWriter()) {
                 jsonSuggestions.writeJSONString(pw);
             }
