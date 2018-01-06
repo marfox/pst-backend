@@ -1,7 +1,6 @@
 package org.wikidata.query.rdf.primarysources.common;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.google.common.io.Resources;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
@@ -21,7 +20,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 
-import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
 import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
 
 /**
@@ -52,13 +51,13 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
     }
 
     private void purgeCache() throws Exception {
-        Files.deleteIfExists(CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
         JSONObject empty = new JSONObject();
-        try (BufferedWriter writer = Files.newBufferedWriter(CACHE_PATH)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(SUBJECTS_CACHE_PATH)) {
             empty.writeJSONString(writer);
         }
     }
@@ -82,7 +81,7 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     private JSONObject parseCache(JSONParser parser) throws IOException, ParseException {
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(CACHE_PATH)) {
+        try (BufferedReader reader = Files.newBufferedReader(SUBJECTS_CACHE_PATH)) {
             parsed = parser.parse(reader);
         }
         return (JSONObject) parsed;

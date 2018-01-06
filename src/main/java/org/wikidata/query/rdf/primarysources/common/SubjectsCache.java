@@ -16,7 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
 
@@ -30,9 +31,9 @@ public class SubjectsCache {
     /*
      An environment variable is needed for tests. A system property would not be read when testing.
      IMPORTANT: SUBJECTS_CACHE should always be exported, otherwise integration tests can't run:
-     when Jetty is fired up, the listener SubjectsCacheUpdater looks for that variable.
+     when Jetty is fired up, the listener CacheUpdater looks for that variable.
       */
-    public static final Path CACHE_PATH = Paths.get(System.getenv("SUBJECTS_CACHE"));
+    public static final Path SUBJECTS_CACHE_PATH = Paths.get(System.getenv("SUBJECTS_CACHE"));
 
     private static final String ONE_DATASET_SUBJECT_LIST_QUERY =
             "SELECT ?subject " +
@@ -62,16 +63,16 @@ public class SubjectsCache {
 
     static void dumpAllSubjects() {
         /*
-         The task runs on an indpendent thread, so prevent it from dying quietly if something goes wrong.
+         The task runs on an independent thread, so prevent it from dying quietly if something goes wrong.
          Log anything that may be thrown.
           */
         try {
             JSONObject subjects = fetchAllSubjects();
             if (subjects == null) return;
-            try (BufferedWriter writer = Files.newBufferedWriter(CACHE_PATH)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(SUBJECTS_CACHE_PATH)) {
                 subjects.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping all the subjects to '" + CACHE_PATH + "'.", ioe);
+                log.error("Something went wrong when dumping all the subjects to '" + SUBJECTS_CACHE_PATH + "'.", ioe);
                 return;
             }
         } catch (Throwable t) {
@@ -113,20 +114,20 @@ public class SubjectsCache {
         try {
             JSONParser parser = new JSONParser();
             Object parsed = null;
-            try (BufferedReader reader = Files.newBufferedReader(CACHE_PATH)) {
+            try (BufferedReader reader = Files.newBufferedReader(SUBJECTS_CACHE_PATH)) {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("The subjects cache is malformed JSON. Parse error at index {}. Will overwrite '{}'", pe.getPosition(), CACHE_PATH);
+                log.error("The subjects cache is malformed JSON. Parse error at index {}. Will overwrite '{}'", pe.getPosition(), SUBJECTS_CACHE_PATH);
             } catch (IOException ioe) {
-                log.error("Something went wrong while loading the subjects cache. Will overwrite '" + CACHE_PATH + "'", ioe);
+                log.error("Something went wrong while loading the subjects cache. Will overwrite '" + SUBJECTS_CACHE_PATH + "'", ioe);
             }
             JSONObject oldSubjects = parsed == null ? new JSONObject() : (JSONObject) parsed;
             JSONObject newSubjects = fetchDatasetSubjects(dataset, oldSubjects);
             if (newSubjects == null) return;
-            try (BufferedWriter writer = Files.newBufferedWriter(CACHE_PATH)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(SUBJECTS_CACHE_PATH)) {
                 newSubjects.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping subjects of dataset '" + dataset + "' to '" + CACHE_PATH + "'", ioe);
+                log.error("Something went wrong when dumping subjects of dataset '" + dataset + "' to '" + SUBJECTS_CACHE_PATH + "'", ioe);
                 return;
             }
         } catch (Throwable t) {

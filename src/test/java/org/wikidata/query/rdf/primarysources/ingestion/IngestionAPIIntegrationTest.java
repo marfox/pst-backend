@@ -28,7 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -64,7 +64,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
     }
 
     @Before
