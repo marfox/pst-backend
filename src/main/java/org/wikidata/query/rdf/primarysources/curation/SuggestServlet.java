@@ -47,8 +47,8 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 public class SuggestServlet extends HttpServlet {
 
     static final String QID_PARAMETER = "qid";
-    static final String DATASET_PARAMETER = "dataset";
-    static final String IO_MIME_TYPE = "application/json";
+    public static final String DATASET_PARAMETER = "dataset";
+    public static final String IO_MIME_TYPE = "application/json";
     public static final String DATASET_PLACE_HOLDER = "${DATASET}";
     static final String QID_PLACE_HOLDER = "${QID}";
     public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();

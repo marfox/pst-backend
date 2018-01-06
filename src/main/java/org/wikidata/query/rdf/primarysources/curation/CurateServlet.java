@@ -56,7 +56,7 @@ public class CurateServlet extends HttpServlet {
     private static final String MAIN_PID_PLACE_HOLDER = "${MAIN_PID}";
     private static final String PID_PLACE_HOLDER = "${PID}";
     private static final String VALUE_PLACE_HOLDER = "${VALUE}";
-    private static final String STATE_PLACE_HOLDER = "${STATE}";
+    public static final String STATE_PLACE_HOLDER = "${STATE}";
 
     private static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
     // Value data types matchers
