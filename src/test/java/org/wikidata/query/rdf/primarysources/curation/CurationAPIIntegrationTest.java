@@ -1,7 +1,6 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import com.google.common.io.Resources;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -16,7 +15,6 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
-import org.wikidata.query.rdf.primarysources.common.SubjectsCacheIntegrationTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +24,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -60,11 +58,15 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
     }
 
     @Before
     public void setUp() throws Exception {
+        uploadTestDataset(testDataset);
+    }
+
+    public static void uploadTestDataset(File testDataset) throws IOException {
         MultipartEntityBuilder multipart = MultipartEntityBuilder.create();
         multipart.addTextBody("name", "chuck berry", ContentType.TEXT_PLAIN);
         multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
