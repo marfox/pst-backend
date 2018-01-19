@@ -81,6 +81,12 @@
       <groupId>org.wikidata.query.rdf</groupId>
       <artifactId>common</artifactId>
     </dependency>
+    <!-- The war module implicitly embeds this dependency (v2.7.12) -->
+    <dependency>
+      <groupId>org.openrdf.sesame</groupId>
+      <artifactId>sesame-queryresultio-sparqljson</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.wikidata.query.rdf</groupId>
       <artifactId>tools</artifactId>
@@ -122,10 +128,10 @@
         <executions>
           <execution>
             <!--
-              Copy the blazegraph-service WAR in this module target/war
-              directory, so that we don't have a reference to a path in another
-              module (each module should be independent, except for explicit
-              dependencies).
+			  Copy the blazegraph-service WAR in this module target/war
+	          directory, so that we don't have a reference to a path in another
+	          module (each module should be independent, except for explicit
+	          dependencies).
             -->
             <id>copy-war</id>
             <goals>
@@ -169,8 +175,8 @@
           </contextHandlers>
           <systemProperties combine.children="append">
             <systemProperty>
-              <!-- By default Blazegraph's WAR thinks it running in tomcat and uses funky relative paths. They suggest
-                you overwrite it. We do. -->
+              <!-- By default Blazegraph's WAR thinks it running in tomcat and uses funky relative paths.
+			  They suggest you overwrite it. We do. -->
               <name>com.bigdata.rdf.sail.webapp.ConfigParams.propertyFile</name>
               <value>${project.parent.basedir}/tools/src/test/resources/blazegraph/RWStore.properties</value>
             </systemProperty>
