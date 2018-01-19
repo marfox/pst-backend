@@ -44,6 +44,8 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
  */
 public class CurateServlet extends HttpServlet {
 
+    public static final String USER_PLACE_HOLDER = "${USER}";
+    public static final String STATE_PLACE_HOLDER = "${STATE}";
     private static final String MW_API_OBJECT = "for_mw_api";
     private static final String PID_KEY = "property";
     private static final String MAIN_PID_KEY = "main_property";
@@ -52,12 +54,9 @@ public class CurateServlet extends HttpServlet {
     private static final String STATE_KEY = "state";
     private static final String USER_KEY = "user";
     private static final String QUICKSTATEMENT_KEY = "qs";
-
     private static final String MAIN_PID_PLACE_HOLDER = "${MAIN_PID}";
     private static final String PID_PLACE_HOLDER = "${PID}";
     private static final String VALUE_PLACE_HOLDER = "${VALUE}";
-    public static final String STATE_PLACE_HOLDER = "${STATE}";
-
     private static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
     // Value data types matchers
     private static final Pattern TIME = Pattern.compile("^[+-]\\d+-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ/\\d+$");
@@ -72,18 +71,32 @@ public class CurateServlet extends HttpServlet {
                     "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
                     "           ?pq ?qualifier ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "  }" +
                     "}" +
                     "INSERT {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/approved> {" +
                     "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
                     "           ?pq ?qualifier ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?incremented ." +
+                    "  }" +
                     "}" +
                     "WHERE {" +
-                    "  ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-                    "  OPTIONAL {" +
-                    "    ?claim ?pq ?qualifier ." +
-                    "    FILTER (?pq != prov:wasDerivedFrom) ." +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "    OPTIONAL {" +
+                    "      ?claim ?pq ?qualifier ." +
+                    "      FILTER (?pq != prov:wasDerivedFrom) ." +
+                    "    }" +
+                    "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    OPTIONAL {" +
+                    "      <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "    }" +
+                    "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
                     "  }" +
                     "}";
     // Reject everything. Note that the state may be one of 'rejected', 'duplicate', or 'blacklisted'
@@ -96,6 +109,9 @@ public class CurateServlet extends HttpServlet {
                     "             ?qualif_p ?qualif_v ." +
                     "    ?ref_node ?ref_p ?ref_v" +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities . " +
+                    "  }" +
                     "}" +
                     "INSERT {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
@@ -105,16 +121,27 @@ public class CurateServlet extends HttpServlet {
                     "             ?qualif_p ?qualif_v ." +
                     "    ?ref_node ?ref_p ?ref_v" +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?incremented ." +
+                    "  }" +
                     "}" +
                     "WHERE {" +
-                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-                    "  ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
-                    "  OPTIONAL {" +
-                    "    ?st_node prov:wasDerivedFrom ?ref_node ." +
-                    "    ?ref_node ?ref_p ?ref_v ." +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
+                    "    OPTIONAL {" +
+                    "      ?st_node prov:wasDerivedFrom ?ref_node ." +
+                    "      ?ref_node ?ref_p ?ref_v ." +
+                    "    }" +
+                    "    OPTIONAL {" +
+                    "      ?st_node ?qualif_p ?qualif_v ." +
+                    "    }" +
                     "  }" +
-                    "  OPTIONAL {" +
-                    "    ?st_node ?qualif_p ?qualif_v ." +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    OPTIONAL {" +
+                    "      <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "    }" +
+                    "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
                     "  }" +
                     "}";
 
@@ -126,6 +153,9 @@ public class CurateServlet extends HttpServlet {
                     "             prov:wasDerivedFrom ?ref_node ." +
                     "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities . " +
+                    "  }" +
                     "}" +
                     "INSERT {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
@@ -133,14 +163,25 @@ public class CurateServlet extends HttpServlet {
                     "             prov:wasDerivedFrom ?ref_node ." +
                     "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?incremented ." +
+                    "  }" +
                     "}" +
                     "WHERE {" +
-                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
-                    "  ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-                    "  OPTIONAL {" +
-                    "    ?st_node prov:wasDerivedFrom ?ref_node ." +
-                    "    ?ref_node ?ref_p ?ref_v ." +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
+                    "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "    OPTIONAL {" +
+                    "      ?st_node prov:wasDerivedFrom ?ref_node ." +
+                    "      ?ref_node ?ref_p ?ref_v ." +
+                    "    }" +
+                    "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    OPTIONAL {" +
+                    "      <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "    }" +
+                    "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
                     "  }" +
                     "}";
 
@@ -154,6 +195,9 @@ public class CurateServlet extends HttpServlet {
                     "             ?qualif_p ?qualif_v ." +
                     "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities . " +
+                    "  }" +
                     "}" +
                     "INSERT {" +
                     "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
@@ -163,17 +207,29 @@ public class CurateServlet extends HttpServlet {
                     "             ?qualif_p ?qualif_v ." +
                     "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
                     "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?incremented ." +
+                    "  }" +
                     "}" +
                     "WHERE {" +
-                    "  wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-                    "  ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
-                    "           prov:wasDerivedFrom ?ref_node ." +
-                    "  ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
-                    "  OPTIONAL {" +
-                    "    ?st_node ?qualif_p ?qualif_v ." +
-                    "    FILTER (?qualif_p != prov:wasDerivedFrom) ." +
+                    "  GRAPH <" + SuggestServlet.DATASET_PLACE_HOLDER + "/new> {" +
+                    "    wd:" + SuggestServlet.QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
+                    "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
+                    "             prov:wasDerivedFrom ?ref_node ." +
+                    "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
+                    "    OPTIONAL {" +
+                    "      ?st_node ?qualif_p ?qualif_v ." +
+                    "      FILTER (?qualif_p != prov:wasDerivedFrom) ." +
+                    "     }" +
+                    "  }" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    OPTIONAL {" +
+                    "      <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "    }" +
+                    "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
                     "  }" +
                     "}";
+
     private static final Logger log = LoggerFactory.getLogger(CurateServlet.class);
 
     private String qId;
@@ -182,7 +238,6 @@ public class CurateServlet extends HttpServlet {
     private Value value;
     private String type;
     private String state;
-    // TODO use this field for https://phabricator.wikimedia.org/T170820
     private String user;
     private String dataset;
 
@@ -407,6 +462,7 @@ public class CurateServlet extends HttpServlet {
             case "claim":
                 query = state.equals("approved") ? CLAIM_APPROVAL_QUERY : CLAIM_REJECTION_QUERY;
                 query = query
+                        .replace(USER_PLACE_HOLDER, user)
                         .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
                         .replace(STATE_PLACE_HOLDER, state)
                         .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
@@ -418,6 +474,7 @@ public class CurateServlet extends HttpServlet {
                 break;
             case "qualifier":
                 query = QUALIFIER_QUERY
+                        .replace(USER_PLACE_HOLDER, user)
                         .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
                         .replace(STATE_PLACE_HOLDER, state)
                         .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
@@ -429,6 +486,7 @@ public class CurateServlet extends HttpServlet {
                 break;
             case "reference":
                 query = REFERENCE_QUERY
+                        .replace(USER_PLACE_HOLDER, user)
                         .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
                         .replace(STATE_PLACE_HOLDER, state)
                         .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
