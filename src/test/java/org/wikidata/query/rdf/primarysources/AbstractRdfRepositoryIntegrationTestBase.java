@@ -18,14 +18,6 @@ import java.net.URI;
 public abstract class AbstractRdfRepositoryIntegrationTestBase extends RandomizedTest {
 
     /**
-     * Take a relative path and create a URL with the full path to Blazegraph on
-     * localhost.
-     */
-    private static URI url(String path) {
-        return URI.create("http://localhost:9999/bigdata" + path);
-    }
-
-    /**
      * Wikibase uris to test with.
      */
     private final WikibaseUris uris;
@@ -44,6 +36,14 @@ public abstract class AbstractRdfRepositoryIntegrationTestBase extends Randomize
     public AbstractRdfRepositoryIntegrationTestBase(WikibaseUris uris) {
         this.uris = uris;
         rdfRepository = new RdfRepositoryForTesting("wdq");
+    }
+
+    /**
+     * Take a relative path and create a URL with the full path to Blazegraph on
+     * localhost.
+     */
+    private static URI url(String path) {
+        return URI.create("http://localhost:9999/bigdata" + path);
     }
 
     /**
@@ -70,6 +70,7 @@ public abstract class AbstractRdfRepositoryIntegrationTestBase extends Randomize
 
     /**
      * Close the repository at the end.
+     *
      * @throws Exception on error
      */
     @After

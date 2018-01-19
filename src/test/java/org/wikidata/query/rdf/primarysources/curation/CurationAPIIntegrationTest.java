@@ -61,11 +61,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Files.deleteIfExists(SUBJECTS_CACHE_PATH);
     }
 
-    @Before
-    public void setUp() throws Exception {
-        uploadTestDataset(testDataset);
-    }
-
     public static void uploadTestDataset(File testDataset) throws IOException {
         MultipartEntityBuilder multipart = MultipartEntityBuilder.create();
         multipart.addTextBody("name", "chuck berry", ContentType.TEXT_PLAIN);
@@ -75,6 +70,11 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
                 .body(multipart.build())
                 .execute()
                 .discardContent();
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        uploadTestDataset(testDataset);
     }
 
     @Test

@@ -46,12 +46,12 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
  */
 public class SuggestServlet extends HttpServlet {
 
-    static final String QID_PARAMETER = "qid";
     public static final String DATASET_PARAMETER = "dataset";
     public static final String IO_MIME_TYPE = "application/json";
     public static final String DATASET_PLACE_HOLDER = "${DATASET}";
-    static final String QID_PLACE_HOLDER = "${QID}";
     public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
+    static final String QID_PARAMETER = "qid";
+    static final String QID_PLACE_HOLDER = "${QID}";
     static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     static final String ONE_DATASET_QUERY =
             "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
@@ -86,6 +86,84 @@ public class SuggestServlet extends HttpServlet {
     private static final String DEFAULT_UNIT = "1";
     private String dataset;
     private String qId;
+
+    public static TupleQueryResult runSparqlQuery(String query) {
+        URIBuilder builder = new URIBuilder();
+        URI uri;
+        try {
+            uri = builder
+                    .setScheme("http")
+                    .setHost(BLAZEGRAPH_HOST)
+                    .setPort(BLAZEGRAPH_PORT)
+                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
+                    .setParameter("query", query)
+                    .build();
+        } catch (URISyntaxException use) {
+            log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
+            return null;
+        }
+        InputStream results;
+        try {
+            results = Request.Get(uri)
+                    .setHeader("Accept", IO_MIME_TYPE)
+                    .execute()
+                    .returnContent().asStream();
+        } catch (IOException ioe) {
+            log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: " + query, ioe);
+            return null;
+        }
+        try {
+            return QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(IO_MIME_TYPE));
+        } catch (QueryResultParseException qrpe) {
+            log.error("Syntax error at line {}, column {} in the SPARQL query: {}", query, qrpe.getLineNumber(), qrpe.getColumnNumber());
+            return null;
+        } catch (TupleQueryResultHandlerException tqrhe) {
+            log.error("Something went wrong when handling the SPARQL query: " + query, tqrhe);
+            return null;
+        } catch (IOException ioe) {
+            log.error("An I/O error occurred while reading the SPARQL results. Query: " + query, ioe);
+            return null;
+        }
+    }
+
+    static String rdfValueToQuickStatement(Value value) {
+        if (value instanceof org.openrdf.model.URI) {
+            org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
+            // Item
+            if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName();
+                // URL
+            else return "\"" + value.stringValue() + "\"";
+        } else if (value instanceof Literal) {
+            Literal literal = (Literal) value;
+            org.openrdf.model.URI dataType = literal.getDatatype();
+            String language = literal.getLanguage();
+            // String
+            if (dataType == null && language == null) return "\"" + literal.stringValue() + "\"";
+                // Monolingual text
+            else if (language != null) return language + ":\"" + literal.getLabel() + "\"";
+                // Globe coordinate
+            else if (dataType.toString().equals(GeoSparql.WKT_LITERAL)) {
+                WikibasePoint point = new WikibasePoint(literal.getLabel());
+                String latitude = point.getLatitude();
+                String longitude = point.getLongitude();
+                return "@" + latitude + "/" + longitude;
+            }
+            // Time
+            else if (dataType.equals(XMLSchema.DATETIME)) {
+                WikibaseDate date = WikibaseDate.fromString(literal.getLabel());
+                // The Blazegraph data loader converts '00' to '01'
+                // Guess precision based on '01' values
+                if (date.day() > 1) return date.toString() + "/11";
+                else if (date.month() > 1) return date.toString() + "/10";
+                else return date.toString() + "/9";
+            }
+            // Quantity
+            else if (dataType.equals(XMLSchema.DECIMAL)) {
+                return literal.getLabel();
+            }
+        }
+        return null;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -127,45 +205,6 @@ public class SuggestServlet extends HttpServlet {
     private TupleQueryResult getSuggestions() {
         String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
         return runSparqlQuery(query);
-    }
-
-    public static TupleQueryResult runSparqlQuery(String query) {
-        URIBuilder builder = new URIBuilder();
-        URI uri;
-        try {
-            uri = builder
-                    .setScheme("http")
-                    .setHost(BLAZEGRAPH_HOST)
-                    .setPort(BLAZEGRAPH_PORT)
-                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
-                    .setParameter("query", query)
-                    .build();
-        } catch (URISyntaxException use) {
-            log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
-            return null;
-        }
-        InputStream results;
-        try {
-            results = Request.Get(uri)
-                    .setHeader("Accept", IO_MIME_TYPE)
-                    .execute()
-                    .returnContent().asStream();
-        } catch (IOException ioe) {
-            log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: " + query, ioe);
-            return null;
-        }
-        try {
-            return QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(IO_MIME_TYPE));
-        } catch (QueryResultParseException qrpe) {
-            log.error("Syntax error at line {}, column {} in the SPARQL query: {}", query, qrpe.getLineNumber(), qrpe.getColumnNumber());
-            return null;
-        } catch (TupleQueryResultHandlerException tqrhe) {
-            log.error("Something went wrong when handling the SPARQL query: " + query, tqrhe);
-            return null;
-        } catch (IOException ioe) {
-            log.error("An I/O error occurred while reading the SPARQL results. Query: " + query, ioe);
-            return null;
-        }
     }
 
     private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions) throws IOException {
@@ -312,45 +351,6 @@ public class SuggestServlet extends HttpServlet {
     private void addCommonKeys(BindingSet suggestion, JSONObject jsonSuggestion) {
         if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
-    }
-
-    static String rdfValueToQuickStatement(Value value) {
-        if (value instanceof org.openrdf.model.URI) {
-            org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
-            // Item
-            if (uri.getNamespace().equals(WIKIBASE_URIS.entity())) return uri.getLocalName();
-                // URL
-            else return "\"" + value.stringValue() + "\"";
-        } else if (value instanceof Literal) {
-            Literal literal = (Literal) value;
-            org.openrdf.model.URI dataType = literal.getDatatype();
-            String language = literal.getLanguage();
-            // String
-            if (dataType == null && language == null) return "\"" + literal.stringValue() + "\"";
-                // Monolingual text
-            else if (language != null) return language + ":\"" + literal.getLabel() + "\"";
-                // Globe coordinate
-            else if (dataType.toString().equals(GeoSparql.WKT_LITERAL)) {
-                WikibasePoint point = new WikibasePoint(literal.getLabel());
-                String latitude = point.getLatitude();
-                String longitude = point.getLongitude();
-                return "@" + latitude + "/" + longitude;
-            }
-            // Time
-            else if (dataType.equals(XMLSchema.DATETIME)) {
-                WikibaseDate date = WikibaseDate.fromString(literal.getLabel());
-                // The Blazegraph data loader converts '00' to '01'
-                // Guess precision based on '01' values
-                if (date.day() > 1) return date.toString() + "/11";
-                else if (date.month() > 1) return date.toString() + "/10";
-                else return date.toString() + "/9";
-            }
-            // Quantity
-            else if (dataType.equals(XMLSchema.DECIMAL)) {
-                return literal.getLabel();
-            }
-        }
-        return null;
     }
 
     /**
