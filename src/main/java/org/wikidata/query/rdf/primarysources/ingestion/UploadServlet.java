@@ -52,7 +52,16 @@ public class UploadServlet extends HttpServlet {
     /**
      * The data provider should not care about the base URI. A constant is used instead.
      */
-    static final String BASE_URI = "https://www.wikidata.org";
+    static final String BASE_URI = WikibaseUris.WIKIDATA.root();
+    /**
+     * Namespace URI for metadata triples. Used to store data providers and users activities.
+     * See {@link UploadServlet#addUploaderQuad(HttpServletResponse)} and {@link org.wikidata.query.rdf.primarysources.curation.CurateServlet}.
+     */
+    public static final String METADATA_NAMESPACE = BASE_URI + "/primary-sources";
+    /**
+     * Prefix URI for users. Append the user name to build a full user URI.
+     */
+    public static final String USER_URI_PREFIX = BASE_URI + "/wiki/User:";
     /**
      * The less verbose RDF format is the default.
      */
@@ -397,13 +406,11 @@ public class UploadServlet extends HttpServlet {
      */
     private boolean addUploaderQuad(HttpServletResponse response) throws IOException {
         // Reliably build the quad
-        String wikidataNamespace = WikibaseUris.WIKIDATA.root();
-        String primarySourcesNamespace = wikidataNamespace + "/primary-sources";
         ValueFactory vf = ValueFactoryImpl.getInstance();
-        org.openrdf.model.URI subject = vf.createURI(wikidataNamespace, "/wiki/User:" + user);
-        org.openrdf.model.URI predicate = vf.createURI(primarySourcesNamespace, "/uploaded");
+        org.openrdf.model.URI subject = vf.createURI(USER_URI_PREFIX + user);
+        org.openrdf.model.URI predicate = vf.createURI(METADATA_NAMESPACE, "/uploaded");
         org.openrdf.model.URI object = vf.createURI(datasetURI);
-        org.openrdf.model.URI context = vf.createURI(primarySourcesNamespace);
+        org.openrdf.model.URI context = vf.createURI(METADATA_NAMESPACE);
         String statement = "<" + subject.stringValue() + "> <" + predicate.stringValue() + "> <" + object.stringValue() + "> <" + context.stringValue() + "> .";
         // Fire the POST
         URIBuilder builder = new URIBuilder();
