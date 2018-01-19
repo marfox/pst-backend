@@ -99,7 +99,7 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
     }
 
     @Test
-    public void testCacheDatasetSubjects() throws Exception {
+    public void testCacheDatasetSubjects() {
         // Cache after first test dataset upload
         assertEquals(1, firstDatasetCache.size());
         String firstDatasetUri = "http://chuck-berry/new";
@@ -127,17 +127,7 @@ public class SubjectsCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         assertTrue(subjects.contains("Q22672029"));
     }
 
-    /*
-     This test won't work because Sesame complains for a null value, when SubjectsCache.dumpAllSubjects runs a SPARQL query.
-     Might stem from missing dependencies at test scope.
-     org.openrdf.query.resultio.UnsupportedQueryResultFormatException: No parser factory available for tuple query result format null
-	   at org.openrdf.query.resultio.QueryResultIO.createParser(QueryResultIO.java:355)
-	   at org.openrdf.query.resultio.QueryResultIO.parse(QueryResultIO.java:552)
-	   at org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runSparqlQuery(SuggestServlet.java:159)
-	   at org.wikidata.query.rdf.primarysources.common.SubjectsCache.fetchAllSubjects(SubjectsCache.java:85)
-      */
     @Test
-    @Ignore
     public void testDumpAllSubjects() throws Exception {
         JSONParser parser = new JSONParser();
         SubjectsCache.dumpAllSubjects();
