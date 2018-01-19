@@ -3,6 +3,8 @@ package org.wikidata.query.rdf.primarysources.statistics;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.openrdf.query.QueryEvaluationException;
+import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,10 +18,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache.DATASETS_CACHE_PATH;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.DATASET_PARAMETER;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_MIME_TYPE;
+import static org.wikidata.query.rdf.primarysources.curation.CurateServlet.USER_PLACE_HOLDER;
+import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.METADATA_NAMESPACE;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER_URI_PREFIX;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -28,6 +34,13 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_M
  */
 public class StatisticsServlet extends HttpServlet {
 
+    private static final String USER_QUERY =
+            "SELECT ?activities " +
+                    "WHERE {" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "  }" +
+                    "}";
     private static final String USER_PARAMETER = "user";
     private static final Logger log = LoggerFactory.getLogger(StatisticsServlet.class);
 
@@ -39,12 +52,11 @@ public class StatisticsServlet extends HttpServlet {
         boolean ok = processRequest(request, response);
         if (!ok) return;
         if (dataset != null) {
-            sendResponse(response, getCachedStatistics(dataset), DATASET_PARAMETER);
+            sendResponse(response, getDatasetStatistics(), DATASET_PARAMETER);
             return;
         }
         if (user != null) {
-            // TODO user statistics https://phabricator.wikimedia.org/T183370
-            // sendResponse(response, getCachedStatistics(user), USER_PARAMETER);
+            sendResponse(response, getUserStatistics(), USER_PARAMETER);
         }
     }
 
@@ -72,16 +84,25 @@ public class StatisticsServlet extends HttpServlet {
                     return false;
                 }
                 dataset = datasetOrUserValue;
+                user = null;
                 return true;
             case USER_PARAMETER:
-                // TODO handle user output
+                // URI reserved characters are not allowed https://tools.ietf.org/html/rfc3986#section-2.2
+                Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
+                Matcher matcher = illegal.matcher(datasetOrUserValue);
+                if (matcher.find()) {
+                    log.error("Illegal characters found in the user name: {}. Will fail with a bad request.", datasetOrUser);
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+                    return false;
+                }
                 user = datasetOrUserValue;
+                dataset = null;
                 return true;
             default:
                 log.error("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid required parameter: '" + datasetOrUser + "'. Use one of 'dataset' or 'user");
+                return false;
         }
-        return true;
     }
 
     private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser) throws IOException {
@@ -89,7 +110,7 @@ public class StatisticsServlet extends HttpServlet {
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving " + datasetOrUser + " statistics.");
         } else if (output.isEmpty()) {
-            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + dataset + "> ." : "No statistics available for user <" + user + "> .";
+            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + dataset + "> ." : "No activity for user '" + user + "'.";
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -100,7 +121,7 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    private JSONObject getCachedStatistics(String datasetOrUser) throws IOException {
+    private JSONObject getDatasetStatistics() throws IOException {
         JSONParser parser = new JSONParser();
         Object parsed;
         try (BufferedReader reader = Files.newBufferedReader(DATASETS_CACHE_PATH)) {
@@ -112,6 +133,23 @@ public class StatisticsServlet extends HttpServlet {
             }
         }
         JSONObject allStats = (JSONObject) parsed;
-        return (JSONObject) allStats.getOrDefault(datasetOrUser, new JSONObject());
+        return (JSONObject) allStats.getOrDefault(dataset, new JSONObject());
+    }
+
+    private JSONObject getUserStatistics() {
+        JSONObject stats = new JSONObject();
+        String query = USER_QUERY.replace(USER_PLACE_HOLDER, user);
+        TupleQueryResult result = runSparqlQuery(query);
+        try {
+            while (result.hasNext()) {
+                int activities = Integer.parseInt(result.next().getValue("activities").stringValue());
+                stats.put("user", user);
+                stats.put("activities", activities);
+            }
+        } catch (QueryEvaluationException qee) {
+            log.error("Failed evaluating the user statistics query: '" + query + "' The stack trace follows.", qee);
+            return null;
+        }
+        return stats;
     }
 }
