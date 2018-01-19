@@ -27,7 +27,7 @@ public class DatasetsStatisticsCache {
     private static final String STATEMENTS_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
     private static final Logger log = LoggerFactory.getLogger(DatasetsStatisticsCache.class);
 
-    static void dumpStatistics() {
+    public static void dumpStatistics() {
         /*
          The task runs on an independent thread, so prevent it from dying quietly if something goes wrong.
          Log anything that may be thrown.
