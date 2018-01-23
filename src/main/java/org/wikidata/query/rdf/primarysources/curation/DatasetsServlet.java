@@ -25,7 +25,7 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runS
 public class DatasetsServlet extends HttpServlet {
 
     private static final String METADATA_GRAPH = "http://www.wikidata.org/primary-sources";
-    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_GRAPH + "> { ?user ?operation ?dataset } }";
+    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_GRAPH + "> { ?user <" + METADATA_GRAPH + "/uploaded> ?dataset } }";
     private static final Logger log = LoggerFactory.getLogger(DatasetsServlet.class);
 
     @Override
