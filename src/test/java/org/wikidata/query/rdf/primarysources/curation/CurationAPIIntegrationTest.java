@@ -30,6 +30,7 @@ import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECT
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.4
  * Created on Oct 10, 2017.
+ * TODO tests broken after the introduction of the type triple
  */
 @RunWith(RandomizedRunner.class)
 public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegrationTestBase {
@@ -276,7 +277,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
          */
         assertEquals(5, approved);
         assertEquals(total - approved, stillNew);
-        assertEquals(21, stillNew);
+        assertEquals(22, stillNew);
     }
 
     @Test
@@ -305,7 +306,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
          */
         assertEquals(11, rejected);
         assertEquals(total - rejected, stillNew);
-        assertEquals(15, stillNew);
+        assertEquals(16, stillNew);
     }
 
     @Test
@@ -333,7 +334,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
          */
         assertEquals(5, approved);
         assertEquals(total - approved, stillNew);
-        assertEquals(21, stillNew);
+        assertEquals(22, stillNew);
     }
 
     @Test
@@ -361,6 +362,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
          */
         assertEquals(5, rejected);
         assertEquals(total - rejected, stillNew);
-        assertEquals(21, stillNew);
+        assertEquals(22, stillNew);
     }
 }

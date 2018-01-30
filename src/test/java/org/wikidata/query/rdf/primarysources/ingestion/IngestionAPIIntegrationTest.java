@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
 import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
 
 /**
@@ -39,7 +40,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
 
     private static final String BASE_ENDPOINT = "http://localhost:9999/bigdata";
     private static final String GOOD_DATASET_FILE_NAME = "good_chuck_berry.ttl"; // Valid data model
-    private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // Only 1 valid triple
+    private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // 2 valid triples
     private static final String BAD_DATASET_FILE_NAME = "bad_chuck_berry.ttl"; // Invalid data model
     private static final String BAD_RDF_FILE_NAME = "just_bad_rdf.ttl"; // Invalid RDF
 
@@ -93,12 +94,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         }
         assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://parole-esotiche/new> { ?s ?p ?o } }");
-        int uploadedCount = 0;
-        while (uploadedStatements.hasNext()) {
-            uploadedStatements.next();
-            uploadedCount++;
-        }
-        assertEquals(4, uploadedCount);
+        assertEquals(4, count(uploadedStatements));
         TupleQueryResult metadata = rdfRepository().query("select * where { graph <http://www.wikidata.org/primary-sources> { ?s ?p ?o } }");
         BindingSet quad = metadata.next();
         assertEquals("http://www.wikidata.org/wiki/User:IMDataProvider", quad.getValue("s").stringValue());
@@ -123,12 +119,8 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         }
         assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
-        int uploadedCount = 0;
-        while (uploadedStatements.hasNext()) {
-            uploadedStatements.next();
-            uploadedCount++;
-        }
-        assertEquals(2, uploadedCount);
+        assertEquals(3, count(uploadedStatements));
+        testSubjectItemTypeAddition(expectedDatasetName, 1);
     }
 
     @Test
@@ -155,12 +147,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
-        int updatedCount = 0;
-        while (updatedStatements.hasNext()) {
-            updatedStatements.next();
-            updatedCount++;
-        }
-        assertEquals(4, updatedCount);
+        assertEquals(4, count(updatedStatements));
     }
 
     // Remove good dataset, add partially bad dataset
@@ -168,17 +155,14 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     public void testPartiallyBadDatasetUpdate() throws Exception {
         postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
         CloseableHttpResponse partiallyBadResponse = postDatasetUpdate(updateEndpoint, goodDataset, partiallyBadDataset);
+        String expectedDatasetName = "http://chuck-berry/new";
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
         assertEquals(10, partiallyBadResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
-        TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
-        int updatedCount = 0;
-        while (updatedStatements.hasNext()) {
-            updatedStatements.next();
-            updatedCount++;
-        }
-        assertEquals(2, updatedCount);
+        TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
+        assertEquals(3, count(updatedStatements));
+        testSubjectItemTypeAddition(expectedDatasetName, 1);
     }
 
     // Remove good dataset, add bad dataset
@@ -201,12 +185,21 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
         // Check that nothing happened, i.e., that the good dataset is still there
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
-        int uploadedCount = 0;
-        while (uploadedStatements.hasNext()) {
-            uploadedStatements.next();
-            uploadedCount++;
+        assertEquals(4, count(uploadedStatements));
+    }
+
+    private int count(TupleQueryResult result) throws Exception {
+        int total = 0;
+        while (result.hasNext()) {
+            result.next();
+            total++;
         }
-        assertEquals(4, uploadedCount);
+        return total;
+    }
+
+    private void testSubjectItemTypeAddition(String datasetUri, int expectedTypeTriples) throws Exception {
+        TupleQueryResult typeTriples = rdfRepository().query("select * where { graph <" + datasetUri + "> { ?s a <" + ITEM + "> } }");
+        assertEquals(expectedTypeTriples, count(typeTriples));
     }
 
     private List<String> readResponse(CloseableHttpResponse response) throws IOException {
