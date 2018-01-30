@@ -34,6 +34,7 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  * Created on Nov 20, 2017.
  */
 public class SearchServlet extends HttpServlet {
+
     private static final String PROPERTY_PLACE_HOLDER = "${PROPERTY}";
     private static final String VALUE_PLACE_HOLDER = "${ITEM_VALUE}";
     private static final String OFFSET_PLACE_HOLDER = "${OFFSET}";
@@ -43,13 +44,13 @@ public class SearchServlet extends HttpServlet {
             "SELECT * " +
                     "WHERE {" +
                     "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    ?item a wikibase:Item ;" +
+                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
                     "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
                     "LIMIT " + LIMIT_PLACE_HOLDER;
@@ -58,7 +59,8 @@ public class SearchServlet extends HttpServlet {
             "SELECT * " +
                     "WHERE {" +
                     "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    ?item a wikibase:Item ;" +
+                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
                     "    {" +
                     "      SELECT ?statement_node WHERE {" +
                     "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
@@ -69,7 +71,6 @@ public class SearchServlet extends HttpServlet {
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
                     "LIMIT " + LIMIT_PLACE_HOLDER;
@@ -78,13 +79,13 @@ public class SearchServlet extends HttpServlet {
             "SELECT * " +
                     "WHERE {" +
                     "  GRAPH ?dataset {" +
-                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    ?item a wikibase:Item ;" +
+                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
                     "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
                     "  FILTER STRENDS(str(?dataset), \"new\") ." +
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
@@ -94,7 +95,8 @@ public class SearchServlet extends HttpServlet {
             "SELECT * " +
                     "WHERE {" +
                     "  GRAPH ?dataset {" +
-                    "    ?item " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
+                    "    ?item a wikibase:Item ;" +
+                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
                     "    {" +
                     "      SELECT ?statement_node WHERE {" +
                     "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
@@ -105,11 +107,11 @@ public class SearchServlet extends HttpServlet {
                     "      ?statement_value ?reference_property ?reference_value ." +
                     "    }" +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?item), \"http://www.wikidata.org/entity/Q\") ." +
                     "  FILTER STRENDS(str(?dataset), \"new\") ." +
                     "}" +
                     "OFFSET " + OFFSET_PLACE_HOLDER + " " +
                     "LIMIT " + LIMIT_PLACE_HOLDER;
+
     private static final String OFFSET_PARAMETER = "offset";
     private static final String LIMIT_PARAMETER = "limit";
     private static final String PROPERTY_PARAMETER = "property";
