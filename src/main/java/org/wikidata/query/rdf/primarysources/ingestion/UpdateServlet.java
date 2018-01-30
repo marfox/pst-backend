@@ -175,9 +175,11 @@ public class UpdateServlet extends HttpServlet {
          */
         AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedRemoveDataset = validator.handleDataset(removeDatasetWithValidSyntax);
         Model toBeRemoved = validatedRemoveDataset.getKey();
+        addTypeToSubjectItems(toBeRemoved, targetDatasetURI.toString());
         List<String> toBeRemovedInvalid = validatedRemoveDataset.getValue();
         AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedAddDataset = validator.handleDataset(addDatasetWithValidSyntax);
         Model toBeAdded = validatedAddDataset.getKey();
+        addTypeToSubjectItems(toBeAdded, targetDatasetURI.toString());
         List<String> toBeAddedInvalid = validatedAddDataset.getValue();
 
         /*

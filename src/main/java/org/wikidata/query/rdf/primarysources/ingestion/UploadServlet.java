@@ -11,8 +11,11 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.openrdf.model.Model;
+import org.openrdf.model.Resource;
 import org.openrdf.model.ValueFactory;
+import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandlerException;
 import org.openrdf.rio.RDFParseException;
@@ -34,6 +37,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.Normalizer;
 import java.util.*;
+
+import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
+import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.WIKIBASE_URIS;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -153,6 +159,7 @@ public class UploadServlet extends HttpServlet {
                 continue;
             }
             invalidComponents.put(dataset, validated.getValue());
+            addTypeToSubjectItems(toBeUploaded, datasetURI);
             File tempDataset = writeTempDataset(response, valid.getKey(), toBeUploaded);
             if (tempDataset == null) return;
             tempDatasets.add(tempDataset);
@@ -170,6 +177,16 @@ public class UploadServlet extends HttpServlet {
         for (File tempDataset : tempDatasets) tempDataset.delete();
         SubjectsCache.cacheDatasetSubjects(datasetURI);
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
+    }
+
+    static void addTypeToSubjectItems(Model dataset, String uri) {
+        Set<Resource> subjects = dataset.subjects();
+        Set<org.openrdf.model.URI> items = new HashSet<>();
+        for (Resource s : subjects) {
+            org.openrdf.model.URI subject = (org.openrdf.model.URI) s;
+            if (subject.getNamespace().equals(WIKIBASE_URIS.entity())) items.add(subject);
+        }
+        for (org.openrdf.model.URI item : items) dataset.add(item, RDF.TYPE, new URIImpl(ITEM), new URIImpl(uri));
     }
 
     /**
@@ -285,6 +302,7 @@ public class UploadServlet extends HttpServlet {
     }
 
     /**
+     * TODO should raise a bad request when the content type is not in the list of valid RDF content types, otherwise it would be a 500
      * Try to find a suitable RDF format for a given file name.
      * If the part has no content type, guess the format based on the file name extension.
      * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
