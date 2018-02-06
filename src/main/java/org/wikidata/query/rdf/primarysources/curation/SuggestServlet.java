@@ -30,12 +30,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -280,24 +276,12 @@ public class SuggestServlet extends HttpServlet {
         for (String key : quickStatements.keySet()) {
             String dataset = key.split("\\|")[1];
             String qs = quickStatements.get(key).toString();
-            // The front end always thinks there is only 1 reference, so mint 1 QuickStatement per reference
-            Pattern pattern = Pattern.compile("\tS\\d+\t[^\t]+");
-            Matcher matcher = pattern.matcher(qs);
-            List<String> references = new ArrayList<>();
-            while (matcher.find()) {
-                String reference = matcher.group();
-                references.add(reference);
-                qs = qs.replace(reference, "");
-            }
-            for (String ref : references) {
-                String statement = qs + ref;
-                JSONObject jsonSuggestion = new JSONObject();
-                jsonSuggestion.put("dataset", dataset);
-                jsonSuggestion.put("format", "QuickStatement");
-                jsonSuggestion.put("state", "new");
-                jsonSuggestion.put("statement", statement);
-                jsonSuggestions.add(jsonSuggestion);
-            }
+            JSONObject jsonSuggestion = new JSONObject();
+            jsonSuggestion.put("dataset", dataset);
+            jsonSuggestion.put("format", "QuickStatement");
+            jsonSuggestion.put("state", "new");
+            jsonSuggestion.put("statement", qs);
+            jsonSuggestions.add(jsonSuggestion);
         }
         return jsonSuggestions;
     }
