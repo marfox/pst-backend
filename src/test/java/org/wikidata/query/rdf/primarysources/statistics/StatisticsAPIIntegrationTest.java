@@ -22,6 +22,8 @@ import java.nio.file.Files;
 
 import static org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache.DATASETS_CACHE_PATH;
 import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
+import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER_URI_PREFIX;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -58,13 +60,15 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         URIBuilder builder = new URIBuilder(statisticsEndpoint);
         JSONParser parser = new JSONParser();
         // Proper call
-        JSONObject stats = testSuccess(builder, parser, "dataset", "http://chuck-berry/new");
+        JSONObject stats = testSuccess(builder, parser, "dataset", EXPECTED_DATASET_URI);
         long totalStatements = (long) stats.get("total_statements");
         long totalReferences = (long) stats.get("total_references");
         assertEquals(totalStatements, 5);
         assertEquals(totalReferences, totalStatements);
         assertEquals(stats.get("missing_statements"), totalStatements);
         assertEquals(stats.get("missing_references"), totalStatements);
+        assertEquals(DATASET_DESCRIPTION, stats.get("description"));
+        assertEquals(USER_URI_PREFIX + UPLOADER_NAME, stats.get("uploader"));
         // Bad call
         HttpResponse response = testClientError(builder, "dataset", "bad uri");
         assertEquals(400, response.getStatusLine().getStatusCode());
@@ -78,7 +82,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         JSONObject curated = new JSONObject();
         curated.put("qs", TEST_QID + "\tP999\t\"Maybelline\"");
         curated.put("type", "claim");
-        curated.put("dataset", "http://chuck-berry/new");
+        curated.put("dataset", EXPECTED_DATASET_URI);
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)

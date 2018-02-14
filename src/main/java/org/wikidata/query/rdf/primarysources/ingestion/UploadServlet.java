@@ -77,15 +77,15 @@ public class UploadServlet extends HttpServlet {
     /**
      * Expected HTTP form field with the Wiki user name of the dataset provider.
      */
-    static final String USER_NAME_FORM_FIELD = "user";
+    public static final String USER_NAME_FORM_FIELD = "user";
     /**
      * Expected HTTP form field with the name of the dataset.
      */
-    static final String DATASET_NAME_FORM_FIELD = "name";
+    public static final String DATASET_NAME_FORM_FIELD = "name";
     /**
      * Optional HTTP form field with the dataset description.
      */
-    static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
+    public static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
     /**
      * The uploaded dataset must be saved to the server local file system, before sending it to the Blazegraph bulk load service.
      * See https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Load_Configuration

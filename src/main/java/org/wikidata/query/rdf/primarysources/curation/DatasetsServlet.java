@@ -16,6 +16,8 @@ import java.io.PrintWriter;
 
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_MIME_TYPE;
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runSparqlQuery;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.METADATA_NAMESPACE;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.UPLOADED_BY_PREDICATE;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -24,8 +26,7 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runS
  */
 public class DatasetsServlet extends HttpServlet {
 
-    private static final String METADATA_GRAPH = "http://www.wikidata.org/primary-sources";
-    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_GRAPH + "> { ?user <" + METADATA_GRAPH + "/uploaded> ?dataset } }";
+    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_NAMESPACE + "> { ?dataset <" + UPLOADED_BY_PREDICATE + "> ?user } }";
     private static final Logger log = LoggerFactory.getLogger(DatasetsServlet.class);
 
     @Override

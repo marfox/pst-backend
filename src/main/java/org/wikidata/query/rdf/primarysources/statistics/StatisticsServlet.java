@@ -3,6 +3,7 @@ package org.wikidata.query.rdf.primarysources.statistics;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.openrdf.model.Value;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
@@ -39,6 +40,13 @@ public class StatisticsServlet extends HttpServlet {
                     "WHERE {" +
                     "  GRAPH <" + METADATA_NAMESPACE + "> {" +
                     "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
+                    "  }" +
+                    "}";
+    private static final String DATASET_INFO_QUERY =
+            "SELECT ?description_or_uploader " +
+                    "WHERE {" +
+                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
+                    "    <" + DATASET_PLACE_HOLDER + "> ?p ?description_or_uploader ." +
                     "  }" +
                     "}";
     private static final String USER_PARAMETER = "user";
@@ -133,7 +141,26 @@ public class StatisticsServlet extends HttpServlet {
             }
         }
         JSONObject allStats = (JSONObject) parsed;
-        return (JSONObject) allStats.getOrDefault(dataset, new JSONObject());
+        Object datasetStats = allStats.get(dataset);
+        if (datasetStats == null) return new JSONObject();
+            // Get dataset description and uploader user name
+        else {
+            JSONObject stats = (JSONObject) datasetStats;
+            String query = DATASET_INFO_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
+            TupleQueryResult result = runSparqlQuery(query);
+            try {
+                while (result.hasNext()) {
+                    Value descriptionOrUploader = result.next().getValue("description_or_uploader");
+                    if (descriptionOrUploader instanceof org.openrdf.model.URI)
+                        stats.put("uploader", descriptionOrUploader.stringValue());
+                    else stats.put("description", descriptionOrUploader.stringValue());
+                }
+                return stats;
+            } catch (QueryEvaluationException qee) {
+                log.error("Failed evaluating the dataset statistics query: '" + query + "' The stack trace follows.", qee);
+                return null;
+            }
+        }
     }
 
     private JSONObject getUserStatistics() {

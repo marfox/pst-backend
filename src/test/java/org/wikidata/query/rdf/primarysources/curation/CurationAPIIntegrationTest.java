@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -64,9 +66,11 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     public static void uploadTestDataset(File testDataset) throws IOException {
         MultipartEntityBuilder multipart = MultipartEntityBuilder.create();
-        multipart.addTextBody("name", "chuck berry", ContentType.TEXT_PLAIN);
-        multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
-        multipart.addBinaryBody("dataset", testDataset);
+        ContentType text = ContentType.TEXT_PLAIN;
+        multipart.addTextBody(DATASET_NAME_FORM_FIELD, DATASET_NAME, text);
+        multipart.addTextBody(DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, text);
+        multipart.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, text);
+        multipart.addBinaryBody(FILE_FIELD, testDataset);
         Request.Post(UPLOAD_ENDPOINT)
                 .body(multipart.build())
                 .execute()

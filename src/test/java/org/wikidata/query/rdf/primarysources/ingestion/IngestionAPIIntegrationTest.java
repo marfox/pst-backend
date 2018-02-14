@@ -45,10 +45,11 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // 2 valid triples
     private static final String BAD_DATASET_FILE_NAME = "bad_chuck_berry.ttl"; // Invalid data model
     private static final String BAD_RDF_FILE_NAME = "just_bad_rdf.ttl"; // Invalid RDF
-    private static final String DATASET_NAME = "chuck berry";
-    private static final String EXPECTED_DATASET_URI = "http://chuck-berry/new";
-    private static final String DATASET_DESCRIPTION = "An amazing dataset for tests";
-    private static final String UPLOADER_NAME = "IMDataProvider";
+    public static final String DATASET_NAME = "chuck berry";
+    public static final String EXPECTED_DATASET_URI = "http://chuck-berry/new";
+    public static final String DATASET_DESCRIPTION = "An amazing dataset for tests";
+    public static final String UPLOADER_NAME = "IMDataProvider";
+    public static final String FILE_FIELD = "dataset";
 
     private static URI uploadEndpoint;
     private static URI updateEndpoint;
@@ -242,7 +243,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         builder.addTextBody(DATASET_NAME_FORM_FIELD, datasetName, textContentType);
         builder.addTextBody(DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, textContentType);
         builder.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
-        builder.addBinaryBody("dataset", dataset);
+        builder.addBinaryBody(FILE_FIELD, dataset);
         HttpEntity datasetUpload = builder.build();
         post.setEntity(datasetUpload);
         return client.execute(post);
