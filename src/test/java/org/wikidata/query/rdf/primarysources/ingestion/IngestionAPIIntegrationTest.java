@@ -115,12 +115,12 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
             predicates.add(statement.getValue("p").stringValue());
             objects.add(statement.getValue("o").stringValue());
         }
-        assertEquals(2, subjects.size());
+        assertEquals(1, subjects.size());
         assertEquals(2, predicates.size());
         assertEquals(2, objects.size());
-        assertThat(subjects, Matchers.containsInAnyOrder(expectedDatasetName, USER_URI_PREFIX + UPLOADER_NAME));
-        assertThat(predicates, Matchers.containsInAnyOrder(METADATA_NAMESPACE + "/uploaded", METADATA_NAMESPACE + "/description"));
-        assertThat(objects, Matchers.containsInAnyOrder(expectedDatasetName, DATASET_DESCRIPTION));
+        assertThat(subjects, Matchers.contains(expectedDatasetName));
+        assertThat(predicates, Matchers.containsInAnyOrder(UPLOADED_BY_PREDICATE, DESCRIPTION_PREDICATE));
+        assertThat(objects, Matchers.containsInAnyOrder(USER_URI_PREFIX + UPLOADER_NAME, DATASET_DESCRIPTION));
     }
 
     @Test

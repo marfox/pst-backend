@@ -64,6 +64,8 @@ public class UploadServlet extends HttpServlet {
      * See {@link UploadServlet#addMetadataQuads(HttpServletResponse)} and {@link org.wikidata.query.rdf.primarysources.curation.CurateServlet}.
      */
     public static final String METADATA_NAMESPACE = BASE_URI + "/primary-sources";
+    public static final String DESCRIPTION_PREDICATE = METADATA_NAMESPACE + "/description";
+    public static final String UPLOADED_BY_PREDICATE = METADATA_NAMESPACE + "/uploadedBy";
     /**
      * Prefix URI for users. Append the user name to build a full user URI.
      */
@@ -446,19 +448,19 @@ public class UploadServlet extends HttpServlet {
     }
 
     /**
-     * Add the (user, uploaded, dataset) and (dataset, description, description string) statements to the metadata named graph.
+     * Add the (dataset, uploaded by, user) and (dataset, description, description string) statements to the metadata named graph.
      *
      * @throws IOException if an input or output error is detected when the client sends the request to the SPARQL service
      */
     private boolean addMetadataQuads(HttpServletResponse response) throws IOException {
         ValueFactory vf = ValueFactoryImpl.getInstance();
-        String uploader = vf.createURI(USER_URI_PREFIX + user).stringValue();
-        String uploaded = vf.createURI(METADATA_NAMESPACE, "/uploaded").stringValue();
         String dataset = vf.createURI(datasetURI).stringValue();
+        String uploadedBy = vf.createURI(UPLOADED_BY_PREDICATE).stringValue();
+        String uploader = vf.createURI(USER_URI_PREFIX + user).stringValue();
         String metadataGraph = vf.createURI(METADATA_NAMESPACE).stringValue();
-        StringBuilder toBeAdded = new StringBuilder("<" + uploader + "> <" + uploaded + "> <" + dataset + "> <" + metadataGraph + "> .");
+        StringBuilder toBeAdded = new StringBuilder("<" + dataset + "> <" + uploadedBy + "> <" + uploader + "> <" + metadataGraph + "> .");
         if (datasetDescription != null) {
-            String description = vf.createURI(METADATA_NAMESPACE, "/description").stringValue();
+            String description = vf.createURI(DESCRIPTION_PREDICATE).stringValue();
             String descriptionString = vf.createLiteral(datasetDescription).stringValue();
             String descriptionStatement = "<" + dataset + "> <" + description + "> \"" + descriptionString + "\" <" + metadataGraph + "> .";
             toBeAdded.append('\n').append(descriptionStatement);
