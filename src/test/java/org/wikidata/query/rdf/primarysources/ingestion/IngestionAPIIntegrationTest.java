@@ -30,6 +30,8 @@ import java.util.Set;
 
 import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
 import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.ingestion.UpdateServlet.*;
+import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -43,6 +45,10 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // 2 valid triples
     private static final String BAD_DATASET_FILE_NAME = "bad_chuck_berry.ttl"; // Invalid data model
     private static final String BAD_RDF_FILE_NAME = "just_bad_rdf.ttl"; // Invalid RDF
+    private static final String DATASET_NAME = "chuck berry";
+    private static final String EXPECTED_DATASET_URI = "http://chuck-berry/new";
+    private static final String DATASET_DESCRIPTION = "An amazing dataset for tests";
+    private static final String UPLOADER_NAME = "IMDataProvider";
 
     private static URI uploadEndpoint;
     private static URI updateEndpoint;
@@ -69,7 +75,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         client = HttpClients.createDefault();
     }
 
@@ -92,14 +98,29 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
-        TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://parole-esotiche/new> { ?s ?p ?o } }");
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, METADATA_NAMESPACE));
+        TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         assertEquals(4, count(uploadedStatements));
-        TupleQueryResult metadata = rdfRepository().query("select * where { graph <http://www.wikidata.org/primary-sources> { ?s ?p ?o } }");
-        BindingSet quad = metadata.next();
-        assertEquals("http://www.wikidata.org/wiki/User:IMDataProvider", quad.getValue("s").stringValue());
-        assertEquals("http://www.wikidata.org/primary-sources/uploaded", quad.getValue("p").stringValue());
-        assertEquals(expectedDatasetName, quad.getValue("o").stringValue());
+        testMetadataAddition(expectedDatasetName);
+    }
+
+    private void testMetadataAddition(String expectedDatasetName) throws Exception {
+        TupleQueryResult metadata = rdfRepository().query("select * where { graph <" + METADATA_NAMESPACE + "> { ?s ?p ?o } }");
+        Set<String> subjects = new HashSet<>();
+        Set<String> predicates = new HashSet<>();
+        Set<String> objects = new HashSet<>();
+        while (metadata.hasNext()) {
+            BindingSet statement = metadata.next();
+            subjects.add(statement.getValue("s").stringValue());
+            predicates.add(statement.getValue("p").stringValue());
+            objects.add(statement.getValue("o").stringValue());
+        }
+        assertEquals(2, subjects.size());
+        assertEquals(2, predicates.size());
+        assertEquals(2, objects.size());
+        assertThat(subjects, Matchers.containsInAnyOrder(expectedDatasetName, USER_URI_PREFIX + UPLOADER_NAME));
+        assertThat(predicates, Matchers.containsInAnyOrder(METADATA_NAMESPACE + "/uploaded", METADATA_NAMESPACE + "/description"));
+        assertThat(objects, Matchers.containsInAnyOrder(expectedDatasetName, DATASET_DESCRIPTION));
     }
 
     @Test
@@ -117,15 +138,15 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, "http://www.wikidata.org/primary-sources"));
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, METADATA_NAMESPACE));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         assertEquals(3, count(uploadedStatements));
-        testSubjectItemTypeAddition(expectedDatasetName, 1);
+        testSubjectItemTypeAddition(expectedDatasetName);
     }
 
     @Test
     public void testBadDatasetUpload() throws Exception {
-        CloseableHttpResponse badResponse = postDatasetUpload(uploadEndpoint, badDataset, "dataset");
+        CloseableHttpResponse badResponse = postDatasetUpload(uploadEndpoint, badDataset, "baddataset");
         assertEquals(HttpServletResponse.SC_ACCEPTED, badResponse.getStatusLine().getStatusCode());
         assertFalse(rdfRepository().ask("ask where {?s ?p ?o}"));
         assertFalse(rdfRepository().query("select * where {?s ?p ?o}").hasNext());
@@ -133,58 +154,58 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
 
     @Test
     public void testBadRDFUpload() throws Exception {
-        CloseableHttpResponse badRDFResponse = postDatasetUpload(uploadEndpoint, badRDF, "dataset");
+        CloseableHttpResponse badRDFResponse = postDatasetUpload(uploadEndpoint, badRDF, "badrdf");
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
     }
 
     // Remove good dataset, add good dataset
     @Test
     public void testGoodDatasetUpdate() throws Exception {
-        postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
+        postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse goodResponse = postDatasetUpdate(updateEndpoint, goodDataset, goodDataset);
         List<String> goodResponseContent = readResponse(goodResponse);
         assertTrue(goodResponseContent.isEmpty());
         assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 }"));
-        TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
+        TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }");
         assertEquals(4, count(updatedStatements));
     }
 
     // Remove good dataset, add partially bad dataset
     @Test
     public void testPartiallyBadDatasetUpdate() throws Exception {
-        postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
+        postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse partiallyBadResponse = postDatasetUpdate(updateEndpoint, goodDataset, partiallyBadDataset);
-        String expectedDatasetName = "http://chuck-berry/new";
+        String expectedDatasetName = EXPECTED_DATASET_URI;
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
         assertEquals(10, partiallyBadResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         assertEquals(3, count(updatedStatements));
-        testSubjectItemTypeAddition(expectedDatasetName, 1);
+        testSubjectItemTypeAddition(expectedDatasetName);
     }
 
     // Remove good dataset, add bad dataset
     @Test
     public void testBadDatasetUpdate() throws Exception {
-        postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
+        postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse badResponse = postDatasetUpdate(updateEndpoint, goodDataset, badDataset);
         List<String> badResponseContent = readResponse(badResponse);
         assertEquals(12, badResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, badResponse.getStatusLine().getStatusCode());
-        assertFalse(rdfRepository().ask("ask where { graph <http://chuck-berry/new> { ?s ?p ?o } }"));
-        assertFalse(rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }").hasNext());
+        assertFalse(rdfRepository().ask("ask where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }"));
+        assertFalse(rdfRepository().query("select * where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }").hasNext());
     }
 
     // Remove good dataset, add bad RDF
     @Test
     public void testBadRDFUpdate() throws Exception {
-        postDatasetUpload(uploadEndpoint, goodDataset, "chuck berry");
+        postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse badRDFResponse = postDatasetUpdate(updateEndpoint, goodDataset, badRDF);
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, badRDFResponse.getStatusLine().getStatusCode());
         // Check that nothing happened, i.e., that the good dataset is still there
-        TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <http://chuck-berry/new> { ?s ?p ?o } }");
+        TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }");
         assertEquals(4, count(uploadedStatements));
     }
 
@@ -197,9 +218,9 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         return total;
     }
 
-    private void testSubjectItemTypeAddition(String datasetUri, int expectedTypeTriples) throws Exception {
+    private void testSubjectItemTypeAddition(String datasetUri) throws Exception {
         TupleQueryResult typeTriples = rdfRepository().query("select * where { graph <" + datasetUri + "> { ?s a <" + ITEM + "> } }");
-        assertEquals(expectedTypeTriples, count(typeTriples));
+        assertEquals(1, count(typeTriples));
     }
 
     private List<String> readResponse(CloseableHttpResponse response) throws IOException {
@@ -218,8 +239,9 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         HttpPost post = new HttpPost(endpoint);
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
-        builder.addTextBody("name", datasetName, textContentType);
-        builder.addTextBody(UploadServlet.USER_NAME_FORM_FIELD, "IMDataProvider", textContentType);
+        builder.addTextBody(DATASET_NAME_FORM_FIELD, datasetName, textContentType);
+        builder.addTextBody(DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, textContentType);
+        builder.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
         builder.addBinaryBody("dataset", dataset);
         HttpEntity datasetUpload = builder.build();
         post.setEntity(datasetUpload);
@@ -230,10 +252,10 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         HttpPost post = new HttpPost(endpoint);
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
-        builder.addTextBody(UpdateServlet.TARGET_DATASET_URI_FORM_FIELD, "http://chuck-berry/new", textContentType);
-        builder.addTextBody(UploadServlet.USER_NAME_FORM_FIELD, "IMDataProvider", textContentType);
-        builder.addBinaryBody(UpdateServlet.REMOVE_FORM_FIELD, toRemove);
-        builder.addBinaryBody(UpdateServlet.ADD_FORM_FIELD, toAdd);
+        builder.addTextBody(TARGET_DATASET_URI_FORM_FIELD, EXPECTED_DATASET_URI, textContentType);
+        builder.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
+        builder.addBinaryBody(REMOVE_FORM_FIELD, toRemove);
+        builder.addBinaryBody(ADD_FORM_FIELD, toAdd);
         HttpEntity update = builder.build();
         post.setEntity(update);
         return client.execute(post);
