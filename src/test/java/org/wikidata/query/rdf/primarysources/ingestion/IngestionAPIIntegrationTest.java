@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
-import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.UpdateServlet.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -72,7 +72,9 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(VALUES_CACHE_FILE);
     }
 
     @Before

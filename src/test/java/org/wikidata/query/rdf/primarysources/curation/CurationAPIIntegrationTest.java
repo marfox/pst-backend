@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.wikidata.query.rdf.primarysources.common.SubjectsCache.SUBJECTS_CACHE_PATH;
+import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
@@ -61,7 +61,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(SUBJECTS_CACHE_PATH);
+        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(VALUES_CACHE_FILE);
     }
 
     public static void uploadTestDataset(File testDataset) throws IOException {

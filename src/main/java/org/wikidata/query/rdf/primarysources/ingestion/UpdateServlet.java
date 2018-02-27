@@ -19,7 +19,7 @@ import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 import javax.servlet.http.HttpServlet;
@@ -206,7 +206,7 @@ public class UpdateServlet extends HttpServlet {
                     "https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model");
             return;
         }
-        SubjectsCache.cacheDatasetSubjects(targetDatasetURI.toString());
+        EntitiesCache.cacheDatasetEntities(targetDatasetURI.toString());
         /*
          * Build the final response
          */

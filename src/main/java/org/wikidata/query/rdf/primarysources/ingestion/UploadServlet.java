@@ -23,7 +23,7 @@ import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
-import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 import javax.servlet.ServletException;
@@ -182,7 +182,7 @@ public class UploadServlet extends HttpServlet {
         boolean added = addMetadataQuads(response);
         if (!added) return;
         for (File tempDataset : tempDatasets) tempDataset.delete();
-        SubjectsCache.cacheDatasetSubjects(datasetURI);
+        EntitiesCache.cacheDatasetEntities(datasetURI);
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
     }
 

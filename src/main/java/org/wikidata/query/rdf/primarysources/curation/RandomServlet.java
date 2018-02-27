@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
-import org.wikidata.query.rdf.primarysources.common.SubjectsCache;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +26,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.SUBJECTS_CACHE_FILE;
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
 
 /**
@@ -57,11 +57,11 @@ public class RandomServlet extends HttpServlet {
         Set<String> subjectSet = new HashSet<>();
         JSONParser parser = new JSONParser();
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(SubjectsCache.SUBJECTS_CACHE_PATH)) {
+        try (BufferedReader reader = Files.newBufferedReader(SUBJECTS_CACHE_FILE)) {
             try {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), SubjectsCache.SUBJECTS_CACHE_PATH);
+                log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), SUBJECTS_CACHE_FILE);
                 return null;
             }
         }

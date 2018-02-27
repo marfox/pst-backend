@@ -23,13 +23,13 @@ public class CacheUpdater implements ServletContextListener {
 
     private static final Logger log = LoggerFactory.getLogger(CacheUpdater.class);
 
-    private ScheduledExecutorService subjectService;
-    private ScheduledExecutorService datasetStatsService;
+    private ScheduledExecutorService entitiesService;
+    private ScheduledExecutorService datasetsStatsService;
 
-    private static ScheduledExecutorService scheduleSubjectsUpdate() {
+    private static ScheduledExecutorService scheduleEntitiesUpdate() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-        service.scheduleAtFixedRate(() -> SubjectsCache.dumpAllSubjects(), UPDATE_INITIAL_DELAY, UPDATE_INTERVAL, UPDATE_UNIT);
-        log.info("Primary sources tool subjects cache update scheduled: will run every {} {}, {} {} after the server starts.",
+        service.scheduleAtFixedRate(() -> EntitiesCache.dumpAllEntities(), UPDATE_INITIAL_DELAY, UPDATE_INTERVAL, UPDATE_UNIT);
+        log.info("Primary sources tool entities cache update scheduled: will run every {} {}, {} {} after the server starts.",
                 UPDATE_INTERVAL, UPDATE_UNIT, UPDATE_INITIAL_DELAY, UPDATE_UNIT);
         return service;
     }
@@ -44,13 +44,13 @@ public class CacheUpdater implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        subjectService = scheduleSubjectsUpdate();
-        datasetStatsService = scheduleDatasetStatsUpdate();
+        entitiesService = scheduleEntitiesUpdate();
+        datasetsStatsService = scheduleDatasetStatsUpdate();
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent event) {
-        subjectService.shutdownNow();
-        datasetStatsService.shutdownNow();
+        entitiesService.shutdownNow();
+        datasetsStatsService.shutdownNow();
     }
 }
