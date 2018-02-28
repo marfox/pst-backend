@@ -68,7 +68,7 @@ public class DatasetsServlet extends HttpServlet {
                 output.add(datasetAndUser);
             }
         } catch (QueryEvaluationException qee) {
-            log.error("Failed evaluating the datsets query. The stack trace follows.", qee);
+            log.error("Failed evaluating the datasets query. The stack trace follows.", qee);
             return null;
         }
         return output;
