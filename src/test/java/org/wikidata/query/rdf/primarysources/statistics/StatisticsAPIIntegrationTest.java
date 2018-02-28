@@ -40,6 +40,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
     private static URI statisticsEndpoint;
     private static URI curateEndpoint;
     private static URI propertiesEndpoint;
+    private static URI valuesEndpoint;
     private static File testDataset;
 
     @BeforeClass
@@ -47,6 +48,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         statisticsEndpoint = URI.create(BASE_ENDPOINT + "/statistics");
         curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
         propertiesEndpoint = URI.create(BASE_ENDPOINT + "/properties");
+        valuesEndpoint = URI.create(BASE_ENDPOINT + "/values");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
     }
 
@@ -65,13 +67,22 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @Test
     public void testProperties() throws Exception {
-        URIBuilder builder = new URIBuilder(propertiesEndpoint);
+        testPropertiesOrValues(propertiesEndpoint, 2, "P18");
+    }
+
+    @Test
+    public void testValues() throws Exception {
+        testPropertiesOrValues(valuesEndpoint, 2, "Q123456");
+    }
+
+    private void testPropertiesOrValues(URI endpoint, int expectedListSize, String expectedEntity) throws Exception {
+        URIBuilder builder = new URIBuilder(endpoint);
         JSONParser parser = new JSONParser();
         // Proper call
         JSONObject jsonResponse = testCorrectCall(builder, parser, "dataset", EXPECTED_DATASET_URI);
-        JSONArray properties = (JSONArray) jsonResponse.get(EXPECTED_DATASET_URI);
-        assertEquals(2, properties.size());
-        assertTrue(properties.contains("P18"));
+        JSONArray entities = (JSONArray) jsonResponse.get(EXPECTED_DATASET_URI);
+        assertEquals(expectedListSize, entities.size());
+        assertTrue(entities.contains(expectedEntity));
         // Bad call
         HttpResponse httpResponse = testClientError(builder, "rock'n'roll", "will save us");
         assertEquals(400, httpResponse.getStatusLine().getStatusCode());
