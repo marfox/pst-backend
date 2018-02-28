@@ -28,9 +28,6 @@ import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
 import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
 
 /**
- * TODO write /properties service
- * TODO write /values service
- *
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
  * Created on Dec 11, 2017.
@@ -84,7 +81,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
     }
 
     @Before
-    public void prepareDatasetSubjectsCache() throws Exception {
+    public void prepareDatasetEntitiesCache() throws Exception {
         purgeCache();
         JSONParser parser = new JSONParser();
         uploadDataset("chuck berry", firstDataset);
