@@ -157,7 +157,7 @@ public class EntitiesCache {
                 namespaceIndex = WIKIBASE_URIS.entity().length();
                 break;
             default:
-                log.error("Unexpected entity type '{}'. The cache for those entities will not be available");
+                log.error("Unexpected entity type '{}'. The cache for those entities will not be available", entityType);
                 return null;
         }
         JSONObject entitiesJson = new JSONObject();
