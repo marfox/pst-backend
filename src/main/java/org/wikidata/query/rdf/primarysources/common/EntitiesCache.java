@@ -32,7 +32,7 @@ public class EntitiesCache {
 
     /*
      An environment variable is needed for tests. A system property would not be read when testing.
-     IMPORTANT: SUBJECTS_CACHE should always be exported, otherwise integration tests can't run:
+     IMPORTANT: ENTITIES_CACHE should always be exported, otherwise integration tests can't run:
      when Jetty is fired up, the listener CacheUpdater looks for that variable.
       */
     private static final String ENTITIES_CACHE_DIR = System.getenv("ENTITIES_CACHE");
