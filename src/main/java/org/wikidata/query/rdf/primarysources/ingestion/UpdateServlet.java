@@ -5,6 +5,7 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -149,17 +150,16 @@ public class UpdateServlet extends HttpServlet {
                         boolean ok;
                         if (item.isFormField()) {
                             ok = handleFormField(fieldStream, item.getFieldName(), parameters, response);
-                            if (!ok) {
-                                return;
-                            }
+                            if (!ok) return;
                         } else {
                             ok = handleFileField(item, fieldStream, parameters, response, validator);
-                            if (!ok) {
-                                return;
-                            }
+                            if (!ok) return;
                         }
                     }
                 }
+                boolean checked = checkRequiredFields(parameters, response);
+                if (!checked) return;
+                log.debug("Parameters stored as fields in private class: {}", parameters);
             } catch (FileUploadException fue) {
                 log.error("Failed reading/parsing the request or storing files: {}", fue);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, fue.getLocalizedMessage());
@@ -167,7 +167,7 @@ public class UpdateServlet extends HttpServlet {
             }
         } else {
             String actualContentType = request.getContentType();
-            log.error("Not a multipart content type: {} Will fail with a bad request", actualContentType);
+            log.warn("Not a multipart content type: {} Will fail with a bad request", actualContentType);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "You should update your dataset using 'multipart/form-data' content type, not " +
                     actualContentType + ". Please fix your HTTP request and try again.");
             return;
@@ -204,6 +204,7 @@ public class UpdateServlet extends HttpServlet {
             return;
         }
         if (parsedUpdateResponse == null) {
+            log.warn("No file passed the data model validation. Will fail with a 202 status code");
             response.sendError(HttpServletResponse.SC_ACCEPTED, "Neither the dataset to be removed, nor the dataset to be added has content that complies" +
                     " with the Wikidata RDF data model. Nothing will be updated. Please check the documentation and try again:" +
                     "https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model");
@@ -229,12 +230,12 @@ public class UpdateServlet extends HttpServlet {
         String contentType = item.getContentType();
         switch (fieldName) {
             case REMOVE_FORM_FIELD:
-                log.info("Dataset to be removed file field '{}' with file name '{}' detected.", fieldName, fileName);
+                log.info("Dataset to be removed file detected: {}", fileName);
                 parameters.removeDatasetFileName = fileName;
                 parameters.removeDatasetFormat = handleFormat(contentType, fileName);
                 // The part is just wrong, so fail with a bad request
                 if (parameters.removeDatasetFormat == null) {
-                    log.error("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
+                    log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                             fileName, contentType);
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be removed '" + fileName +
                             "' does not match any RDF format: " + contentType + ". Please fix it and try again.");
@@ -244,7 +245,7 @@ public class UpdateServlet extends HttpServlet {
                 try {
                     parameters.removeDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.removeDatasetFormat);
                 } catch (RDFParseException rpe) {
-                    log.error("The dataset to be removed is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
+                    log.warn("The dataset to be removed is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be removed '" + fileName + "' is not valid RDF." +
                             " Found an error at line " + rpe.getLineNumber() + ", column " + rpe.getColumnNumber() + ". Please fix it and try again.");
@@ -252,11 +253,11 @@ public class UpdateServlet extends HttpServlet {
                 }
                 break;
             case ADD_FORM_FIELD:
-                log.info("Dataset to be added file field '{}' with file name '{}' detected.", fieldName, fileName);
+                log.info("Dataset to be added file detected: {}", fileName);
                 parameters.addDatasetFileName = fileName;
                 parameters.addDatasetFormat = handleFormat(contentType, fileName);
                 if (parameters.addDatasetFormat == null) {
-                    log.error("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
+                    log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                             fileName, contentType);
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be added '" + fileName +
                             "' does not match any RDF format: " + contentType + ". Please fix it and try again.");
@@ -266,7 +267,7 @@ public class UpdateServlet extends HttpServlet {
                 try {
                     parameters.addDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.addDatasetFormat);
                 } catch (RDFParseException rpe) {
-                    log.error("The dataset to be added is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
+                    log.warn("The dataset to be added is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be added '" + fileName + "' is not valid RDF." +
                             " Found an error at line " + rpe.getLineNumber() + ", column " + rpe.getColumnNumber() + ". Please fix it and try again.");
@@ -274,7 +275,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 break;
             default:
-                log.error("Unexpected file field '{}' with value '{}'. Will fail with a bad request", fieldName, fileName);
+                log.warn("Unexpected file field '{}' with value '{}'. Will fail with a bad request", fieldName, fileName);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected file field '" + fieldName + "' with value '" + fileName + "'");
                 return false;
         }
@@ -298,9 +299,33 @@ public class UpdateServlet extends HttpServlet {
                 parameters.targetDatasetURI = URI.create(formValue);
                 break;
             default:
-                log.error("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", fieldName, formValue);
+                log.warn("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", fieldName, formValue);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected form field '" + fieldName + "' with value '" + formValue + "'");
                 return false;
+        }
+        return true;
+    }
+
+    private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
+        if (parameters.user == null) {
+            log.warn("No user name given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + USER_NAME_FORM_FIELD + "' to send it.");
+            return false;
+        }
+        if (parameters.targetDatasetURI == null) {
+            log.warn("No dataset URI given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset URI given. Please use the field '" + DATASET_NAME_FORM_FIELD + "' to send it.");
+            return false;
+        }
+        if (parameters.removeDatasetFileName == null) {
+            log.warn("No dataset file to be removed. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be removed given. Please use the field '" + REMOVE_FORM_FIELD + "' to send it.");
+            return false;
+        }
+        if (parameters.addDatasetFileName == null) {
+            log.warn("No dataset file to be added. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be added given. Please use the field '" + ADD_FORM_FIELD + "' to send it.");
+            return false;
         }
         return true;
     }
@@ -331,6 +356,7 @@ public class UpdateServlet extends HttpServlet {
                 .setParameter(BLAZEGRAPH_UPDATE_DELETE_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
                 .setParameter(BLAZEGRAPH_UPDATE_INSERT_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
                 .build();
+        log.debug("URI built for Blazegraph update service: {}", uri);
         HttpPost post;
         post = new HttpPost(uri);
         MultipartEntityBuilder meBuilder = MultipartEntityBuilder.create();
@@ -340,6 +366,7 @@ public class UpdateServlet extends HttpServlet {
             // Set a suitable extension based on the RDF format
             tempDatasetToBeRemoved = File.createTempFile(TEMP_DATASET_TO_BE_REMOVED_FILE_NAME, "." + removeDatasetFormat.getDefaultFileExtension());
             Rio.write(toBeRemoved, Files.newBufferedWriter(tempDatasetToBeRemoved.toPath(), StandardCharsets.UTF_8), removeDatasetFormat);
+            log.debug("Written temporary file with dataset to be removed: {}", tempDatasetToBeRemoved);
             ContentType toBeRemovedContentType = ContentType.create(removeDatasetFormat.getDefaultMIMEType(), StandardCharsets.UTF_8);
             meBuilder.addBinaryBody(REMOVE_FORM_FIELD, tempDatasetToBeRemoved, toBeRemovedContentType, TEMP_DATASET_TO_BE_REMOVED_FILE_NAME);
         } else {
@@ -352,6 +379,7 @@ public class UpdateServlet extends HttpServlet {
             // Set a suitable extension based on the RDF format
             tempDatasetToBeAdded = File.createTempFile(TEMP_DATASET_TO_BE_ADDED_FILE_NAME, "." + addDatasetFormat.getDefaultFileExtension());
             Rio.write(toBeAdded, Files.newBufferedWriter(tempDatasetToBeAdded.toPath(), StandardCharsets.UTF_8), addDatasetFormat);
+            log.debug("Written temporary file with dataset to be added: {}", tempDatasetToBeAdded);
             ContentType toBeAddedContentType = ContentType.create(addDatasetFormat.getDefaultMIMEType(), StandardCharsets.UTF_8);
             meBuilder.addBinaryBody(ADD_FORM_FIELD, tempDatasetToBeAdded, toBeAddedContentType, TEMP_DATASET_TO_BE_ADDED_FILE_NAME);
         } else {
@@ -363,12 +391,16 @@ public class UpdateServlet extends HttpServlet {
         if (nothingRemoved != null && nothingAdded != null) {
             return null;
         }
-        post.setEntity(meBuilder.build());
+        HttpEntity entity = meBuilder.build();
+        post.setEntity(entity);
+        log.debug("Request body that will be sent to the Blazegraph update service: {}", entity);
         try (CloseableHttpResponse updateResponse = client.execute(post)) {
             if (tempDatasetToBeRemoved != null) {
                 tempDatasetToBeRemoved.delete();
+                log.debug("Deleted temporary file with dataset to be removed");
             }
             if (tempDatasetToBeAdded != null) {
+                log.debug("Deleted temporary file with dataset to be added");
                 tempDatasetToBeAdded.delete();
             }
             return parseUpdateResponse(updateResponse, nothingRemoved, nothingAdded);
@@ -391,8 +423,9 @@ public class UpdateServlet extends HttpServlet {
             updateResponseContent.add(nothingAdded);
         }
         if (updateResponse.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-            log.info("The dataset upload (remove + add) into Blazegraph went fine");
+            log.info("The dataset update (remove + add) into Blazegraph went fine");
         } else {
+            log.error("Failed updating the dataset into Blazegraph, HTTP error code: {}", updateResponse.getStatusLine().getStatusCode());
             try (BufferedReader updateResponseReader = new BufferedReader(new InputStreamReader(updateResponse.getEntity().getContent(), StandardCharsets
                     .UTF_8))) {
                 String line;
