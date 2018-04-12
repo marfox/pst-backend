@@ -232,24 +232,27 @@ public class CurateServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(CurateServlet.class);
 
-    private String qId;
-    private String pId;
-    private String mainPId;
-    private Value value;
-    private String type;
-    private String state;
-    private String user;
-    private String dataset;
+    private class RequestParameters {
+        private String qId;
+        private String pId;
+        private String mainPId;
+        private Value value;
+        private String type;
+        private String state;
+        private String user;
+        private String dataset;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean ok = processQuickStatementRequest(request, response);
+        RequestParameters parameters = new RequestParameters();
+        boolean ok = processQuickStatementRequest(request, parameters, response);
         if (!ok) return;
-        JSONObject blazegraphError = changeState();
+        JSONObject blazegraphError = changeState(parameters);
         sendResponse(response, blazegraphError);
     }
 
-    private boolean processQuickStatementRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processQuickStatementRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         JSONObject body;
         try (BufferedReader requestReader = request.getReader()) {
             JSONParser parser = new JSONParser();
@@ -271,14 +274,14 @@ public class CurateServlet extends HttpServlet {
                     "Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
             return false;
         }
-        state = givenState;
+        parameters.state = givenState;
         String givenUser = (String) body.get(USER_KEY);
         if (givenUser == null) {
             log.error("No user name given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
             return false;
         }
-        user = givenUser;
+        parameters.user = givenUser;
         String givenDataset = (String) body.get(SuggestServlet.DATASET_PARAMETER);
         if (givenDataset == null) {
             log.error("No dataset URI given. Will fail with a bad request");
@@ -293,7 +296,7 @@ public class CurateServlet extends HttpServlet {
                     "Parse error at index " + use.getIndex() + ".");
             return false;
         }
-        dataset = givenDataset.replace("/new", "");
+        parameters.dataset = givenDataset.replace("/new", "");
         String givenType = (String) body.get(STATEMENT_TYPE_KEY);
         if (givenType == null) {
             log.error("No statement type (claim | qualifier | reference) given. Will fail with a bad request");
@@ -305,14 +308,14 @@ public class CurateServlet extends HttpServlet {
                     "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
         }
-        type = givenType;
+        parameters.type = givenType;
         String givenQuickStatement = (String) body.get(QUICKSTATEMENT_KEY);
         if (givenQuickStatement == null) {
             log.error("No QuickStatement given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required QuickStatement.");
             return false;
         }
-        boolean parsed = parseQuickStatement(givenQuickStatement);
+        boolean parsed = parseQuickStatement(givenQuickStatement, parameters);
         if (!parsed) {
             log.error("Could not parse the given QuickStatement: {}", givenQuickStatement);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed QuickStatement: " + givenQuickStatement);
@@ -321,7 +324,7 @@ public class CurateServlet extends HttpServlet {
         return true;
     }
 
-    private boolean processMwApiBodyRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processMwApiBodyRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         JSONObject body;
         try (BufferedReader requestReader = request.getReader()) {
             JSONParser parser = new JSONParser();
@@ -342,7 +345,7 @@ public class CurateServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + givenQId + "'");
             return false;
         }
-        qId = givenQId;
+        parameters.qId = givenQId;
         String givenMainPId = (String) body.get(MAIN_PID_KEY);
         if (givenMainPId == null) {
             log.error("No main PID given. will fail with a bad request");
@@ -353,7 +356,7 @@ public class CurateServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid main PID: '" + givenMainPId + "'");
             return false;
         }
-        mainPId = givenMainPId;
+        parameters.mainPId = givenMainPId;
         JSONObject mwApiObject = (JSONObject) body.get(MW_API_OBJECT);
         Object jsonValue;
         Value rdfValue;
@@ -371,7 +374,7 @@ public class CurateServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + givenPId + "'");
                 return false;
             }
-            pId = givenPId;
+            parameters.pId = givenPId;
             JSONArray values = (JSONArray) snaks.get(givenPId);
             // There is only one element in this array, see SuggestServlet#handleReference
             jsonValue = values.get(0);
@@ -392,7 +395,7 @@ public class CurateServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + givenPId + "'");
                 return false;
             }
-            pId = givenPId;
+            parameters.pId = givenPId;
             jsonValue = mwApiObject.get(VALUE_KEY);
             if (jsonValue == null) {
                 log.error("No data value given. will fail with a bad request");
@@ -406,7 +409,7 @@ public class CurateServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected JSON value: '" + jsonValue + "'. Expected an object or a string");
             return false;
         }
-        value = rdfValue;
+        parameters.value = rdfValue;
         String givenType = (String) body.get(STATEMENT_TYPE_KEY);
         if (givenType == null) {
             log.error("No statement type (claim | qualifier | reference) given. Will fail with a bad request");
@@ -418,7 +421,7 @@ public class CurateServlet extends HttpServlet {
                     "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
         }
-        type = givenType;
+        parameters.type = givenType;
         String givenState = (String) body.get(STATE_KEY);
         if (givenState == null) {
             log.error("No state given. Will fail with a bad request");
@@ -430,14 +433,14 @@ public class CurateServlet extends HttpServlet {
                     "Must be either 'approved' or 'rejected'.");
             return false;
         }
-        state = givenState;
+        parameters.state = givenState;
         String givenUser = (String) body.get(USER_KEY);
         if (givenUser == null) {
             log.error("No user name given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
             return false;
         }
-        user = givenUser;
+        parameters.user = givenUser;
         String givenDataset = (String) body.get(SuggestServlet.DATASET_PARAMETER);
         if (givenDataset == null) {
             log.error("No dataset URI given. Will fail with a bad request");
@@ -452,49 +455,49 @@ public class CurateServlet extends HttpServlet {
                     "Parse error at index " + use.getIndex() + ".");
             return false;
         }
-        dataset = givenDataset.replace("/new", "");
+        parameters.dataset = givenDataset.replace("/new", "");
         return true;
     }
 
-    private JSONObject changeState() throws IOException {
+    private JSONObject changeState(RequestParameters parameters) throws IOException {
         String query = null;
-        switch (type) {
+        switch (parameters.type) {
             case "claim":
-                query = state.equals("approved") ? CLAIM_APPROVAL_QUERY : CLAIM_REJECTION_QUERY;
+                query = parameters.state.equals("approved") ? CLAIM_APPROVAL_QUERY : CLAIM_REJECTION_QUERY;
                 query = query
-                        .replace(USER_PLACE_HOLDER, user)
-                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                        .replace(STATE_PLACE_HOLDER, state)
-                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                        .replace(PID_PLACE_HOLDER, pId);
-                query = value instanceof org.openrdf.model.URI
-                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                        .replace(USER_PLACE_HOLDER, parameters.user)
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, parameters.dataset)
+                        .replace(STATE_PLACE_HOLDER, parameters.state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, parameters.qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                        .replace(PID_PLACE_HOLDER, parameters.pId);
+                query = parameters.value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, parameters.value.toString());
                 break;
             case "qualifier":
                 query = QUALIFIER_QUERY
-                        .replace(USER_PLACE_HOLDER, user)
-                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                        .replace(STATE_PLACE_HOLDER, state)
-                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                        .replace(PID_PLACE_HOLDER, pId);
-                query = value instanceof org.openrdf.model.URI
-                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                        .replace(USER_PLACE_HOLDER, parameters.user)
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, parameters.dataset)
+                        .replace(STATE_PLACE_HOLDER, parameters.state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, parameters.qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                        .replace(PID_PLACE_HOLDER, parameters.pId);
+                query = parameters.value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, parameters.value.toString());
                 break;
             case "reference":
                 query = REFERENCE_QUERY
-                        .replace(USER_PLACE_HOLDER, user)
-                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, dataset)
-                        .replace(STATE_PLACE_HOLDER, state)
-                        .replace(SuggestServlet.QID_PLACE_HOLDER, qId)
-                        .replace(MAIN_PID_PLACE_HOLDER, mainPId)
-                        .replace(PID_PLACE_HOLDER, pId);
-                query = value instanceof org.openrdf.model.URI
-                        ? query.replace(VALUE_PLACE_HOLDER, "<" + value.toString() + ">")
-                        : query.replace(VALUE_PLACE_HOLDER, value.toString());
+                        .replace(USER_PLACE_HOLDER, parameters.user)
+                        .replace(SuggestServlet.DATASET_PLACE_HOLDER, parameters.dataset)
+                        .replace(STATE_PLACE_HOLDER, parameters.state)
+                        .replace(SuggestServlet.QID_PLACE_HOLDER, parameters.qId)
+                        .replace(MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                        .replace(PID_PLACE_HOLDER, parameters.pId);
+                query = parameters.value instanceof org.openrdf.model.URI
+                        ? query.replace(VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                        : query.replace(VALUE_PLACE_HOLDER, parameters.value.toString());
                 break;
         }
         URIBuilder builder = new URIBuilder();
@@ -550,7 +553,7 @@ public class CurateServlet extends HttpServlet {
         }
     }
 
-    private boolean parseQuickStatement(String quickStatement) {
+    private boolean parseQuickStatement(String quickStatement, RequestParameters parameters) {
         String[] elements = quickStatement.split("\t");
         if (elements.length < 3) {
             log.error("Malformed QuickStatement: {}", quickStatement);
@@ -566,21 +569,21 @@ public class CurateServlet extends HttpServlet {
             log.error("Invalid main property PID: {}", mainProperty);
             return false;
         }
-        qId = subject;
-        mainPId = mainProperty;
+        parameters.qId = subject;
+        parameters.mainPId = mainProperty;
         List<String> qualifierOrReference = Arrays.asList(elements).subList(3, elements.length);
-        switch (type) {
+        switch (parameters.type) {
             case "claim":
-                pId = mainProperty;
-                value = quickStatementValueToRdf(elements[2]);
+                parameters.pId = mainProperty;
+                parameters.value = quickStatementValueToRdf(elements[2]);
                 break;
             case "qualifier":
-                pId = qualifierOrReference.get(0);
-                value = quickStatementValueToRdf(qualifierOrReference.get(1));
+                parameters.pId = qualifierOrReference.get(0);
+                parameters.value = quickStatementValueToRdf(qualifierOrReference.get(1));
                 break;
             case "reference":
-                pId = qualifierOrReference.get(0).replace('S', 'P');
-                value = quickStatementValueToRdf(qualifierOrReference.get(1));
+                parameters.pId = qualifierOrReference.get(0).replace('S', 'P');
+                parameters.value = quickStatementValueToRdf(qualifierOrReference.get(1));
                 break;
         }
         return true;

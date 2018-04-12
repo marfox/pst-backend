@@ -119,29 +119,33 @@ public class SearchServlet extends HttpServlet {
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_LIMIT = 50;
     private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
-    private String dataset;
-    private String property;
-    private String value;
-    private int offset;
-    private int limit;
+
+    private class RequestParameters {
+        private String dataset;
+        private String property;
+        private String value;
+        private int offset;
+        private int limit;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean ok = processRequest(request, response);
+        RequestParameters parameters = new RequestParameters();
+        boolean ok = processRequest(request, parameters, response);
         if (!ok) return;
-        TupleQueryResult suggestions = getSuggestions();
-        sendResponse(response, suggestions);
+        TupleQueryResult suggestions = getSuggestions(parameters);
+        sendResponse(response, suggestions, parameters);
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
         String datasetParameter = request.getParameter(DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
-            dataset = "all";
+            parameters.dataset = "all";
         } else {
             try {
                 new URI(datasetParameter);
-                dataset = datasetParameter;
+                parameters.dataset = datasetParameter;
             } catch (URISyntaxException use) {
                 log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
@@ -151,18 +155,18 @@ public class SearchServlet extends HttpServlet {
         }
         String propertyParameter = request.getParameter(PROPERTY_PARAMETER);
         if (propertyParameter == null || propertyParameter.isEmpty()) {
-            property = "all";
+            parameters.property = "all";
         } else {
             if (!validator.isValidTerm(propertyParameter, "property")) {
                 log.error("Invalid PID: {}. Will fail with a bad request.", propertyParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid PID: '" + propertyParameter + "'");
                 return false;
             }
-            property = propertyParameter;
+            parameters.property = propertyParameter;
         }
         String valueParameter = request.getParameter(VALUE_PARAMETER);
         if (valueParameter == null || valueParameter.isEmpty()) {
-            value = null;
+            parameters.value = null;
         } else {
             if (!validator.isValidTerm(valueParameter, "item")) {
                 log.error("Invalid QID: {}. The value must be a Wikidata item. Will fail with a bad request.", valueParameter);
@@ -170,13 +174,13 @@ public class SearchServlet extends HttpServlet {
                         "The value must be a Wikidata item.");
                 return false;
             }
-            value = valueParameter;
+            parameters.value = valueParameter;
         }
         String offsetParameter = request.getParameter(OFFSET_PARAMETER);
-        if (offsetParameter == null || offsetParameter.isEmpty()) offset = DEFAULT_OFFSET;
+        if (offsetParameter == null || offsetParameter.isEmpty()) parameters.offset = DEFAULT_OFFSET;
         else {
             try {
-                offset = Integer.parseInt(offsetParameter);
+                parameters.offset = Integer.parseInt(offsetParameter);
             } catch (NumberFormatException nfe) {
                 log.error("Invalid offset: {}. Does not look like an integer number. Will fail with a bad request", offsetParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid offset: " + offsetParameter + ". " +
@@ -185,10 +189,10 @@ public class SearchServlet extends HttpServlet {
             }
         }
         String limitParameter = request.getParameter(LIMIT_PARAMETER);
-        if (limitParameter == null || limitParameter.isEmpty()) limit = DEFAULT_LIMIT;
+        if (limitParameter == null || limitParameter.isEmpty()) parameters.limit = DEFAULT_LIMIT;
         else {
             try {
-                limit = Integer.parseInt(limitParameter);
+                parameters.limit = Integer.parseInt(limitParameter);
             } catch (NumberFormatException nfe) {
                 log.error("Invalid limit: {}. Does not look like an integer number. Will fail with a bad request", limitParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid limit: " + limitParameter + ". " +
@@ -199,9 +203,9 @@ public class SearchServlet extends HttpServlet {
         return true;
     }
 
-    private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions) throws IOException {
+    private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions, RequestParameters parameters) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        JSONArray jsonSuggestions = formatSuggestions(suggestions);
+        JSONArray jsonSuggestions = formatSuggestions(suggestions, parameters);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
         } else if (jsonSuggestions.isEmpty()) {
@@ -218,22 +222,22 @@ public class SearchServlet extends HttpServlet {
         }
     }
 
-    private TupleQueryResult getSuggestions() throws IOException {
+    private TupleQueryResult getSuggestions(RequestParameters parameters) throws IOException {
         String query;
-        if (dataset.equals("all")) {
-            if (value == null) query = ALL_DATASETS_QUERY;
-            else query = ALL_DATASETS_VALUE_QUERY.replace(VALUE_PLACE_HOLDER, value);
+        if (parameters.dataset.equals("all")) {
+            if (parameters.value == null) query = ALL_DATASETS_QUERY;
+            else query = ALL_DATASETS_VALUE_QUERY.replace(VALUE_PLACE_HOLDER, parameters.value);
         } else {
-            if (value == null) query = ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
+            if (parameters.value == null) query = ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, parameters.dataset);
             else
-                query = ONE_DATASET_VALUE_QUERY.replace(DATASET_PLACE_HOLDER, dataset).replace(VALUE_PLACE_HOLDER, value);
+                query = ONE_DATASET_VALUE_QUERY.replace(DATASET_PLACE_HOLDER, parameters.dataset).replace(VALUE_PLACE_HOLDER, parameters.value);
         }
-        query = query.replace(OFFSET_PLACE_HOLDER, String.valueOf(offset)).replace(LIMIT_PLACE_HOLDER, String.valueOf(limit));
-        query = property.equals("all") ? query.replace(PROPERTY_PLACE_HOLDER, "?property") : query.replace(PROPERTY_PLACE_HOLDER, "p:" + property);
+        query = query.replace(OFFSET_PLACE_HOLDER, String.valueOf(parameters.offset)).replace(LIMIT_PLACE_HOLDER, String.valueOf(parameters.limit));
+        query = parameters.property.equals("all") ? query.replace(PROPERTY_PLACE_HOLDER, "?property") : query.replace(PROPERTY_PLACE_HOLDER, "p:" + parameters.property);
         return runSparqlQuery(query);
     }
 
-    private JSONArray formatSuggestions(TupleQueryResult suggestions) {
+    private JSONArray formatSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
         JSONArray jsonSuggestions = new JSONArray();
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
@@ -242,10 +246,10 @@ public class SearchServlet extends HttpServlet {
             while (suggestions.hasNext()) {
                 BindingSet suggestion = suggestions.next();
                 Value datasetValue = suggestion.getValue("dataset");
-                String currentDataset = datasetValue == null ? dataset : datasetValue.stringValue();
+                String currentDataset = datasetValue == null ? parameters.dataset : datasetValue.stringValue();
                 String subject = suggestion.getValue("item").stringValue().substring(WIKIBASE_URIS.entity().length());
                 Value mainPropertyValue = suggestion.getValue("property");
-                String mainProperty = mainPropertyValue == null ? property : mainPropertyValue.stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
+                String mainProperty = mainPropertyValue == null ? parameters.property : mainPropertyValue.stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
                 String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
                 Value statementValue = suggestion.getValue("statement_value");

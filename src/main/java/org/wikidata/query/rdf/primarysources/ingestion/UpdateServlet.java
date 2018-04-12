@@ -95,41 +95,44 @@ public class UpdateServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateServlet.class);
 
-    /**
-     * The client user name.
-     */
-    private String user;
-    /**
-     * The target dataset URI to be updated.
-     */
-    private URI targetDatasetURI;
-    /**
-     * The file name of the dataset to be removed, as given by the client.
-     */
-    private String removeDatasetFileName;
-    /**
-     * The RDF format of the dataset to be removed.
-     */
-    private RDFFormat removeDatasetFormat;
-    /**
-     * The RDF {@link Model} of the dataset to be removed, which has passed the syntax check.
-     */
-    private Model removeDatasetWithValidSyntax;
-    /**
-     * The file name of the dataset to be added, as given by the client.
-     */
-    private String addDatasetFileName;
-    /**
-     * The RDF format of the dataset to be added.
-     */
-    private RDFFormat addDatasetFormat;
-    /**
-     * The RDF {@link Model} of the dataset to be added, which has passed the syntax check.
-     */
-    private Model addDatasetWithValidSyntax;
+    private class RequestParameters {
+        /**
+         * The client user name.
+         */
+        public String user;
+        /**
+         * The target dataset URI to be updated.
+         */
+        public URI targetDatasetURI;
+        /**
+         * The file name of the dataset to be removed, as given by the client.
+         */
+        public String removeDatasetFileName;
+        /**
+         * The RDF format of the dataset to be removed.
+         */
+        public RDFFormat removeDatasetFormat;
+        /**
+         * The RDF {@link Model} of the dataset to be removed, which has passed the syntax check.
+         */
+        public Model removeDatasetWithValidSyntax;
+        /**
+         * The file name of the dataset to be added, as given by the client.
+         */
+        public String addDatasetFileName;
+        /**
+         * The RDF format of the dataset to be added.
+         */
+        public RDFFormat addDatasetFormat;
+        /**
+         * The RDF {@link Model} of the dataset to be added, which has passed the syntax check.
+         */
+        public Model addDatasetWithValidSyntax;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        RequestParameters parameters = new RequestParameters();
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
         /*
@@ -145,12 +148,12 @@ public class UpdateServlet extends HttpServlet {
                     try (InputStream fieldStream = item.openStream()) {
                         boolean ok;
                         if (item.isFormField()) {
-                            ok = handleFormField(fieldStream, item.getFieldName(), response);
+                            ok = handleFormField(fieldStream, item.getFieldName(), parameters, response);
                             if (!ok) {
                                 return;
                             }
                         } else {
-                            ok = handleFileField(item, fieldStream, response, validator);
+                            ok = handleFileField(item, fieldStream, parameters, response, validator);
                             if (!ok) {
                                 return;
                             }
@@ -173,13 +176,13 @@ public class UpdateServlet extends HttpServlet {
         /*
          * Validate the data model
          */
-        AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedRemoveDataset = validator.handleDataset(removeDatasetWithValidSyntax);
+        AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedRemoveDataset = validator.handleDataset(parameters.removeDatasetWithValidSyntax);
         Model toBeRemoved = validatedRemoveDataset.getKey();
-        addTypeToSubjectItems(toBeRemoved, targetDatasetURI.toString());
+        addTypeToSubjectItems(toBeRemoved, parameters.targetDatasetURI.toString());
         List<String> toBeRemovedInvalid = validatedRemoveDataset.getValue();
-        AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedAddDataset = validator.handleDataset(addDatasetWithValidSyntax);
+        AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedAddDataset = validator.handleDataset(parameters.addDatasetWithValidSyntax);
         Model toBeAdded = validatedAddDataset.getKey();
-        addTypeToSubjectItems(toBeAdded, targetDatasetURI.toString());
+        addTypeToSubjectItems(toBeAdded, parameters.targetDatasetURI.toString());
         List<String> toBeAddedInvalid = validatedAddDataset.getValue();
 
         /*
@@ -187,8 +190,8 @@ public class UpdateServlet extends HttpServlet {
          */
         AbstractMap.SimpleImmutableEntry<Integer, List<String>> parsedUpdateResponse;
         try {
-            parsedUpdateResponse = sendUpdateToBlazegraph(targetDatasetURI, toBeRemoved, removeDatasetFormat, removeDatasetFileName, toBeAdded,
-                    addDatasetFormat, addDatasetFileName);
+            parsedUpdateResponse = sendUpdateToBlazegraph(parameters.targetDatasetURI, toBeRemoved, parameters.removeDatasetFormat, parameters.removeDatasetFileName, toBeAdded,
+                    parameters.addDatasetFormat, parameters.addDatasetFileName);
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph update URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -206,11 +209,11 @@ public class UpdateServlet extends HttpServlet {
                     "https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model");
             return;
         }
-        EntitiesCache.cacheDatasetEntities(targetDatasetURI.toString());
+        EntitiesCache.cacheDatasetEntities(parameters.targetDatasetURI.toString());
         /*
          * Build the final response
          */
-        respond(response, removeDatasetFileName, addDatasetFileName, toBeRemovedInvalid, toBeAddedInvalid, parsedUpdateResponse);
+        respond(response, parameters.removeDatasetFileName, parameters.addDatasetFileName, toBeRemovedInvalid, toBeAddedInvalid, parsedUpdateResponse);
     }
 
     /**
@@ -219,7 +222,7 @@ public class UpdateServlet extends HttpServlet {
      *
      * @throws IOException if an error is detected when operating on the files
      */
-    private boolean handleFileField(FileItemStream item, InputStream fieldStream, HttpServletResponse response, WikibaseDataModelValidator validator) throws
+    private boolean handleFileField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response, WikibaseDataModelValidator validator) throws
             IOException {
         String fieldName = item.getFieldName();
         String fileName = item.getName();
@@ -227,10 +230,10 @@ public class UpdateServlet extends HttpServlet {
         switch (fieldName) {
             case REMOVE_FORM_FIELD:
                 log.info("Dataset to be removed file field '{}' with value '{}' detected.", fieldName, fileName);
-                removeDatasetFileName = fileName;
-                removeDatasetFormat = handleFormat(contentType, fileName);
+                parameters.removeDatasetFileName = fileName;
+                parameters.removeDatasetFormat = handleFormat(contentType, fileName);
                 // The part is just wrong, so fail with a bad request
-                if (removeDatasetFormat == null) {
+                if (parameters.removeDatasetFormat == null) {
                     log.error("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                             fileName, contentType);
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be removed '" + fileName +
@@ -239,7 +242,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 // Validate syntax
                 try {
-                    removeDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, removeDatasetFormat);
+                    parameters.removeDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.removeDatasetFormat);
                 } catch (RDFParseException rpe) {
                     log.error("The dataset to be removed is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
@@ -250,9 +253,9 @@ public class UpdateServlet extends HttpServlet {
                 break;
             case ADD_FORM_FIELD:
                 log.info("Dataset to be added file field '{}' with value '{}' detected.", fieldName, fileName);
-                addDatasetFileName = fileName;
-                addDatasetFormat = handleFormat(contentType, fileName);
-                if (addDatasetFormat == null) {
+                parameters.addDatasetFileName = fileName;
+                parameters.addDatasetFormat = handleFormat(contentType, fileName);
+                if (parameters.addDatasetFormat == null) {
                     log.error("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                             fileName, contentType);
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset to be added '" + fileName +
@@ -261,7 +264,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 // Validate syntax
                 try {
-                    addDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, addDatasetFormat);
+                    parameters.addDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.addDatasetFormat);
                 } catch (RDFParseException rpe) {
                     log.error("The dataset to be added is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
@@ -283,16 +286,16 @@ public class UpdateServlet extends HttpServlet {
      *
      * @throws IOException if an error is detected when reading the fields
      */
-    private boolean handleFormField(InputStream stream, String fieldName, HttpServletResponse response) throws IOException {
+    private boolean handleFormField(InputStream stream, String fieldName, RequestParameters parameters, HttpServletResponse response) throws IOException {
         String formValue = Streams.asString(stream, StandardCharsets.UTF_8.name());
         switch (fieldName) {
             case UploadServlet.USER_NAME_FORM_FIELD:
                 log.info("User name form field '{}' with value '{}' detected.", fieldName, formValue);
-                user = formValue;
+                parameters.user = formValue;
                 break;
             case TARGET_DATASET_URI_FORM_FIELD:
                 log.info("Target dataset URI form field '{}' with value '{}' detected.", fieldName, formValue);
-                targetDatasetURI = URI.create(formValue);
+                parameters.targetDatasetURI = URI.create(formValue);
                 break;
             default:
                 log.error("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", fieldName, formValue);

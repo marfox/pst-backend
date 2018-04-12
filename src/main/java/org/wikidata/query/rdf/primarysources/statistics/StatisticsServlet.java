@@ -52,23 +52,26 @@ public class StatisticsServlet extends HttpServlet {
     private static final String USER_PARAMETER = "user";
     private static final Logger log = LoggerFactory.getLogger(StatisticsServlet.class);
 
-    private String dataset;
-    private String user;
+    private class RequestParameters {
+        public String dataset;
+        public String user;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean ok = processRequest(request, response);
+        RequestParameters parameters = new RequestParameters();
+        boolean ok = processRequest(request, parameters, response);
         if (!ok) return;
-        if (dataset != null) {
-            sendResponse(response, getDatasetStatistics(), DATASET_PARAMETER);
+        if (parameters.dataset != null) {
+            sendResponse(response, getDatasetStatistics(parameters.dataset), DATASET_PARAMETER, parameters);
             return;
         }
-        if (user != null) {
-            sendResponse(response, getUserStatistics(), USER_PARAMETER);
+        if (parameters.user != null) {
+            sendResponse(response, getUserStatistics(parameters.user), USER_PARAMETER, parameters);
         }
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         Enumeration<String> params = request.getParameterNames();
         String datasetOrUser = params.nextElement();
         if (params.hasMoreElements()) {
@@ -91,8 +94,8 @@ public class StatisticsServlet extends HttpServlet {
                             "Parse error at index " + use.getIndex() + ".");
                     return false;
                 }
-                dataset = datasetOrUserValue;
-                user = null;
+                parameters.dataset = datasetOrUserValue;
+                parameters.user = null;
                 return true;
             case USER_PARAMETER:
                 // URI reserved characters are not allowed https://tools.ietf.org/html/rfc3986#section-2.2
@@ -103,8 +106,8 @@ public class StatisticsServlet extends HttpServlet {
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
                     return false;
                 }
-                user = datasetOrUserValue;
-                dataset = null;
+                parameters.user = datasetOrUserValue;
+                parameters.dataset = null;
                 return true;
             default:
                 log.error("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
@@ -113,12 +116,12 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser) throws IOException {
+    private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser, RequestParameters parameters) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving " + datasetOrUser + " statistics.");
         } else if (output.isEmpty()) {
-            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + dataset + "> ." : "No activity for user '" + user + "'.";
+            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + parameters.dataset + "> ." : "No activity for user '" + parameters.user + "'.";
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -129,7 +132,7 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    private JSONObject getDatasetStatistics() throws IOException {
+    private JSONObject getDatasetStatistics(String dataset) throws IOException {
         JSONParser parser = new JSONParser();
         Object parsed;
         try (BufferedReader reader = Files.newBufferedReader(DATASETS_CACHE_PATH)) {
@@ -163,7 +166,7 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    private JSONObject getUserStatistics() {
+    private JSONObject getUserStatistics(String user) {
         JSONObject stats = new JSONObject();
         String query = USER_QUERY.replace(USER_PLACE_HOLDER, user);
         TupleQueryResult result = runSparqlQuery(query);

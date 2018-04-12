@@ -53,7 +53,8 @@ public class SuggestServlet extends HttpServlet {
             "SELECT ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement_node ." +
+                    "    wd:" + QID_PLACE_HOLDER + " a wikibase:Item ;" +
+                    "                                ?property ?statement_node ." +
                     "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
@@ -64,7 +65,8 @@ public class SuggestServlet extends HttpServlet {
             "SELECT ?dataset ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
                     "WHERE {" +
                     "  GRAPH ?dataset {" +
-                    "    wd:" + QID_PLACE_HOLDER + " ?property ?statement_node ." +
+                    "    wd:" + QID_PLACE_HOLDER + " a wikibase:Item ;" +
+                    "                                ?property ?statement_node ." +
                     "    ?statement_node ?statement_property ?statement_value ." +
                     "    OPTIONAL {" +
                     "      ?statement_value ?reference_property ?reference_value ." +
@@ -80,8 +82,11 @@ public class SuggestServlet extends HttpServlet {
     private static final int DEFAULT_TIME_PRECISION = 9;
     private static final String DEFAULT_CALENDAR_MODEL = "http://www.wikidata.org/entity/Q1985727";
     private static final String DEFAULT_UNIT = "1";
-    private String dataset;
-    private String qId;
+
+    private class RequestParameters {
+        public String dataset;
+        public String qId;
+    }
 
     public static TupleQueryResult runSparqlQuery(String query) {
         URIBuilder builder = new URIBuilder();
@@ -163,31 +168,32 @@ public class SuggestServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean ok = processRequest(request, response);
+        RequestParameters parameters = new RequestParameters();
+        boolean ok = processRequest(request, parameters, response);
         if (!ok) return;
-        TupleQueryResult suggestions = getSuggestions();
-        sendResponse(response, suggestions);
+        TupleQueryResult suggestions = getSuggestions(parameters);
+        sendResponse(response, parameters, suggestions);
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
-        qId = request.getParameter(QID_PARAMETER);
-        if (qId == null) {
+        parameters.qId = request.getParameter(QID_PARAMETER);
+        if (parameters.qId == null) {
             log.error("No QID given. Will fail with a bad request.");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required QID.");
             return false;
-        } else if (!validator.isValidTerm(qId, "item")) {
-            log.error("Invalid QID: {}. Will fail with a bad request.", qId);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + qId + "'");
+        } else if (!validator.isValidTerm(parameters.qId, "item")) {
+            log.error("Invalid QID: {}. Will fail with a bad request.", parameters.qId);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + parameters.qId + "'");
             return false;
         }
         String datasetParameter = request.getParameter(DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
-            dataset = "all";
+            parameters.dataset = "all";
         } else {
             try {
                 new URI(datasetParameter);
-                dataset = datasetParameter;
+                parameters.dataset = datasetParameter;
             } catch (URISyntaxException use) {
                 log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
@@ -198,18 +204,18 @@ public class SuggestServlet extends HttpServlet {
         return true;
     }
 
-    private TupleQueryResult getSuggestions() {
-        String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
+    private TupleQueryResult getSuggestions(RequestParameters parameters) {
+        String query = parameters.dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, parameters.qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, parameters.qId).replace(DATASET_PLACE_HOLDER, parameters.dataset);
         return runSparqlQuery(query);
     }
 
-    private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions) throws IOException {
+    private void sendResponse(HttpServletResponse response, RequestParameters parameters, TupleQueryResult suggestions) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        JSONArray jsonSuggestions = formatSuggestions(suggestions);
+        JSONArray jsonSuggestions = formatSuggestions(suggestions, parameters);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
         } else if (jsonSuggestions.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + qId + " .");
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + parameters.qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);
@@ -222,7 +228,7 @@ public class SuggestServlet extends HttpServlet {
         }
     }
 
-    private JSONArray formatSuggestions(TupleQueryResult suggestions) {
+    private JSONArray formatSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
         JSONArray jsonSuggestions = new JSONArray();
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
@@ -231,7 +237,7 @@ public class SuggestServlet extends HttpServlet {
             while (suggestions.hasNext()) {
                 BindingSet suggestion = suggestions.next();
                 Value datasetValue = suggestion.getValue("dataset");
-                String currentDataset = datasetValue == null ? dataset : datasetValue.stringValue();
+                String currentDataset = datasetValue == null ? parameters.dataset : datasetValue.stringValue();
                 String mainProperty = suggestion.getValue("property").stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
                 String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
@@ -242,7 +248,7 @@ public class SuggestServlet extends HttpServlet {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     quickStatements.put(
                             qsKey,
-                            quickStatement.insert(0, qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
+                            quickStatement.insert(0, parameters.qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
@@ -286,10 +292,10 @@ public class SuggestServlet extends HttpServlet {
         return jsonSuggestions;
     }
 
-    private JSONObject handleReference(BindingSet suggestion) {
+    private JSONObject handleReference(BindingSet suggestion, String dataset) {
         JSONObject jsonReference = new JSONObject();
         JSONObject forMediaWikiApi = new JSONObject();
-        addCommonKeys(suggestion, jsonReference);
+        addCommonKeys(suggestion, jsonReference, dataset);
         JSONObject snaks = new JSONObject();
         JSONArray values = new JSONArray();
         JSONObject dataValue = new JSONObject();
@@ -318,10 +324,10 @@ public class SuggestServlet extends HttpServlet {
         return jsonReference;
     }
 
-    private JSONObject handleStatement(BindingSet suggestion, String prefix, String property) {
+    private JSONObject handleStatement(BindingSet suggestion, String prefix, String property, String dataset) {
         JSONObject jsonSuggestion = new JSONObject();
         JSONObject forMediaWikiApi = new JSONObject();
-        addCommonKeys(suggestion, jsonSuggestion);
+        addCommonKeys(suggestion, jsonSuggestion, dataset);
         String pId = property.substring(prefix.length());
         forMediaWikiApi.put("property", pId);
         forMediaWikiApi.put("snaktype", "value");
@@ -332,7 +338,7 @@ public class SuggestServlet extends HttpServlet {
         return jsonSuggestion;
     }
 
-    private void addCommonKeys(BindingSet suggestion, JSONObject jsonSuggestion) {
+    private void addCommonKeys(BindingSet suggestion, JSONObject jsonSuggestion, String dataset) {
         if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
     }

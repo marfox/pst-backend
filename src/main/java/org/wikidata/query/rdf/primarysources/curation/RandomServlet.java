@@ -36,24 +36,28 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  */
 public class RandomServlet extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(RandomServlet.class);
-    private String dataset;
-    private String qId;
+
+    private class RequestParameters {
+        private String dataset;
+        private String qId;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        boolean ok = processRequest(request, response);
+        RequestParameters parameters = new RequestParameters();
+        boolean ok = processRequest(request, response, parameters.dataset);
         if (!ok) return;
-        Set<String> items = readCachedSubjectSet();
+        Set<String> items =  readCachedSubjectSet(parameters.dataset);
         if (items == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving the list of subject items.");
             return;
         }
-        qId = pickRandomItem(new ArrayList<>(items));
-        TupleQueryResult suggestions = getSuggestions();
-        sendResponse(response, suggestions);
+        parameters.qId = pickRandomItem(new ArrayList<>(items));
+        TupleQueryResult suggestions = getSuggestions(parameters);
+        sendResponse(response, suggestions, parameters);
     }
 
-    private Set<String> readCachedSubjectSet() throws IOException {
+    private Set<String> readCachedSubjectSet(String dataset) throws IOException {
         Set<String> subjectSet = new HashSet<>();
         JSONParser parser = new JSONParser();
         Object parsed;
@@ -78,12 +82,12 @@ public class RandomServlet extends HttpServlet {
         return items.get(randomIndex);
     }
 
-    private TupleQueryResult getSuggestions() throws IOException {
-        String query = dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, qId).replace(DATASET_PLACE_HOLDER, dataset);
+    private TupleQueryResult getSuggestions(RequestParameters parameters) throws IOException {
+        String query = parameters.dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, parameters.qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, parameters.qId).replace(DATASET_PLACE_HOLDER, parameters.dataset);
         return runSparqlQuery(query);
     }
 
-    private JSONArray formatSuggestions(TupleQueryResult suggestions) {
+    private JSONArray formatSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
         JSONArray jsonSuggestions = new JSONArray();
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
@@ -92,7 +96,7 @@ public class RandomServlet extends HttpServlet {
             while (suggestions.hasNext()) {
                 BindingSet suggestion = suggestions.next();
                 Value datasetValue = suggestion.getValue("dataset");
-                String currentDataset = datasetValue == null ? dataset : datasetValue.stringValue();
+                String currentDataset = datasetValue == null ? parameters.dataset : datasetValue.stringValue();
                 String mainProperty = suggestion.getValue("property").stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
                 String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
@@ -103,7 +107,7 @@ public class RandomServlet extends HttpServlet {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     quickStatements.put(
                             qsKey,
-                            quickStatement.insert(0, qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
+                            quickStatement.insert(0, parameters.qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
@@ -159,13 +163,13 @@ public class RandomServlet extends HttpServlet {
         return jsonSuggestions;
     }
 
-    private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions) throws IOException {
+    private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions, RequestParameters parameters) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        JSONArray jsonSuggestions = formatSuggestions(suggestions);
+        JSONArray jsonSuggestions = formatSuggestions(suggestions, parameters);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
         } else if (jsonSuggestions.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + qId + " .");
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + parameters.qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);
@@ -175,7 +179,7 @@ public class RandomServlet extends HttpServlet {
         }
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean processRequest(HttpServletRequest request, HttpServletResponse response, String dataset) throws IOException {
         String datasetParameter = request.getParameter(DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
             dataset = "all";
