@@ -229,7 +229,7 @@ public class UpdateServlet extends HttpServlet {
         String contentType = item.getContentType();
         switch (fieldName) {
             case REMOVE_FORM_FIELD:
-                log.info("Dataset to be removed file field '{}' with value '{}' detected.", fieldName, fileName);
+                log.info("Dataset to be removed file field '{}' with file name '{}' detected.", fieldName, fileName);
                 parameters.removeDatasetFileName = fileName;
                 parameters.removeDatasetFormat = handleFormat(contentType, fileName);
                 // The part is just wrong, so fail with a bad request
@@ -252,7 +252,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 break;
             case ADD_FORM_FIELD:
-                log.info("Dataset to be added file field '{}' with value '{}' detected.", fieldName, fileName);
+                log.info("Dataset to be added file field '{}' with file name '{}' detected.", fieldName, fileName);
                 parameters.addDatasetFileName = fileName;
                 parameters.addDatasetFormat = handleFormat(contentType, fileName);
                 if (parameters.addDatasetFormat == null) {
