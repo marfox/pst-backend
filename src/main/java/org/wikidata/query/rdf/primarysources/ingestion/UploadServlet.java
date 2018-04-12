@@ -315,6 +315,13 @@ public class UploadServlet extends HttpServlet {
         String contentType = item.getContentType();
         log.info("File field '{}' with file name '{}' detected.", fieldName, fileName);
         RDFFormat format = handleFormat(contentType, fileName);
+        if (format == null) {
+            log.error("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
+                    fileName, contentType);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset '" + fileName +
+                    "' does not match any RDF format. Both the file content type '" + contentType + "' and the extension are invalid. Please fix this and try again.");
+            return null;
+        }
         Model validSyntax;
         try {
             validSyntax = validator.checkSyntax(fieldStream, BASE_URI, format);
@@ -329,11 +336,9 @@ public class UploadServlet extends HttpServlet {
     }
 
     /**
-     * TODO should raise a bad request when the content type is not in the list of valid RDF content types, otherwise it would be a 500
      * Try to find a suitable RDF format for a given file name.
      * If the part has no content type, guess the format based on the file name extension.
      * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
-     * Build a sanitized ASCII URI out of a given dataset name.
      */
     private RDFFormat handleFormat(String contentType, String fileName) {
         // If the content type is not explicilty RDF, still try to guess based on the file name extension
@@ -341,6 +346,9 @@ public class UploadServlet extends HttpServlet {
         else return Rio.getParserFormatForMIMEType(contentType, Rio.getParserFormatForFileName(fileName));
     }
 
+    /**
+     * Build a sanitized ASCII URI out of a given dataset name.
+     */
     private String mintDatasetURI(String datasetName) {
         // Delete any character that is not a letter, a number, or a whitespace, as we want to mint readable URIs
         String onlyLetters = datasetName.replaceAll("[^\\p{L}\\d\\s]", "");
