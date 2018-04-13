@@ -62,12 +62,17 @@ public class StatisticsServlet extends HttpServlet {
         RequestParameters parameters = new RequestParameters();
         boolean ok = processRequest(request, parameters, response);
         if (!ok) return;
+        log.debug("Required parameters stored as fields in private class: {}", parameters);
         if (parameters.dataset != null) {
-            sendResponse(response, getDatasetStatistics(parameters.dataset), DATASET_PARAMETER, parameters);
+            JSONObject datasetStatistics = getDatasetStatistics(parameters.dataset);
+            if (datasetStatistics != null) log.info("Loaded datasets statistics from cache");
+            sendResponse(response, datasetStatistics, DATASET_PARAMETER, parameters);
+            log.info("GET /statistics for datasets successful");
             return;
         }
         if (parameters.user != null) {
             sendResponse(response, getUserStatistics(parameters.user), USER_PARAMETER, parameters);
+            log.info("GET /statistics for users successful");
         }
     }
 
@@ -75,21 +80,22 @@ public class StatisticsServlet extends HttpServlet {
         Enumeration<String> params = request.getParameterNames();
         String datasetOrUser = params.nextElement();
         if (params.hasMoreElements()) {
-            log.error("More than one parameters given, will fail with a bad request");
+            log.warn("More than one parameter given, will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one parameter is required, either 'dataset' or 'user");
             return false;
         }
         String datasetOrUserValue = request.getParameter(datasetOrUser);
         if (datasetOrUserValue.isEmpty()) {
-            log.error("Empty {} value. Will fail with a bad request", datasetOrUser);
+            log.warn("Empty {} value. Will fail with a bad request", datasetOrUser);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The parameter '" + datasetOrUser + "' cannot have an empty value.");
+            return false;
         }
         switch (datasetOrUser) {
             case DATASET_PARAMETER:
                 try {
                     new URI(datasetOrUserValue);
                 } catch (URISyntaxException use) {
-                    log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+                    log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
                             "Parse error at index " + use.getIndex() + ".");
                     return false;
@@ -98,22 +104,33 @@ public class StatisticsServlet extends HttpServlet {
                 parameters.user = null;
                 return true;
             case USER_PARAMETER:
-                // URI reserved characters are not allowed https://tools.ietf.org/html/rfc3986#section-2.2
-                Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
-                Matcher matcher = illegal.matcher(datasetOrUserValue);
-                if (matcher.find()) {
-                    log.error("Illegal characters found in the user name: {}. Will fail with a bad request.", datasetOrUser);
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+                boolean validated = validateUserName(datasetOrUserValue);
+                if (!validated) {
+                    log.warn("Invalid user name. Will fail with a bad request");
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
                     return false;
                 }
                 parameters.user = datasetOrUserValue;
                 parameters.dataset = null;
                 return true;
             default:
-                log.error("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
+                log.warn("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid required parameter: '" + datasetOrUser + "'. Use one of 'dataset' or 'user");
                 return false;
         }
+    }
+
+    /**
+     * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2
+     */
+    public static boolean validateUserName(String userName) {
+        Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
+        Matcher matcher = illegal.matcher(userName);
+        if (matcher.find()) {
+            log.warn("Illegal characters found in the user name: {}", userName);
+            return false;
+        }
+        return true;
     }
 
     private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser, RequestParameters parameters) throws IOException {
@@ -122,6 +139,7 @@ public class StatisticsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving " + datasetOrUser + " statistics.");
         } else if (output.isEmpty()) {
             String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + parameters.dataset + "> ." : "No activity for user '" + parameters.user + "'.";
+            log.warn(errorMessage + " Will fail with a not found");
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -146,11 +164,13 @@ public class StatisticsServlet extends HttpServlet {
         JSONObject allStats = (JSONObject) parsed;
         Object datasetStats = allStats.get(dataset);
         if (datasetStats == null) return new JSONObject();
-            // Get dataset description and uploader user name
         else {
             JSONObject stats = (JSONObject) datasetStats;
+            log.debug("Dataset statistics from cache file '{}:' {}", DATASETS_CACHE_PATH, stats);
+            // Get dataset description and uploader user name via SPARQL
             String query = DATASET_INFO_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
             TupleQueryResult result = runSparqlQuery(query);
+            if (result == null) return null;
             try {
                 while (result.hasNext()) {
                     Value descriptionOrUploader = result.next().getValue("description_or_uploader");
@@ -158,11 +178,12 @@ public class StatisticsServlet extends HttpServlet {
                         stats.put("uploader", descriptionOrUploader.stringValue());
                     else stats.put("description", descriptionOrUploader.stringValue());
                 }
-                return stats;
             } catch (QueryEvaluationException qee) {
-                log.error("Failed evaluating the dataset statistics query: '" + query + "' The stack trace follows.", qee);
+                log.error("Failed evaluating the dataset description and uploader query: '" + query + "' The stack trace follows.", qee);
                 return null;
             }
+            log.debug("Final dataset statistics with uploader user name and eventual dataset description: {}", stats);
+            return stats;
         }
     }
 
@@ -170,9 +191,14 @@ public class StatisticsServlet extends HttpServlet {
         JSONObject stats = new JSONObject();
         String query = USER_QUERY.replace(USER_PLACE_HOLDER, user);
         TupleQueryResult result = runSparqlQuery(query);
+        if (result == null) return null;
         try {
-            while (result.hasNext()) {
+            if (result.hasNext()) {
                 int activities = Integer.parseInt(result.next().getValue("activities").stringValue());
+                if (result.hasNext()) log.warn("The user statistics query yielded more than one result. " +
+                        "This should not happen, please check the database. " +
+                        "Only the first result will be used. " +
+                        "Query: {}. Result: {}", query, result);
                 stats.put("user", user);
                 stats.put("activities", activities);
             }
