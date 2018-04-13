@@ -251,7 +251,7 @@ public class UploadServlet extends HttpServlet {
                 }
                 boolean checked = checkRequiredFields(parameters, response);
                 if (!checked) return false;
-                log.debug("Parameters stored as fields in private class: {}", parameters);
+                log.debug("Required parameters stored as fields in private class: {}", parameters);
             } catch (FileUploadException fue) {
                 log.error("Failed reading/parsing the request or storing files: {}", fue);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, fue.getLocalizedMessage());
@@ -466,7 +466,7 @@ public class UploadServlet extends HttpServlet {
         if (status == HttpServletResponse.SC_OK) {
             log.info("The datasets ingestion into Blazegraph went fine");
         } else {
-            log.error("Failed ingesting one or more datasets into Blazegraph, HTTP error code: {}", status);
+            log.error("Failed ingesting one or more datasets into Blazegraph. HTTP error code: {}", status);
             try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(dataLoaderResponse.getEntity().getContent(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = responseReader.readLine()) != null) {

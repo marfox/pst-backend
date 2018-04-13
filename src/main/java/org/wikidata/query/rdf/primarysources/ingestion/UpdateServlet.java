@@ -159,7 +159,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 boolean checked = checkRequiredFields(parameters, response);
                 if (!checked) return;
-                log.debug("Parameters stored as fields in private class: {}", parameters);
+                log.debug("Required parameters stored as fields in private class: {}", parameters);
             } catch (FileUploadException fue) {
                 log.error("Failed reading/parsing the request or storing files: {}", fue);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, fue.getLocalizedMessage());
