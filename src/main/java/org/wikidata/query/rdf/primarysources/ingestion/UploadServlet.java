@@ -187,6 +187,7 @@ public class UploadServlet extends HttpServlet {
         log.debug("Temporary dataset files deleted");
         EntitiesCache.cacheDatasetEntities(parameters.datasetURI);
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
+        log.info("POST /upload successful");
     }
 
     static void addTypeToSubjectItems(Model dataset, String uri) {

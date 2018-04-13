@@ -215,6 +215,7 @@ public class UpdateServlet extends HttpServlet {
          * Build the final response
          */
         respond(response, parameters.removeDatasetFileName, parameters.addDatasetFileName, toBeRemovedInvalid, toBeAddedInvalid, parsedUpdateResponse);
+        log.info("POST /update successful");
     }
 
     /**
