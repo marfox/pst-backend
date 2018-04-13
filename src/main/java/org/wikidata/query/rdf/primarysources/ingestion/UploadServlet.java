@@ -60,7 +60,7 @@ public class UploadServlet extends HttpServlet {
     static final String BASE_URI = WikibaseUris.WIKIDATA.root();
     /**
      * Namespace URI for metadata triples. Used to store data providers and users activities.
-     * See {@link UploadServlet#addMetadataQuads(HttpServletResponse)} and {@link org.wikidata.query.rdf.primarysources.curation.CurateServlet}.
+     * See {@link UploadServlet#addMetadataQuads(RequestParameters, HttpServletResponse)} and {@link org.wikidata.query.rdf.primarysources.curation.CurateServlet}.
      */
     public static final String METADATA_NAMESPACE = BASE_URI + "/primary-sources";
     public static final String DESCRIPTION_PREDICATE = METADATA_NAMESPACE + "/description";
