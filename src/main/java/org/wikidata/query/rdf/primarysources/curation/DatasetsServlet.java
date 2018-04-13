@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_MIME_TYPE;
 import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runSparqlQuery;
@@ -31,12 +32,15 @@ public class DatasetsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        if (!request.getParameterMap().isEmpty()) {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        if (!parameterMap.isEmpty()) {
+            log.warn("Request parameters detected: {}. Will fail with a bad request", parameterMap);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No parameters accepted.");
             return;
         }
         TupleQueryResult datasetsAndUsers = runSparqlQuery(QUERY);
         sendResponse(response, datasetsAndUsers);
+        log.info("GET /datasets successful");
     }
 
     private void sendResponse(HttpServletResponse response, TupleQueryResult datasetsAndUsers) throws IOException {
@@ -45,6 +49,7 @@ public class DatasetsServlet extends HttpServlet {
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving datasets.");
         } else if (output.isEmpty()) {
+            log.warn("No datasets available, will fail with a not found");
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Sorry, no datasets available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -71,6 +76,7 @@ public class DatasetsServlet extends HttpServlet {
             log.error("Failed evaluating the datasets query. The stack trace follows.", qee);
             return null;
         }
+        log.debug("JSON response body to be sent to the client: {}", output);
         return output;
     }
 

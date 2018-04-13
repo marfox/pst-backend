@@ -250,6 +250,7 @@ public class CurateServlet extends HttpServlet {
         if (!ok) return;
         JSONObject blazegraphError = changeState(parameters);
         sendResponse(response, blazegraphError);
+        log.info("POST /curate successful");
     }
 
     private boolean processQuickStatementRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
@@ -258,18 +259,18 @@ public class CurateServlet extends HttpServlet {
             JSONParser parser = new JSONParser();
             body = (JSONObject) parser.parse(requestReader);
         } catch (ParseException pe) {
-            log.error("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
+            log.warn("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed JSON request body. Parse error at index "
                     + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
             return false;
         }
         String givenState = (String) body.get(STATE_KEY);
         if (givenState == null) {
-            log.error("No state given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required state, either 'approved' or 'rejected'.");
+            log.warn("No state given. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required state. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
             return false;
         } else if (!givenState.equals("approved") && !givenState.equals("rejected") && !givenState.equals("duplicate") && !givenState.equals("blacklisted")) {
-            log.error("Invalid statement state: {}. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'. Will fail with a bad request");
+            log.warn("Invalid statement state: {}. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement state: '" + givenState + "'. " +
                     "Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
             return false;
@@ -277,21 +278,21 @@ public class CurateServlet extends HttpServlet {
         parameters.state = givenState;
         String givenUser = (String) body.get(USER_KEY);
         if (givenUser == null) {
-            log.error("No user name given. Will fail with a bad request");
+            log.warn("No user name given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
             return false;
         }
         parameters.user = givenUser;
         String givenDataset = (String) body.get(SuggestServlet.DATASET_PARAMETER);
         if (givenDataset == null) {
-            log.error("No dataset URI given. Will fail with a bad request");
+            log.warn("No dataset URI given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required dataset URI.");
             return false;
         }
         try {
             new URI(givenDataset);
         } catch (URISyntaxException use) {
-            log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+            log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
                     "Parse error at index " + use.getIndex() + ".");
             return false;
@@ -299,11 +300,11 @@ public class CurateServlet extends HttpServlet {
         parameters.dataset = givenDataset.replace("/new", "");
         String givenType = (String) body.get(STATEMENT_TYPE_KEY);
         if (givenType == null) {
-            log.error("No statement type (claim | qualifier | reference) given. Will fail with a bad request");
+            log.warn("No statement type (claim | qualifier | reference) given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required statement type, one of 'claim', 'qualifier', 'reference'.");
             return false;
         } else if (!givenType.equals("claim") && !givenType.equals("qualifier") && !givenType.equals("reference")) {
-            log.error("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
+            log.warn("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement type: '" + givenType + "'. " +
                     "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
@@ -311,16 +312,17 @@ public class CurateServlet extends HttpServlet {
         parameters.type = givenType;
         String givenQuickStatement = (String) body.get(QUICKSTATEMENT_KEY);
         if (givenQuickStatement == null) {
-            log.error("No QuickStatement given. Will fail with a bad request");
+            log.warn("No QuickStatement given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required QuickStatement.");
             return false;
         }
         boolean parsed = parseQuickStatement(givenQuickStatement, parameters);
         if (!parsed) {
-            log.error("Could not parse the given QuickStatement: {}", givenQuickStatement);
+            log.warn("Could not parse the given QuickStatement. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed QuickStatement: " + givenQuickStatement);
             return false;
         }
+        log.debug("Required parameters stored as fields in private class: {}", parameters);
         return true;
     }
 
@@ -500,6 +502,7 @@ public class CurateServlet extends HttpServlet {
                         : query.replace(VALUE_PLACE_HOLDER, parameters.value.toString());
                 break;
         }
+        log.debug("SPARQL update query to be sent to Blazegraph: {}", query);
         URIBuilder builder = new URIBuilder();
         URI uri;
         try {
@@ -515,12 +518,14 @@ public class CurateServlet extends HttpServlet {
             toBeReturned.put("error_message", "Failed building the URI to query Blazegraph: " + use.getInput() + ". Parse error at index " + use.getIndex());
             return toBeReturned;
         }
+        log.debug("URI built for Blazegraph SPARQL endpoint: {}", uri);
         HttpResponse response;
         response = Request.Post(uri)
                 .setHeader("Accept", SuggestServlet.IO_MIME_TYPE)
                 .bodyForm(Form.form().add("update", query).build())
                 .execute()
                 .returnResponse();
+        log.debug("Response from Blazegraph SPARQL endpoint: {}", response);
         int status = response.getStatusLine().getStatusCode();
         // Get the SPARQL update response only if it went wrong
         if (status == HttpServletResponse.SC_OK) {
@@ -556,17 +561,17 @@ public class CurateServlet extends HttpServlet {
     private boolean parseQuickStatement(String quickStatement, RequestParameters parameters) {
         String[] elements = quickStatement.split("\t");
         if (elements.length < 3) {
-            log.error("Malformed QuickStatement: {}", quickStatement);
+            log.warn("Malformed QuickStatement: {}", quickStatement);
             return false;
         }
         String subject = elements[0];
         String mainProperty = elements[1];
         if (!VALIDATOR.isValidTerm(subject, "item")) {
-            log.error("Invalid subject QID: {}", subject);
+            log.warn("Invalid subject QID: {}", subject);
             return false;
         }
         if (!VALIDATOR.isValidTerm(mainProperty, "property")) {
-            log.error("Invalid main property PID: {}", mainProperty);
+            log.warn("Invalid main property PID: {}", mainProperty);
             return false;
         }
         parameters.qId = subject;

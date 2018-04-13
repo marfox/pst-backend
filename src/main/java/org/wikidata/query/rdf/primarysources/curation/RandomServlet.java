@@ -52,9 +52,12 @@ public class RandomServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving the list of subject items.");
             return;
         }
+        log.info("Loaded subject items from cache");
         parameters.qId = pickRandomItem(new ArrayList<>(items));
+        log.debug("Required parameters stored as fields in private class: {}", parameters);
         TupleQueryResult suggestions = getSuggestions(parameters);
         sendResponse(response, suggestions, parameters);
+        log.info("GET /random successful");
     }
 
     private Set<String> readCachedSubjectSet(String dataset) throws IOException {
@@ -73,21 +76,24 @@ public class RandomServlet extends HttpServlet {
         if (dataset.equals("all"))
             for (String ds : (Set<String>) subjects.keySet()) subjectSet.addAll((JSONArray) subjects.get(ds));
         else subjectSet.addAll((JSONArray) subjects.get(dataset));
+        log.debug("Subject items from cache file '{}:' {}", SUBJECTS_CACHE_FILE, subjectSet);
         return subjectSet;
     }
 
     private String pickRandomItem(List<String> items) {
         Random random = new Random();
         int randomIndex = random.nextInt(items.size());
+        log.debug("Will pick subject number {}", randomIndex);
         return items.get(randomIndex);
     }
 
-    private TupleQueryResult getSuggestions(RequestParameters parameters) throws IOException {
+    private TupleQueryResult getSuggestions(RequestParameters parameters) {
         String query = parameters.dataset.equals("all") ? ALL_DATASETS_QUERY.replace(QID_PLACE_HOLDER, parameters.qId) : ONE_DATASET_QUERY.replace(QID_PLACE_HOLDER, parameters.qId).replace(DATASET_PLACE_HOLDER, parameters.dataset);
         return runSparqlQuery(query);
     }
 
     private JSONArray formatSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
+        log.debug("Starting conversion of SPARQL results to QuickStatements");
         JSONArray jsonSuggestions = new JSONArray();
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
@@ -102,63 +108,52 @@ public class RandomServlet extends HttpServlet {
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
                 Value statementValue = suggestion.getValue("statement_value");
                 String qsKey = statementUuid + "|" + currentDataset;
+                log.debug("Current QuickStatement key from RDF statement node and dataset: {}", qsKey);
                 // Statement
                 if (statementProperty.startsWith(WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
-                    quickStatements.put(
-                            qsKey,
-                            quickStatement.insert(0, parameters.qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue)));
+                    String statement = parameters.qId + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue);
+                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with statement: [{}]", statement);
+                    else log.debug("Existing key. Will update QuickStatement [{}] with statement [{}]", quickStatement, statement);
+                    quickStatements.put(qsKey, quickStatement.insert(0, statement));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
-                    quickStatements.put(
-                            qsKey,
-                            quickStatement
-                                    .append("\t")
-                                    .append(statementProperty.substring(qualifierPrefix.length()))
-                                    .append("\t")
-                                    .append(rdfValueToQuickStatement(statementValue)));
+                    String qualifier = "\t" + statementProperty.substring(qualifierPrefix.length()) + "\t" + rdfValueToQuickStatement(statementValue);
+                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with qualifier: [{}]", qualifier);
+                    else log.debug("Existing key. Will update QuickStatement [{}] with qualifier [{}]", quickStatement, qualifier);
+                    quickStatements.put(qsKey, quickStatement.append(qualifier));
                 }
                 // Reference
                 else if (statementProperty.equals(referencePrefix)) {
                     String referenceProperty = suggestion.getValue("reference_property").stringValue();
                     Value referenceValue = suggestion.getValue("reference_value");
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
-                    quickStatements.put(
-                            qsKey,
-                            quickStatement
-                                    .append("\t")
-                                    .append(referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S"))
-                                    .append("\t")
-                                    .append(rdfValueToQuickStatement(referenceValue)));
+                    String reference =
+                            "\t" +
+                                    referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
+                                    "\t" +
+                                    rdfValueToQuickStatement(referenceValue);
+                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with reference: [{}]", reference);
+                    else log.debug("Existing key. Will update QuickStatement [{}] with reference [{}]", quickStatement, reference);
+                    quickStatements.put(qsKey, quickStatement.append(reference));
                 }
             }
         } catch (QueryEvaluationException qee) {
-            log.error("Failed evaluating the suggestion query: {}", qee.getMessage());
+            log.error("Failed evaluating the suggestion SPARQL query: {}", qee.getMessage());
             return null;
         }
+        log.debug("Converted QuickStatements: {}", quickStatements);
         for (String key : quickStatements.keySet()) {
             String dataset = key.split("\\|")[1];
             String qs = quickStatements.get(key).toString();
-            // The front end always thinks there is only 1 reference, so mint 1 QuickStatement per reference
-            Pattern pattern = Pattern.compile("\tS\\d+\t[^\t]+");
-            Matcher matcher = pattern.matcher(qs);
-            List<String> references = new ArrayList<>();
-            while (matcher.find()) {
-                String reference = matcher.group();
-                references.add(reference);
-                qs = qs.replace(reference, "");
-            }
-            for (String ref : references) {
-                String statement = qs + ref;
-                JSONObject jsonSuggestion = new JSONObject();
-                jsonSuggestion.put("dataset", dataset);
-                jsonSuggestion.put("format", "QuickStatement");
-                jsonSuggestion.put("state", "new");
-                jsonSuggestion.put("statement", statement);
-                jsonSuggestions.add(jsonSuggestion);
-            }
+            JSONObject jsonSuggestion = new JSONObject();
+            jsonSuggestion.put("dataset", dataset);
+            jsonSuggestion.put("format", "QuickStatement");
+            jsonSuggestion.put("state", "new");
+            jsonSuggestion.put("statement", qs);
+            jsonSuggestions.add(jsonSuggestion);
         }
         return jsonSuggestions;
     }
@@ -169,6 +164,7 @@ public class RandomServlet extends HttpServlet {
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
         } else if (jsonSuggestions.isEmpty()) {
+            log.warn("No suggestions available for item {}. Will fail with a not found", parameters.qId);
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + parameters.qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -188,7 +184,7 @@ public class RandomServlet extends HttpServlet {
                 new URI(datasetParameter);
                 parameters.dataset = datasetParameter;
             } catch (URISyntaxException use) {
-                log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+                log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
                         "Parse error at index " + use.getIndex() + ".");
                 return false;
