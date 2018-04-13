@@ -1,5 +1,6 @@
 package org.wikidata.query.rdf.primarysources.statistics;
 
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +22,12 @@ public class ValuesServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         SessionHandler sh = new SessionHandler();
-        boolean ok = sh.processRequest(request, response, log);
+        boolean ok = sh.processRequest(request, response);
         if (!ok) return;
-        sh.sendResponse(response, sh.getEntities(ENTITY_TYPE, log), ENTITY_TYPE);
+        JSONObject entities = sh.getEntities(ENTITY_TYPE);
+        log.info("Loaded {} from cache", ENTITY_TYPE);
+        sh.sendResponse(response, entities, ENTITY_TYPE);
+        log.info("GET /values successful");
     }
 
 }

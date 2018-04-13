@@ -5,6 +5,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,17 +29,19 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_M
  */
 public class SessionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(SessionHandler.class);
+
     private String dataset;
 
-    boolean processRequest(HttpServletRequest request, HttpServletResponse response, Logger log) throws IOException {
+    boolean processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String[]> params = request.getParameterMap();
         if (params.size() > 1) {
-            log.error("More than one parameter given, will fail with a bad request");
+            log.warn("More than one parameter given, will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one optional parameter allowed: '" + DATASET_PARAMETER + "'");
             return false;
         }
         if (params.size() == 1 && !params.keySet().contains(DATASET_PARAMETER)) {
-            log.error("Invalid optional parameter given. Will fail with a bad request");
+            log.warn("Invalid optional parameter given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid optional parameter given. Only '" + DATASET_PARAMETER + "' is allowed");
             return false;
         }
@@ -50,12 +53,13 @@ public class SessionHandler {
                 new URI(datasetParameter);
                 dataset = datasetParameter;
             } catch (URISyntaxException use) {
-                log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+                log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
                         "Parse error at index " + use.getIndex() + ".");
                 return false;
             }
         }
+        log.debug("Required parameters stored: {}", dataset);
         return true;
     }
 
@@ -64,7 +68,8 @@ public class SessionHandler {
         if (entities == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when getting the list of " + entityType + ".");
         } else if (entities.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Sorry, no " + entityType + " available.");
+            log.warn("No {} available. Will fail with a not found", entityType);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "No " + entityType + " available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(IO_MIME_TYPE);
@@ -74,7 +79,7 @@ public class SessionHandler {
         }
     }
 
-    JSONObject getEntities(String entityType, Logger log) throws IOException {
+    JSONObject getEntities(String entityType) throws IOException {
         Path cache;
         switch (entityType) {
             case "subjects":
@@ -87,7 +92,7 @@ public class SessionHandler {
                 cache = VALUES_CACHE_FILE;
                 break;
             default:
-                log.error("Unexpected entity type '{}'. The cache for those entities cannot be retrieved", entityType);
+                log.error("Unexpected entity type: {}. The cache for those entities cannot be retrieved", entityType);
                 return null;
         }
         JSONParser parser = new JSONParser();
@@ -101,12 +106,15 @@ public class SessionHandler {
             }
         }
         JSONObject allEntities = (JSONObject) parsed;
-        if (dataset.equals("all")) return allEntities;
-        else {
+        if (dataset.equals("all")) {
+            log.debug("All {} from cache file '{}:' {}", entityType, cache, allEntities);
+            return allEntities;
+        } else {
             if (allEntities.containsKey(dataset)) {
                 JSONObject datasetEntities = new JSONObject();
                 JSONArray entities = (JSONArray) allEntities.get(dataset);
                 datasetEntities.put(dataset, entities);
+                log.debug("<{}> {} from cache file '{}:' {}", dataset, entityType, cache, datasetEntities);
                 return datasetEntities;
             } else return new JSONObject(); // Stands for no available entities
         }
