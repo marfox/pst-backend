@@ -45,7 +45,7 @@ public class RandomServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
-        boolean ok = processRequest(request, response, parameters.dataset);
+        boolean ok = processRequest(request, response, parameters);
         if (!ok) return;
         Set<String> items =  readCachedSubjectSet(parameters.dataset);
         if (items == null) {
@@ -179,14 +179,14 @@ public class RandomServlet extends HttpServlet {
         }
     }
 
-    private boolean processRequest(HttpServletRequest request, HttpServletResponse response, String dataset) throws IOException {
+    private boolean processRequest(HttpServletRequest request, HttpServletResponse response, RequestParameters parameters) throws IOException {
         String datasetParameter = request.getParameter(DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
-            dataset = "all";
+            parameters.dataset = "all";
         } else {
             try {
                 new URI(datasetParameter);
-                dataset = datasetParameter;
+                parameters.dataset = datasetParameter;
             } catch (URISyntaxException use) {
                 log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
