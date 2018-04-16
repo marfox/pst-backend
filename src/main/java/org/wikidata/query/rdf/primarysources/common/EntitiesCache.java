@@ -107,7 +107,7 @@ public class EntitiesCache {
         service.submit(() -> dumpDatasetEntities(dataset));
     }
 
-    static void dumpAllEntities() {
+    public static void dumpAllEntities() {
         /*
          The task runs on an independent thread, so prevent it from dying quietly if something goes wrong.
          Log anything that may be thrown.
