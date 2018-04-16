@@ -14,6 +14,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
 import org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 
 import java.io.File;
@@ -22,9 +23,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 
 import static org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache.DATASETS_CACHE_PATH;
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.PROPERTIES_CACHE_FILE;
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.SUBJECTS_CACHE_FILE;
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.VALUES_CACHE_FILE;
+import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
 import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
 import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER_URI_PREFIX;
@@ -76,6 +75,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
     }
 
     private void testPropertiesOrValues(URI endpoint, int expectedListSize, String expectedEntity) throws Exception {
+        EntitiesCache.dumpAllEntities();
         URIBuilder builder = new URIBuilder(endpoint);
         JSONParser parser = new JSONParser();
         // Proper call
@@ -129,7 +129,6 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         long activities = (long) stats.get("activities");
         assertEquals(1, activities);
         // Bad user name
-        // non va
         HttpResponse response = testClientError(builder, "user", ":/?#[]@!$&'()*+,;=");
         assertEquals(400, response.getStatusLine().getStatusCode());
         // No user activity

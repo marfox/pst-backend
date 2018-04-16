@@ -15,6 +15,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.4
  * Created on Oct 10, 2017.
- * TODO tests broken after the introduction of the type triple
  */
 @RunWith(RandomizedRunner.class)
 public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegrationTestBase {
@@ -57,6 +57,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         randomEndpoint = URI.create(BASE_ENDPOINT + "/random");
         datasetsEndpoint = URI.create(BASE_ENDPOINT + "/datasets");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
+        EntitiesCache.dumpAllEntities();
     }
 
     @AfterClass
@@ -228,7 +229,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        assertEquals(4, suggestions.size());
+        assertEquals(5, suggestions.size());
     }
 
     private void testSearchDefaultBehavior(URIBuilder builder, JSONParser parser) throws Exception {
@@ -254,7 +255,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        assertEquals(3, suggestions.size());
+        assertEquals(5, suggestions.size());
     }
 
     @Test
