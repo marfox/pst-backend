@@ -8,6 +8,10 @@ import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.Config;
+import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
+import org.wikidata.query.rdf.primarysources.common.Utils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,14 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Enumeration;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache.DATASETS_CACHE_PATH;
-import static org.wikidata.query.rdf.primarysources.curation.CurateServlet.USER_PLACE_HOLDER;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.METADATA_NAMESPACE;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER_URI_PREFIX;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -35,21 +31,6 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER
  */
 public class StatisticsServlet extends HttpServlet {
 
-    private static final String USER_QUERY =
-            "SELECT ?activities " +
-                    "WHERE {" +
-                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
-                    "    <" + USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + METADATA_NAMESPACE + "/activities> ?activities ." +
-                    "  }" +
-                    "}";
-    private static final String DATASET_INFO_QUERY =
-            "SELECT ?description_or_uploader " +
-                    "WHERE {" +
-                    "  GRAPH <" + METADATA_NAMESPACE + "> {" +
-                    "    <" + DATASET_PLACE_HOLDER + "> ?p ?description_or_uploader ." +
-                    "  }" +
-                    "}";
-    private static final String USER_PARAMETER = "user";
     private static final Logger log = LoggerFactory.getLogger(StatisticsServlet.class);
 
     private class RequestParameters {
@@ -66,12 +47,12 @@ public class StatisticsServlet extends HttpServlet {
         if (parameters.dataset != null) {
             JSONObject datasetStatistics = getDatasetStatistics(parameters.dataset);
             if (datasetStatistics != null) log.info("Loaded datasets statistics from cache");
-            sendResponse(response, datasetStatistics, DATASET_PARAMETER, parameters);
+            sendResponse(response, datasetStatistics, ApiParameters.DATASET_PARAMETER, parameters);
             log.info("GET /statistics for datasets successful");
             return;
         }
         if (parameters.user != null) {
-            sendResponse(response, getUserStatistics(parameters.user), USER_PARAMETER, parameters);
+            sendResponse(response, getUserStatistics(parameters.user), ApiParameters.USER_PARAMETER, parameters);
             log.info("GET /statistics for users successful");
         }
     }
@@ -91,7 +72,7 @@ public class StatisticsServlet extends HttpServlet {
             return false;
         }
         switch (datasetOrUser) {
-            case DATASET_PARAMETER:
+            case ApiParameters.DATASET_PARAMETER:
                 try {
                     new URI(datasetOrUserValue);
                 } catch (URISyntaxException use) {
@@ -103,8 +84,8 @@ public class StatisticsServlet extends HttpServlet {
                 parameters.dataset = datasetOrUserValue;
                 parameters.user = null;
                 return true;
-            case USER_PARAMETER:
-                boolean validated = validateUserName(datasetOrUserValue);
+            case ApiParameters.USER_PARAMETER:
+                boolean validated = Utils.validateUserName(datasetOrUserValue);
                 if (!validated) {
                     log.warn("Invalid user name. Will fail with a bad request");
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
@@ -120,19 +101,6 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    /**
-     * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2
-     */
-    public static boolean validateUserName(String userName) {
-        Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
-        Matcher matcher = illegal.matcher(userName);
-        if (matcher.find()) {
-            log.warn("Illegal characters found in the user name: {}", userName);
-            return false;
-        }
-        return true;
-    }
-
     private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser, RequestParameters parameters) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
         if (output == null) {
@@ -143,7 +111,7 @@ public class StatisticsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 output.writeJSONString(pw);
             }
@@ -153,11 +121,11 @@ public class StatisticsServlet extends HttpServlet {
     private JSONObject getDatasetStatistics(String dataset) throws IOException {
         JSONParser parser = new JSONParser();
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(DATASETS_CACHE_PATH)) {
+        try (BufferedReader reader = Files.newBufferedReader(Config.DATASETS_CACHE_PATH)) {
             try {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON datasets statistics. Parse error at index {}. Please check {}", pe.getPosition(), DATASETS_CACHE_PATH);
+                log.error("Malformed JSON datasets statistics. Parse error at index {}. Please check {}", pe.getPosition(), Config.DATASETS_CACHE_PATH);
                 return null;
             }
         }
@@ -166,10 +134,10 @@ public class StatisticsServlet extends HttpServlet {
         if (datasetStats == null) return new JSONObject();
         else {
             JSONObject stats = (JSONObject) datasetStats;
-            log.debug("Dataset statistics from cache file '{}:' {}", DATASETS_CACHE_PATH, stats);
+            log.debug("Dataset statistics from cache file '{}:' {}", Config.DATASETS_CACHE_PATH, stats);
             // Get dataset description and uploader user name via SPARQL
-            String query = DATASET_INFO_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
-            TupleQueryResult result = runSparqlQuery(query);
+            String query = SparqlQueries.DATASET_INFO_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+            TupleQueryResult result = Utils.runSparqlQuery(query);
             if (result == null) return null;
             try {
                 while (result.hasNext()) {
@@ -189,8 +157,8 @@ public class StatisticsServlet extends HttpServlet {
 
     private JSONObject getUserStatistics(String user) {
         JSONObject stats = new JSONObject();
-        String query = USER_QUERY.replace(USER_PLACE_HOLDER, user);
-        TupleQueryResult result = runSparqlQuery(query);
+        String query = SparqlQueries.USER_INFO_QUERY.replace(SparqlQueries.USER_PLACE_HOLDER, user);
+        TupleQueryResult result = Utils.runSparqlQuery(query);
         if (result == null) return null;
         try {
             if (result.hasNext()) {

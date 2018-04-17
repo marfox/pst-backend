@@ -13,20 +13,17 @@ import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.Config;
 import org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
+import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;
 
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-
-import static org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache.DATASETS_CACHE_PATH;
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
-import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.USER_URI_PREFIX;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -44,11 +41,11 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @BeforeClass
     public static void setUpOnce() throws URISyntaxException {
-        statisticsEndpoint = URI.create(BASE_ENDPOINT + "/statistics");
-        curateEndpoint = URI.create(BASE_ENDPOINT + "/curate");
-        propertiesEndpoint = URI.create(BASE_ENDPOINT + "/properties");
-        valuesEndpoint = URI.create(BASE_ENDPOINT + "/values");
-        testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
+        statisticsEndpoint = URI.create(CurationAPIIntegrationTest.BASE_ENDPOINT + "/statistics");
+        curateEndpoint = URI.create(CurationAPIIntegrationTest.BASE_ENDPOINT + "/curate");
+        propertiesEndpoint = URI.create(CurationAPIIntegrationTest.BASE_ENDPOINT + "/properties");
+        valuesEndpoint = URI.create(CurationAPIIntegrationTest.BASE_ENDPOINT + "/values");
+        testDataset = new File(Resources.getResource(CurationAPIIntegrationTest.TEST_DATASET_FILE_NAME).toURI());
     }
 
     @Before
@@ -58,10 +55,10 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @AfterClass
     public static void deleteCache() throws Exception {
-        Files.deleteIfExists(DATASETS_CACHE_PATH);
-        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
-        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
-        Files.deleteIfExists(VALUES_CACHE_FILE);
+        Files.deleteIfExists(Config.DATASETS_CACHE_PATH);
+        Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);
     }
 
     @Test
@@ -79,8 +76,8 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         URIBuilder builder = new URIBuilder(endpoint);
         JSONParser parser = new JSONParser();
         // Proper call
-        JSONObject jsonResponse = testCorrectCall(builder, parser, "dataset", EXPECTED_DATASET_URI);
-        JSONArray entities = (JSONArray) jsonResponse.get(EXPECTED_DATASET_URI);
+        JSONObject jsonResponse = testCorrectCall(builder, parser, "dataset", IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
+        JSONArray entities = (JSONArray) jsonResponse.get(IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
         assertEquals(expectedListSize, entities.size());
         assertTrue(entities.contains(expectedEntity));
         // Bad call
@@ -96,15 +93,15 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         URIBuilder builder = new URIBuilder(statisticsEndpoint);
         JSONParser parser = new JSONParser();
         // Proper call
-        JSONObject stats = testCorrectCall(builder, parser, "dataset", EXPECTED_DATASET_URI);
+        JSONObject stats = testCorrectCall(builder, parser, "dataset", IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
         long totalStatements = (long) stats.get("total_statements");
         long totalReferences = (long) stats.get("total_references");
         assertEquals(totalStatements, 5);
         assertEquals(totalReferences, totalStatements);
         assertEquals(stats.get("missing_statements"), totalStatements);
         assertEquals(stats.get("missing_references"), totalStatements);
-        assertEquals(DATASET_DESCRIPTION, stats.get("description"));
-        assertEquals(USER_URI_PREFIX + UPLOADER_NAME, stats.get("uploader"));
+        assertEquals(IngestionAPIIntegrationTest.DATASET_DESCRIPTION, stats.get("description"));
+        assertEquals(RdfVocabulary.USER_URI_PREFIX + IngestionAPIIntegrationTest.UPLOADER_NAME, stats.get("uploader"));
         // Bad call
         HttpResponse response = testClientError(builder, "dataset", "bad uri");
         assertEquals(400, response.getStatusLine().getStatusCode());
@@ -116,9 +113,9 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         JSONParser parser = new JSONParser();
         // Success
         JSONObject curated = new JSONObject();
-        curated.put("qs", TEST_QID + "\tP999\t\"Maybelline\"");
+        curated.put("qs", CurationAPIIntegrationTest.TEST_QID + "\tP999\t\"Maybelline\"");
         curated.put("type", "claim");
-        curated.put("dataset", EXPECTED_DATASET_URI);
+        curated.put("dataset", IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)

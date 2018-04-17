@@ -15,6 +15,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -23,9 +24,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
-import static org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -54,22 +52,22 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @BeforeClass
     public static void setUpOnce() throws URISyntaxException {
-        firstDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
+        firstDataset = new File(Resources.getResource(CurationAPIIntegrationTest.TEST_DATASET_FILE_NAME).toURI());
         secondDataset = new File(Resources.getResource(SECOND_TEST_DATASET_FILE_NAME).toURI());
         thirdDataset = new File(Resources.getResource(THIRD_TEST_DATASET_FILE_NAME).toURI());
     }
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
-        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
-        Files.deleteIfExists(VALUES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);
     }
 
     private void purgeCache() throws Exception {
-        purgeCacheFile(SUBJECTS_CACHE_FILE);
-        purgeCacheFile(PROPERTIES_CACHE_FILE);
-        purgeCacheFile(VALUES_CACHE_FILE);
+        purgeCacheFile(EntitiesCache.SUBJECTS_CACHE_FILE);
+        purgeCacheFile(EntitiesCache.PROPERTIES_CACHE_FILE);
+        purgeCacheFile(EntitiesCache.VALUES_CACHE_FILE);
     }
 
     private void purgeCacheFile(Path path) throws IOException {
@@ -87,19 +85,19 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         uploadDataset("chuck berry", firstDataset);
         // The cache updater runs on a separate thread, so wait a bit after the upload
         sleep(500);
-        firstDatasetSubjectsCache = parseCache(SUBJECTS_CACHE_FILE, parser);
-        firstDatasetPropertiesCache = parseCache(PROPERTIES_CACHE_FILE, parser);
-        firstDatasetValuesCache = parseCache(VALUES_CACHE_FILE, parser);
+        firstDatasetSubjectsCache = parseCache(EntitiesCache.SUBJECTS_CACHE_FILE, parser);
+        firstDatasetPropertiesCache = parseCache(EntitiesCache.PROPERTIES_CACHE_FILE, parser);
+        firstDatasetValuesCache = parseCache(EntitiesCache.VALUES_CACHE_FILE, parser);
         uploadDataset("pieter", secondDataset);
         sleep(500);
-        secondDatasetSubjectsCache = parseCache(SUBJECTS_CACHE_FILE, parser);
-        secondDatasetPropertiesCache = parseCache(PROPERTIES_CACHE_FILE, parser);
-        secondDatasetValuesCache = parseCache(VALUES_CACHE_FILE, parser);
+        secondDatasetSubjectsCache = parseCache(EntitiesCache.SUBJECTS_CACHE_FILE, parser);
+        secondDatasetPropertiesCache = parseCache(EntitiesCache.PROPERTIES_CACHE_FILE, parser);
+        secondDatasetValuesCache = parseCache(EntitiesCache.VALUES_CACHE_FILE, parser);
         uploadDataset("b and v", thirdDataset);
         sleep(500);
-        thirdDatasetSubjectsCache = parseCache(SUBJECTS_CACHE_FILE, parser);
-        thirdDatasetPropertiesCache = parseCache(PROPERTIES_CACHE_FILE, parser);
-        thirdDatasetValuesCache = parseCache(VALUES_CACHE_FILE, parser);
+        thirdDatasetSubjectsCache = parseCache(EntitiesCache.SUBJECTS_CACHE_FILE, parser);
+        thirdDatasetPropertiesCache = parseCache(EntitiesCache.PROPERTIES_CACHE_FILE, parser);
+        thirdDatasetValuesCache = parseCache(EntitiesCache.VALUES_CACHE_FILE, parser);
         purgeCache();
     }
 
@@ -116,7 +114,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         multipart.addTextBody("name", datasetName, ContentType.TEXT_PLAIN);
         multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
         multipart.addBinaryBody("dataset", dataset);
-        Request.Post(UPLOAD_ENDPOINT)
+        Request.Post(CurationAPIIntegrationTest.UPLOAD_ENDPOINT)
                 .body(multipart.build())
                 .execute()
                 .discardContent();
@@ -131,7 +129,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         assertTrue(firstDatasetSubjectsCache.containsKey(firstDatasetUri));
         JSONArray subjects = (JSONArray) firstDatasetSubjectsCache.get(firstDatasetUri);
         assertEquals(1, subjects.size());
-        assertEquals(TEST_QID, subjects.get(0));
+        assertEquals(CurationAPIIntegrationTest.TEST_QID, subjects.get(0));
         // Properties
         assertEquals(1, firstDatasetPropertiesCache.size());
         assertTrue(firstDatasetPropertiesCache.containsKey(firstDatasetUri));
@@ -202,7 +200,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         JSONParser parser = new JSONParser();
         EntitiesCache.dumpAllEntities();
         // Subjects
-        JSONObject currentSubjectsCache = parseCache(SUBJECTS_CACHE_FILE, parser);
+        JSONObject currentSubjectsCache = parseCache(EntitiesCache.SUBJECTS_CACHE_FILE, parser);
         assertTrue(currentSubjectsCache.containsKey("http://chuck-berry/new"));
         assertTrue(currentSubjectsCache.containsKey("http://pieter/new"));
         assertTrue(currentSubjectsCache.containsKey("http://b-and-v/new"));
@@ -211,7 +209,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         assertTrue(subjects.contains("Q21462724"));
         assertTrue(subjects.contains("Q22672029"));
         // Properties
-        JSONObject currentPropertiesCache = parseCache(PROPERTIES_CACHE_FILE, parser);
+        JSONObject currentPropertiesCache = parseCache(EntitiesCache.PROPERTIES_CACHE_FILE, parser);
         assertTrue(currentPropertiesCache.containsKey("http://chuck-berry/new"));
         assertTrue(currentPropertiesCache.containsKey("http://pieter/new"));
         assertTrue(currentPropertiesCache.containsKey("http://b-and-v/new"));
@@ -220,7 +218,7 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         assertTrue(properties.contains("P21"));
         assertTrue(properties.contains("P742"));
         // Values
-        JSONObject currentValuesCache = parseCache(VALUES_CACHE_FILE, parser);
+        JSONObject currentValuesCache = parseCache(EntitiesCache.VALUES_CACHE_FILE, parser);
         assertTrue(currentValuesCache.containsKey("http://chuck-berry/new"));
         assertTrue(currentValuesCache.containsKey("http://pieter/new"));
         assertTrue(currentValuesCache.containsKey("http://b-and-v/new"));

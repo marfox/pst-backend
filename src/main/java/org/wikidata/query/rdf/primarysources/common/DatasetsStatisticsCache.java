@@ -10,10 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runSparqlQuery;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -22,9 +18,6 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runS
  */
 public class DatasetsStatisticsCache {
 
-    public static final Path DATASETS_CACHE_PATH = Paths.get(System.getenv("DATASETS_CACHE"));
-    private static final String REFERENCES_QUERY = "select ?graph (count(?reference) as ?count) where { graph ?graph { ?statement prov:wasDerivedFrom ?reference } } group by ?graph";
-    private static final String STATEMENTS_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
     private static final Logger log = LoggerFactory.getLogger(DatasetsStatisticsCache.class);
 
     public static void dumpStatistics() {
@@ -44,10 +37,10 @@ public class DatasetsStatisticsCache {
                 if (referencesValue == null) referencesStats.put(key, statementsStats.get(key));
                 else referencesValue.putAll(statementsValue);
             }
-            try (BufferedWriter writer = Files.newBufferedWriter(DATASETS_CACHE_PATH)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(Config.DATASETS_CACHE_PATH)) {
                 referencesStats.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping datasets statistics to '" + DATASETS_CACHE_PATH + "'.", ioe);
+                log.error("Something went wrong when dumping datasets statistics to '" + Config.DATASETS_CACHE_PATH + "'.", ioe);
                 return;
             }
         } catch (Throwable t) {
@@ -60,8 +53,8 @@ public class DatasetsStatisticsCache {
 
     private static JSONObject fetchStatistics(String statementsOrReferences) {
         JSONObject stats = new JSONObject();
-        String query = statementsOrReferences.equals("statements") ? STATEMENTS_QUERY : REFERENCES_QUERY;
-        TupleQueryResult rawStats = runSparqlQuery(query);
+        String query = statementsOrReferences.equals("statements") ? SparqlQueries.STATEMENTS_COUNT_QUERY : SparqlQueries.REFERENCES_COUNT_QUERY;
+        TupleQueryResult rawStats = Utils.runSparqlQuery(query);
         try {
             while (rawStats.hasNext()) {
                 BindingSet result = rawStats.next();

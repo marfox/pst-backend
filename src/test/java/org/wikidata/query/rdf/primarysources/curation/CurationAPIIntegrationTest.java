@@ -15,7 +15,9 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,10 +26,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -62,18 +60,18 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
-        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
-        Files.deleteIfExists(VALUES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);
     }
 
     public static void uploadTestDataset(File testDataset) throws IOException {
         MultipartEntityBuilder multipart = MultipartEntityBuilder.create();
         ContentType text = ContentType.TEXT_PLAIN;
-        multipart.addTextBody(DATASET_NAME_FORM_FIELD, DATASET_NAME, text);
-        multipart.addTextBody(DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, text);
-        multipart.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, text);
-        multipart.addBinaryBody(FILE_FIELD, testDataset);
+        multipart.addTextBody(ApiParameters.DATASET_NAME_FORM_FIELD, IngestionAPIIntegrationTest.DATASET_NAME, text);
+        multipart.addTextBody(ApiParameters.DATASET_DESCRIPTION_FORM_FIELD, IngestionAPIIntegrationTest.DATASET_DESCRIPTION, text);
+        multipart.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, IngestionAPIIntegrationTest.UPLOADER_NAME, text);
+        multipart.addBinaryBody(IngestionAPIIntegrationTest.FILE_FIELD, testDataset);
         Request.Post(UPLOAD_ENDPOINT)
                 .body(multipart.build())
                 .execute()

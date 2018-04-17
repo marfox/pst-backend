@@ -11,20 +11,15 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.openrdf.model.Model;
-import org.openrdf.model.Resource;
 import org.openrdf.model.ValueFactory;
-import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
-import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandlerException;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.common.uri.WikibaseUris;
-import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
-import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,11 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.text.Normalizer;
 import java.util.*;
-
-import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.WIKIBASE_URIS;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -47,44 +38,6 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.WIKI
  */
 public class UploadServlet extends HttpServlet {
 
-    /**
-     * Endpoint name of the Blazegraph SPARQL service.
-     */
-    public static final String BLAZEGRAPH_SPARQL_ENDPOINT = "/sparql";
-    public static final String BLAZEGRAPH_HOST = System.getenv("HOST");
-    public static final int BLAZEGRAPH_PORT = Integer.parseInt(System.getenv("PORT"));
-    public static final String BLAZEGRAPH_CONTEXT = "/" + System.getenv("CONTEXT");
-    /**
-     * The data provider should not care about the base URI. A constant is used instead.
-     */
-    static final String BASE_URI = WikibaseUris.WIKIDATA.root();
-    /**
-     * Namespace URI for metadata triples. Used to store data providers and users activities.
-     * See {@link UploadServlet#addMetadataQuads(RequestParameters, HttpServletResponse)} and {@link org.wikidata.query.rdf.primarysources.curation.CurateServlet}.
-     */
-    public static final String METADATA_NAMESPACE = BASE_URI + "/primary-sources";
-    public static final String DESCRIPTION_PREDICATE = METADATA_NAMESPACE + "/description";
-    public static final String UPLOADED_BY_PREDICATE = METADATA_NAMESPACE + "/uploadedBy";
-    /**
-     * Prefix URI for users. Append the user name to build a full user URI.
-     */
-    public static final String USER_URI_PREFIX = BASE_URI + "/wiki/User:";
-    /**
-     * The less verbose RDF format is the default.
-     */
-    static final RDFFormat DEFAULT_RDF_FORMAT = RDFFormat.TURTLE;
-    /**
-     * Expected HTTP form field with the Wiki user name of the dataset provider.
-     */
-    public static final String USER_NAME_FORM_FIELD = "user";
-    /**
-     * Expected HTTP form field with the name of the dataset.
-     */
-    public static final String DATASET_NAME_FORM_FIELD = "name";
-    /**
-     * Optional HTTP form field with the dataset description.
-     */
-    public static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
     /**
      * The uploaded dataset must be saved to the server local file system, before sending it to the Blazegraph bulk load service.
      * See https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Load_Configuration
@@ -166,7 +119,7 @@ public class UploadServlet extends HttpServlet {
                 continue;
             }
             invalidComponents.put(dataset, validated.getValue());
-            addTypeToSubjectItems(toBeUploaded, parameters.datasetURI);
+            Utils.addTypeToSubjectItems(toBeUploaded, parameters.datasetURI);
             File tempDataset = writeTempDataset(response, valid.getKey(), toBeUploaded);
             if (tempDataset == null) return;
             tempDatasets.add(tempDataset);
@@ -188,17 +141,6 @@ public class UploadServlet extends HttpServlet {
         EntitiesCache.cacheDatasetEntities(parameters.datasetURI);
         sendResponse(response, notUploaded, invalidComponents, dataLoaderResponse);
         log.info("POST /upload successful");
-    }
-
-    static void addTypeToSubjectItems(Model dataset, String uri) {
-        Set<Resource> subjects = dataset.subjects();
-        Set<org.openrdf.model.URI> items = new HashSet<>();
-        for (Resource s : subjects) {
-            org.openrdf.model.URI subject = (org.openrdf.model.URI) s;
-            if (subject.getNamespace().equals(WIKIBASE_URIS.entity())) items.add(subject);
-        }
-        for (org.openrdf.model.URI item : items) dataset.add(item, RDF.TYPE, new URIImpl(ITEM), new URIImpl(uri));
-        log.debug("Added a (item, rdf:type, wikibase:Item) triple to each subject item: {}", items);
     }
 
     /**
@@ -270,7 +212,7 @@ public class UploadServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + USER_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.datasetFileName == null) {
@@ -280,7 +222,7 @@ public class UploadServlet extends HttpServlet {
         }
         if (parameters.datasetURI == null) {
             log.warn("No dataset name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset name given. Please use the field '" + DATASET_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset name given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.datasetDescription == null) {
@@ -298,20 +240,20 @@ public class UploadServlet extends HttpServlet {
         String field = item.getFieldName();
         String value = Streams.asString(fieldStream);
         switch (field) {
-            case DATASET_NAME_FORM_FIELD:
+            case ApiParameters.DATASET_NAME_FORM_FIELD:
                 log.info("Dataset name detected. Will build a sanitized ASCII URI out of value '{}' as the named graph where the " +
                         "dataset will be stored.", value);
-                parameters.datasetURI = mintDatasetURI(value);
+                parameters.datasetURI = Utils.mintDatasetURI(value);
                 String defaultGraph = "defaultGraph";
                 parameters.dataLoaderProperties.setProperty(defaultGraph, parameters.datasetURI);
                 log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", defaultGraph, parameters.dataLoaderProperties.getProperty(defaultGraph));
                 return true;
-            case DATASET_DESCRIPTION_FORM_FIELD:
-                log.info("Dataset description detected. Will be stored in the metadata graph <{}>", METADATA_NAMESPACE);
+            case ApiParameters.DATASET_DESCRIPTION_FORM_FIELD:
+                log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
                 parameters.datasetDescription = value;
                 log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
                 return true;
-            case USER_NAME_FORM_FIELD:
+            case ApiParameters.USER_NAME_FORM_FIELD:
                 log.info("User name detected. Will store the value '{}' as the uploader of the dataset", value);
                 parameters.user = value;
                 return true;
@@ -335,7 +277,7 @@ public class UploadServlet extends HttpServlet {
         String contentType = item.getContentType();
         log.info("File field '{}' with file name '{}' detected.", fieldName, fileName);
         parameters.datasetFileName = fileName;
-        RDFFormat format = handleFormat(contentType, fileName);
+        RDFFormat format = Utils.handleRdfFormat(contentType, fileName);
         if (format == null) {
             log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                     fileName, contentType);
@@ -345,7 +287,7 @@ public class UploadServlet extends HttpServlet {
         }
         Model validSyntax;
         try {
-            validSyntax = validator.checkSyntax(fieldStream, BASE_URI, format);
+            validSyntax = validator.checkSyntax(fieldStream, RdfVocabulary.BASE_URI, format);
         } catch (RDFParseException rpe) {
             log.warn("The dataset is not valid RDF. Error at line {}, column {}. Will fail with a bad request", rpe.getLineNumber(), rpe
                     .getColumnNumber());
@@ -354,33 +296,6 @@ public class UploadServlet extends HttpServlet {
             return null;
         }
         return new AbstractMap.SimpleImmutableEntry<>(format, validSyntax);
-    }
-
-    /**
-     * Try to find a suitable RDF format for a given file name.
-     * If the part has no content type, guess the format based on the file name extension.
-     * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
-     */
-    private RDFFormat handleFormat(String contentType, String fileName) {
-        // If the content type is not explicilty RDF, still try to guess based on the file name extension
-        if (contentType == null) return Rio.getParserFormatForFileName(fileName, DEFAULT_RDF_FORMAT);
-        else return Rio.getParserFormatForMIMEType(contentType, Rio.getParserFormatForFileName(fileName));
-    }
-
-    /**
-     * Build a sanitized ASCII URI out of a given dataset name.
-     */
-    private String mintDatasetURI(String datasetName) {
-        // Delete any character that is not a letter, a number, or a whitespace, as we want to mint readable URIs
-        String onlyLetters = datasetName.replaceAll("[^\\p{L}\\d\\s]", "");
-        // Remove diactrics to mint ASCII URIs
-        String noDiacritics = Normalizer.normalize(onlyLetters, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
-        // Replace whitespaces with a dash
-        String clean = noDiacritics.replaceAll("\\s+", "-");
-        // A freshly uploaded dataset gets the "/new" state
-        String datasetURI = "http://" + clean.toLowerCase(Locale.ENGLISH) + "/new";
-        log.info("Named graph URI: {}", datasetURI);
-        return datasetURI;
     }
 
     /**
@@ -445,9 +360,9 @@ public class UploadServlet extends HttpServlet {
         try {
             uri = builder
                     .setScheme("http")
-                    .setHost(BLAZEGRAPH_HOST)
-                    .setPort(BLAZEGRAPH_PORT)
-                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
+                    .setHost(Config.BLAZEGRAPH_HOST)
+                    .setPort(Config.BLAZEGRAPH_PORT)
+                    .setPath(Config.BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
                     .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph data loader URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
@@ -485,12 +400,12 @@ public class UploadServlet extends HttpServlet {
     private boolean addMetadataQuads(RequestParameters parameters, HttpServletResponse response) throws IOException {
         ValueFactory vf = ValueFactoryImpl.getInstance();
         String dataset = vf.createURI(parameters.datasetURI).stringValue();
-        String uploadedBy = vf.createURI(UPLOADED_BY_PREDICATE).stringValue();
-        String uploader = vf.createURI(USER_URI_PREFIX + parameters.user).stringValue();
-        String metadataGraph = vf.createURI(METADATA_NAMESPACE).stringValue();
+        String uploadedBy = vf.createURI(RdfVocabulary.UPLOADED_BY_PREDICATE).stringValue();
+        String uploader = vf.createURI(RdfVocabulary.USER_URI_PREFIX + parameters.user).stringValue();
+        String metadataGraph = vf.createURI(RdfVocabulary.METADATA_NAMESPACE).stringValue();
         StringBuilder toBeAdded = new StringBuilder("<" + dataset + "> <" + uploadedBy + "> <" + uploader + "> <" + metadataGraph + "> .");
         if (parameters.datasetDescription != null) {
-            String description = vf.createURI(DESCRIPTION_PREDICATE).stringValue();
+            String description = vf.createURI(RdfVocabulary.DESCRIPTION_PREDICATE).stringValue();
             String descriptionString = vf.createLiteral(parameters.datasetDescription).stringValue();
             String descriptionStatement = "<" + dataset + "> <" + description + "> \"" + descriptionString + "\" <" + metadataGraph + "> .";
             toBeAdded.append('\n').append(descriptionStatement);
@@ -501,9 +416,9 @@ public class UploadServlet extends HttpServlet {
         try {
             uri = builder
                     .setScheme("http")
-                    .setHost(BLAZEGRAPH_HOST)
-                    .setPort(BLAZEGRAPH_PORT)
-                    .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
+                    .setHost(Config.BLAZEGRAPH_HOST)
+                    .setPort(Config.BLAZEGRAPH_PORT)
+                    .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
                     .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph SPARQL endpoint URI: {}. Parse error at index {}", use.getInput(), use.getIndex());

@@ -6,6 +6,8 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,10 +19,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.DATASET_PARAMETER;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_MIME_TYPE;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -37,15 +35,15 @@ public class SessionHandler {
         Map<String, String[]> params = request.getParameterMap();
         if (params.size() > 1) {
             log.warn("More than one parameter given, will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one optional parameter allowed: '" + DATASET_PARAMETER + "'");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one optional parameter allowed: '" + ApiParameters.DATASET_PARAMETER + "'");
             return false;
         }
-        if (params.size() == 1 && !params.keySet().contains(DATASET_PARAMETER)) {
+        if (params.size() == 1 && !params.keySet().contains(ApiParameters.DATASET_PARAMETER)) {
             log.warn("Invalid optional parameter given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid optional parameter given. Only '" + DATASET_PARAMETER + "' is allowed");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid optional parameter given. Only '" + ApiParameters.DATASET_PARAMETER + "' is allowed");
             return false;
         }
-        String datasetParameter = request.getParameter(DATASET_PARAMETER);
+        String datasetParameter = request.getParameter(ApiParameters.DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
             dataset = "all";
         } else {
@@ -72,7 +70,7 @@ public class SessionHandler {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No " + entityType + " available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 entities.writeJSONString(pw);
             }
@@ -83,13 +81,13 @@ public class SessionHandler {
         Path cache;
         switch (entityType) {
             case "subjects":
-                cache = SUBJECTS_CACHE_FILE;
+                cache = EntitiesCache.SUBJECTS_CACHE_FILE;
                 break;
             case "properties":
-                cache = PROPERTIES_CACHE_FILE;
+                cache = EntitiesCache.PROPERTIES_CACHE_FILE;
                 break;
             case "values":
-                cache = VALUES_CACHE_FILE;
+                cache = EntitiesCache.VALUES_CACHE_FILE;
                 break;
             default:
                 log.error("Unexpected entity type: {}. The cache for those entities cannot be retrieved", entityType);

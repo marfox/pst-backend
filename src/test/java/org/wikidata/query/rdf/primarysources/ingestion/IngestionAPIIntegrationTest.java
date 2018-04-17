@@ -12,7 +12,11 @@ import org.hamcrest.Matchers;
 import org.junit.*;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.TupleQueryResult;
+import org.wikidata.query.rdf.common.uri.Ontology;
 import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -27,11 +31,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.wikidata.query.rdf.common.uri.Ontology.ITEM;
-import static org.wikidata.query.rdf.primarysources.common.EntitiesCache.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.UpdateServlet.*;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -72,9 +71,9 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
 
     @AfterClass
     public static void deleteCache() throws IOException {
-        Files.deleteIfExists(SUBJECTS_CACHE_FILE);
-        Files.deleteIfExists(PROPERTIES_CACHE_FILE);
-        Files.deleteIfExists(VALUES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
+        Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);
     }
 
     @Before
@@ -101,14 +100,14 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, METADATA_NAMESPACE));
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, RdfVocabulary.METADATA_NAMESPACE));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         assertEquals(4, count(uploadedStatements));
         testMetadataAddition(expectedDatasetName);
     }
 
     private void testMetadataAddition(String expectedDatasetName) throws Exception {
-        TupleQueryResult metadata = rdfRepository().query("select * where { graph <" + METADATA_NAMESPACE + "> { ?s ?p ?o } }");
+        TupleQueryResult metadata = rdfRepository().query("select * where { graph <" + RdfVocabulary.METADATA_NAMESPACE + "> { ?s ?p ?o } }");
         Set<String> subjects = new HashSet<>();
         Set<String> predicates = new HashSet<>();
         Set<String> objects = new HashSet<>();
@@ -122,8 +121,8 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         assertEquals(2, predicates.size());
         assertEquals(2, objects.size());
         assertThat(subjects, Matchers.contains(expectedDatasetName));
-        assertThat(predicates, Matchers.containsInAnyOrder(UPLOADED_BY_PREDICATE, DESCRIPTION_PREDICATE));
-        assertThat(objects, Matchers.containsInAnyOrder(USER_URI_PREFIX + UPLOADER_NAME, DATASET_DESCRIPTION));
+        assertThat(predicates, Matchers.containsInAnyOrder(RdfVocabulary.UPLOADED_BY_PREDICATE, RdfVocabulary.DESCRIPTION_PREDICATE));
+        assertThat(objects, Matchers.containsInAnyOrder(RdfVocabulary.USER_URI_PREFIX + UPLOADER_NAME, DATASET_DESCRIPTION));
     }
 
     @Test
@@ -141,7 +140,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         while (uploadedGraphs.hasNext()) {
             namedGraphs.add(uploadedGraphs.next().getValue("g").stringValue());
         }
-        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, METADATA_NAMESPACE));
+        assertThat(namedGraphs, Matchers.containsInAnyOrder(expectedDatasetName, RdfVocabulary.METADATA_NAMESPACE));
         TupleQueryResult uploadedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
         assertEquals(3, count(uploadedStatements));
         testSubjectItemTypeAddition(expectedDatasetName);
@@ -222,7 +221,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     }
 
     private void testSubjectItemTypeAddition(String datasetUri) throws Exception {
-        TupleQueryResult typeTriples = rdfRepository().query("select * where { graph <" + datasetUri + "> { ?s a <" + ITEM + "> } }");
+        TupleQueryResult typeTriples = rdfRepository().query("select * where { graph <" + datasetUri + "> { ?s a <" + Ontology.ITEM + "> } }");
         assertEquals(1, count(typeTriples));
     }
 
@@ -242,9 +241,9 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         HttpPost post = new HttpPost(endpoint);
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
-        builder.addTextBody(DATASET_NAME_FORM_FIELD, datasetName, textContentType);
-        builder.addTextBody(DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, textContentType);
-        builder.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
+        builder.addTextBody(ApiParameters.DATASET_NAME_FORM_FIELD, datasetName, textContentType);
+        builder.addTextBody(ApiParameters.DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, textContentType);
+        builder.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
         builder.addBinaryBody(FILE_FIELD, dataset);
         HttpEntity datasetUpload = builder.build();
         post.setEntity(datasetUpload);
@@ -255,10 +254,10 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         HttpPost post = new HttpPost(endpoint);
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
-        builder.addTextBody(TARGET_DATASET_URI_FORM_FIELD, EXPECTED_DATASET_URI, textContentType);
-        builder.addTextBody(USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
-        builder.addBinaryBody(REMOVE_FORM_FIELD, toRemove);
-        builder.addBinaryBody(ADD_FORM_FIELD, toAdd);
+        builder.addTextBody(ApiParameters.TARGET_DATASET_URI_FORM_FIELD, EXPECTED_DATASET_URI, textContentType);
+        builder.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
+        builder.addBinaryBody(ApiParameters.REMOVE_FORM_FIELD, toRemove);
+        builder.addBinaryBody(ApiParameters.ADD_FORM_FIELD, toAdd);
         HttpEntity update = builder.build();
         post.setEntity(update);
         return client.execute(post);

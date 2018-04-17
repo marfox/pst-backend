@@ -21,8 +21,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
@@ -30,21 +28,15 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  */
 public class EntitiesCache {
 
-    /*
-     An environment variable is needed for tests. A system property would not be read when testing.
-     IMPORTANT: ENTITIES_CACHE should always be exported, otherwise integration tests can't run:
-     when Jetty is fired up, the listener CacheUpdater looks for that variable.
-      */
-    private static final String ENTITIES_CACHE_DIR = System.getenv("ENTITIES_CACHE");
-    public static final Path SUBJECTS_CACHE_FILE = Paths.get(ENTITIES_CACHE_DIR, "subjects.json");
-    public static final Path PROPERTIES_CACHE_FILE = Paths.get(ENTITIES_CACHE_DIR, "properties.json");
-    public static final Path VALUES_CACHE_FILE = Paths.get(ENTITIES_CACHE_DIR, "values.json");
+    public static final Path SUBJECTS_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "subjects.json");
+    public static final Path PROPERTIES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "properties.json");
+    public static final Path VALUES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "values.json");
 
     // A single query for subjects, properties, and values is too heavy, so split into 3
     private static final String SUBJECTS_ONE_DATASET_QUERY =
             "SELECT ?subject " + // No need for a DISTINCT here, one dataset should not have duplicate subjects
                     "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
                     "    ?subject a wikibase:Item ;" +
                     "      ?property ?statement_node ." +
                     "  }" +
@@ -53,7 +45,7 @@ public class EntitiesCache {
     private static final String PROPERTIES_ONE_DATASET_QUERY =
             "SELECT DISTINCT ?property " +
                     "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
                     "    ?subject a wikibase:Item ;" +
                     "      ?property ?statement_node ." +
                     "  }" +
@@ -62,12 +54,12 @@ public class EntitiesCache {
     private static final String VALUES_ONE_DATASET_QUERY =
             "SELECT DISTINCT ?value " +
                     "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
                     "    ?subject a wikibase:Item ;" +
                     "      ?property ?st_node ." +
                     "    ?st_node ?st_property ?value ." +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?value), \"" + WIKIBASE_URIS.entity() + "Q\") ." +
+                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
                     "}";
     private static final String SUBJECTS_ALL_DATASETS_QUERY =
             "SELECT DISTINCT ?subject ?dataset " +
@@ -95,7 +87,7 @@ public class EntitiesCache {
                     "      ?property ?st_node ." +
                     "    ?st_node ?st_property ?value ." +
                     "  }" +
-                    "  FILTER STRSTARTS(str(?value), \"" + WIKIBASE_URIS.entity() + "Q\") ." +
+                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
                     "  FILTER STRENDS(str(?dataset), \"new\") ." +
                     "}";
 
@@ -136,7 +128,7 @@ public class EntitiesCache {
         try (BufferedWriter writer = Files.newBufferedWriter(cache)) {
             entities.writeJSONString(writer);
         } catch (IOException ioe) {
-            log.error("Something went wrong when dumping all " + entityType + " entities to '" + ENTITIES_CACHE_DIR + "'.", ioe);
+            log.error("Something went wrong when dumping all " + entityType + " entities to '" + Config.ENTITIES_CACHE_DIR + "'.", ioe);
         }
     }
 
@@ -146,15 +138,15 @@ public class EntitiesCache {
         switch (entityType) {
             case "subject":
                 query = SUBJECTS_ALL_DATASETS_QUERY;
-                namespaceIndex = WIKIBASE_URIS.entity().length();
+                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             case "property":
                 query = PROPERTIES_ALL_DATASETS_QUERY;
-                namespaceIndex = WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
+                namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
                 break;
             case "value":
                 query = VALUES_ALL_DATASETS_QUERY;
-                namespaceIndex = WIKIBASE_URIS.entity().length();
+                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             default:
                 log.error("Unexpected entity type '{}'. The cache for those entities will not be available", entityType);
@@ -162,7 +154,7 @@ public class EntitiesCache {
         }
         JSONObject entitiesJson = new JSONObject();
         Map<String, Set<String>> entitiesMap = new HashMap<>();
-        TupleQueryResult results = runSparqlQuery(query);
+        TupleQueryResult results = Utils.runSparqlQuery(query);
         try {
             while (results.hasNext()) {
                 BindingSet result = results.next();
@@ -250,23 +242,23 @@ public class EntitiesCache {
         int namespaceIndex;
         switch (entityType) {
             case "subject":
-                query = SUBJECTS_ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = WIKIBASE_URIS.entity().length();
+                query = SUBJECTS_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             case "property":
-                query = PROPERTIES_ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
+                query = PROPERTIES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
                 break;
             case "value":
-                query = VALUES_ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = WIKIBASE_URIS.entity().length();
+                query = VALUES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             default:
                 log.error("Invalid entity type '{}'. Expected one of 'subject', 'property' or 'value'. " +
                         "The cache for those entities will not be available", entityType);
                 return null;
         }
-        TupleQueryResult results = runSparqlQuery(query);
+        TupleQueryResult results = Utils.runSparqlQuery(query);
         try {
             while (results.hasNext()) {
                 BindingSet result = results.next();

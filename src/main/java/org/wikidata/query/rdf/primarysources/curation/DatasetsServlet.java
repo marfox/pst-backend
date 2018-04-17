@@ -7,6 +7,9 @@ import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
+import org.wikidata.query.rdf.primarysources.common.Utils;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,11 +18,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.IO_MIME_TYPE;
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.runSparqlQuery;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.METADATA_NAMESPACE;
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.UPLOADED_BY_PREDICATE;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
@@ -27,7 +25,7 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.UPLO
  */
 public class DatasetsServlet extends HttpServlet {
 
-    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + METADATA_NAMESPACE + "> { ?dataset <" + UPLOADED_BY_PREDICATE + "> ?user } }";
+    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> { ?dataset <" + RdfVocabulary.UPLOADED_BY_PREDICATE + "> ?user } }";
     private static final Logger log = LoggerFactory.getLogger(DatasetsServlet.class);
 
     @Override
@@ -38,7 +36,7 @@ public class DatasetsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No parameters accepted.");
             return;
         }
-        TupleQueryResult datasetsAndUsers = runSparqlQuery(QUERY);
+        TupleQueryResult datasetsAndUsers = Utils.runSparqlQuery(QUERY);
         sendResponse(response, datasetsAndUsers);
         log.info("GET /datasets successful");
     }
@@ -53,7 +51,7 @@ public class DatasetsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Sorry, no datasets available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 output.writeJSONString(pw);
             }

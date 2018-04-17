@@ -20,8 +20,7 @@ import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
-import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
+import org.wikidata.query.rdf.primarysources.common.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,8 +33,6 @@ import java.nio.file.Files;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
 
 /**
  * This Web service allows a third-party data provider to update a given dataset.
@@ -52,20 +49,7 @@ import static org.wikidata.query.rdf.primarysources.ingestion.UploadServlet.*;
  * @since 0.2.4
  * Created on Jul 20, 2017.
  */
-@SuppressWarnings("checkstyle:classfanoutcomplexity")
 public class UpdateServlet extends HttpServlet {
-    /**
-     * Required HTML form field: the value should be the URI of the target dataset to be updated.
-     */
-    static final String TARGET_DATASET_URI_FORM_FIELD = "dataset";
-    /**
-     * Required HTML form field: the value should be the file with the dataset to be removed.
-     */
-    static final String REMOVE_FORM_FIELD = "remove";
-    /**
-     * Required HTML form field: the value should be the file with the dataset to be added.
-     */
-    static final String ADD_FORM_FIELD = "add";
     /**
      * Temporary file name of the dataset to be removed, which must be stored in the server local file system.
      */
@@ -74,25 +58,6 @@ public class UpdateServlet extends HttpServlet {
      * Temporary file name of the dataset to be added, which must be stored in the server local file system.
      */
     private static final String TEMP_DATASET_TO_BE_ADDED_FILE_NAME = "to_be_added";
-    /**
-     * Query parameter (with no value) to call the Blazegraph update with multi-part request body service.
-     * See https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29
-     */
-    private static final String BLAZEGRAPH_UPDATE_PARAMETER = "updatePost";
-    /**
-     * Query parameter for the Blazegraph update service: the value should be the URI of the target dataset that undergoes deletion.
-     * This is not documented in https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29
-     * but can be found in the source code:
-     * https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L896
-     */
-    private static final String BLAZEGRAPH_UPDATE_DELETE_NAMED_GRAPH_PARAMETER = "context-uri-delete";
-    /**
-     * Query parameter for the Blazegraph update service: the value should be the URI of the target dataset that undergoes addition.
-     * This is not documented in https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29
-     * but can be found in the source code:
-     * https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L877
-     */
-    private static final String BLAZEGRAPH_UPDATE_INSERT_NAMED_GRAPH_PARAMETER = "context-uri-insert";
 
     private static final Logger log = LoggerFactory.getLogger(UpdateServlet.class);
 
@@ -178,11 +143,11 @@ public class UpdateServlet extends HttpServlet {
          */
         AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedRemoveDataset = validator.handleDataset(parameters.removeDatasetWithValidSyntax);
         Model toBeRemoved = validatedRemoveDataset.getKey();
-        addTypeToSubjectItems(toBeRemoved, parameters.targetDatasetURI.toString());
+        Utils.addTypeToSubjectItems(toBeRemoved, parameters.targetDatasetURI.toString());
         List<String> toBeRemovedInvalid = validatedRemoveDataset.getValue();
         AbstractMap.SimpleImmutableEntry<Model, List<String>> validatedAddDataset = validator.handleDataset(parameters.addDatasetWithValidSyntax);
         Model toBeAdded = validatedAddDataset.getKey();
-        addTypeToSubjectItems(toBeAdded, parameters.targetDatasetURI.toString());
+        Utils.addTypeToSubjectItems(toBeAdded, parameters.targetDatasetURI.toString());
         List<String> toBeAddedInvalid = validatedAddDataset.getValue();
 
         /*
@@ -230,10 +195,10 @@ public class UpdateServlet extends HttpServlet {
         String fileName = item.getName();
         String contentType = item.getContentType();
         switch (fieldName) {
-            case REMOVE_FORM_FIELD:
+            case ApiParameters.REMOVE_FORM_FIELD:
                 log.info("Dataset to be removed file detected: {}", fileName);
                 parameters.removeDatasetFileName = fileName;
-                parameters.removeDatasetFormat = handleFormat(contentType, fileName);
+                parameters.removeDatasetFormat = Utils.handleRdfFormat(contentType, fileName);
                 // The part is just wrong, so fail with a bad request
                 if (parameters.removeDatasetFormat == null) {
                     log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
@@ -244,7 +209,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 // Validate syntax
                 try {
-                    parameters.removeDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.removeDatasetFormat);
+                    parameters.removeDatasetWithValidSyntax = validator.checkSyntax(fieldStream, RdfVocabulary.BASE_URI, parameters.removeDatasetFormat);
                 } catch (RDFParseException rpe) {
                     log.warn("The dataset to be removed is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
@@ -253,10 +218,10 @@ public class UpdateServlet extends HttpServlet {
                     return false;
                 }
                 break;
-            case ADD_FORM_FIELD:
+            case ApiParameters.ADD_FORM_FIELD:
                 log.info("Dataset to be added file detected: {}", fileName);
                 parameters.addDatasetFileName = fileName;
-                parameters.addDatasetFormat = handleFormat(contentType, fileName);
+                parameters.addDatasetFormat = Utils.handleRdfFormat(contentType, fileName);
                 if (parameters.addDatasetFormat == null) {
                     log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                             fileName, contentType);
@@ -266,7 +231,7 @@ public class UpdateServlet extends HttpServlet {
                 }
                 // Validate syntax
                 try {
-                    parameters.addDatasetWithValidSyntax = validator.checkSyntax(fieldStream, UploadServlet.BASE_URI, parameters.addDatasetFormat);
+                    parameters.addDatasetWithValidSyntax = validator.checkSyntax(fieldStream, RdfVocabulary.BASE_URI, parameters.addDatasetFormat);
                 } catch (RDFParseException rpe) {
                     log.warn("The dataset to be added is not valid RDF. Error at line {}, column {}. Will fail with a bad request",
                             rpe.getLineNumber(), rpe.getColumnNumber());
@@ -291,11 +256,11 @@ public class UpdateServlet extends HttpServlet {
     private boolean handleFormField(InputStream stream, String fieldName, RequestParameters parameters, HttpServletResponse response) throws IOException {
         String formValue = Streams.asString(stream, StandardCharsets.UTF_8.name());
         switch (fieldName) {
-            case UploadServlet.USER_NAME_FORM_FIELD:
+            case ApiParameters.USER_NAME_FORM_FIELD:
                 log.info("User name form field '{}' with value '{}' detected.", fieldName, formValue);
                 parameters.user = formValue;
                 break;
-            case TARGET_DATASET_URI_FORM_FIELD:
+            case ApiParameters.TARGET_DATASET_URI_FORM_FIELD:
                 log.info("Target dataset URI form field '{}' with value '{}' detected.", fieldName, formValue);
                 parameters.targetDatasetURI = URI.create(formValue);
                 break;
@@ -310,22 +275,22 @@ public class UpdateServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + USER_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.targetDatasetURI == null) {
             log.warn("No dataset URI given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset URI given. Please use the field '" + DATASET_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset URI given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.removeDatasetFileName == null) {
             log.warn("No dataset file to be removed. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be removed given. Please use the field '" + REMOVE_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be removed given. Please use the field '" + ApiParameters.REMOVE_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.addDatasetFileName == null) {
             log.warn("No dataset file to be added. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be added given. Please use the field '" + ADD_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be added given. Please use the field '" + ApiParameters.ADD_FORM_FIELD + "' to send it.");
             return false;
         }
         return true;
@@ -350,12 +315,12 @@ public class UpdateServlet extends HttpServlet {
         URI uri;
         uri = builder
                 .setScheme("http")
-                .setHost(BLAZEGRAPH_HOST)
-                .setPort(BLAZEGRAPH_PORT)
-                .setPath(BLAZEGRAPH_CONTEXT + BLAZEGRAPH_SPARQL_ENDPOINT)
-                .setParameter(BLAZEGRAPH_UPDATE_PARAMETER, null)
-                .setParameter(BLAZEGRAPH_UPDATE_DELETE_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
-                .setParameter(BLAZEGRAPH_UPDATE_INSERT_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
+                .setHost(Config.BLAZEGRAPH_HOST)
+                .setPort(Config.BLAZEGRAPH_PORT)
+                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .setParameter(ApiParameters.BLAZEGRAPH_UPDATE_PARAMETER, null)
+                .setParameter(ApiParameters.BLAZEGRAPH_UPDATE_DELETE_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
+                .setParameter(ApiParameters.BLAZEGRAPH_UPDATE_INSERT_NAMED_GRAPH_PARAMETER, targetDatasetURI.toString())
                 .build();
         log.debug("URI built for Blazegraph update service: {}", uri);
         HttpPost post;
@@ -369,7 +334,7 @@ public class UpdateServlet extends HttpServlet {
             Rio.write(toBeRemoved, Files.newBufferedWriter(tempDatasetToBeRemoved.toPath(), StandardCharsets.UTF_8), removeDatasetFormat);
             log.debug("Written temporary file with dataset to be removed: {}", tempDatasetToBeRemoved);
             ContentType toBeRemovedContentType = ContentType.create(removeDatasetFormat.getDefaultMIMEType(), StandardCharsets.UTF_8);
-            meBuilder.addBinaryBody(REMOVE_FORM_FIELD, tempDatasetToBeRemoved, toBeRemovedContentType, TEMP_DATASET_TO_BE_REMOVED_FILE_NAME);
+            meBuilder.addBinaryBody(ApiParameters.REMOVE_FORM_FIELD, tempDatasetToBeRemoved, toBeRemovedContentType, TEMP_DATASET_TO_BE_REMOVED_FILE_NAME);
         } else {
             log.warn("The request succeeded, but no content in the dataset to be removed passed the data model validation. Nothing will be removed from " +
                     "Blazegraph");
@@ -382,7 +347,7 @@ public class UpdateServlet extends HttpServlet {
             Rio.write(toBeAdded, Files.newBufferedWriter(tempDatasetToBeAdded.toPath(), StandardCharsets.UTF_8), addDatasetFormat);
             log.debug("Written temporary file with dataset to be added: {}", tempDatasetToBeAdded);
             ContentType toBeAddedContentType = ContentType.create(addDatasetFormat.getDefaultMIMEType(), StandardCharsets.UTF_8);
-            meBuilder.addBinaryBody(ADD_FORM_FIELD, tempDatasetToBeAdded, toBeAddedContentType, TEMP_DATASET_TO_BE_ADDED_FILE_NAME);
+            meBuilder.addBinaryBody(ApiParameters.ADD_FORM_FIELD, tempDatasetToBeAdded, toBeAddedContentType, TEMP_DATASET_TO_BE_ADDED_FILE_NAME);
         } else {
             log.warn("The request succeeded, but no content in the dataset to be added passed the data model validation. Nothing will be added to " +
                     "Blazegraph");
@@ -436,20 +401,6 @@ public class UpdateServlet extends HttpServlet {
             }
         }
         return new AbstractMap.SimpleImmutableEntry<>(updateResponse.getStatusLine().getStatusCode(), updateResponseContent);
-    }
-
-    /**
-     * Try to find a suitable RDF format for a given file name.
-     * If the part has no content type, guess the format based on the file name extension.
-     * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
-     */
-    private RDFFormat handleFormat(String contentType, String fileName) {
-        if (contentType == null) {
-            return Rio.getParserFormatForFileName(fileName, UploadServlet.DEFAULT_RDF_FORMAT);
-        } else {
-            // If the content type is not explicilty RDF, still try to guess based on the file name extension
-            return Rio.getParserFormatForMIMEType(contentType, Rio.getParserFormatForFileName(fileName));
-        }
     }
 
     /**

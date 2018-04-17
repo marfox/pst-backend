@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
+import org.wikidata.query.rdf.primarysources.common.Utils;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 import javax.servlet.http.HttpServlet;
@@ -19,14 +22,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -35,89 +32,9 @@ import static org.wikidata.query.rdf.primarysources.curation.SuggestServlet.*;
  */
 public class SearchServlet extends HttpServlet {
 
-    private static final String PROPERTY_PLACE_HOLDER = "${PROPERTY}";
-    private static final String VALUE_PLACE_HOLDER = "${ITEM_VALUE}";
-    private static final String OFFSET_PLACE_HOLDER = "${OFFSET}";
-    private static final String LIMIT_PLACE_HOLDER = "${LIMIT}";
-
-    private static final String ONE_DATASET_QUERY =
-            "SELECT * " +
-                    "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    ?item a wikibase:Item ;" +
-                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
-                    "    ?statement_node ?statement_property ?statement_value ." +
-                    "    OPTIONAL {" +
-                    "      ?statement_value ?reference_property ?reference_value ." +
-                    "    }" +
-                    "  }" +
-                    "}" +
-                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
-                    "LIMIT " + LIMIT_PLACE_HOLDER;
-
-    private static final String ONE_DATASET_VALUE_QUERY =
-            "SELECT * " +
-                    "WHERE {" +
-                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
-                    "    ?item a wikibase:Item ;" +
-                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
-                    "    {" +
-                    "      SELECT ?statement_node WHERE {" +
-                    "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
-                    "      }" +
-                    "    }" +
-                    "    ?statement_node ?statement_property ?statement_value ." +
-                    "    OPTIONAL {" +
-                    "      ?statement_value ?reference_property ?reference_value ." +
-                    "    }" +
-                    "  }" +
-                    "}" +
-                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
-                    "LIMIT " + LIMIT_PLACE_HOLDER;
-
-    private static final String ALL_DATASETS_QUERY =
-            "SELECT * " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?item a wikibase:Item ;" +
-                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
-                    "    ?statement_node ?statement_property ?statement_value ." +
-                    "    OPTIONAL {" +
-                    "      ?statement_value ?reference_property ?reference_value ." +
-                    "    }" +
-                    "  }" +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}" +
-                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
-                    "LIMIT " + LIMIT_PLACE_HOLDER;
-
-    private static final String ALL_DATASETS_VALUE_QUERY =
-            "SELECT * " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?item a wikibase:Item ;" +
-                    "      " + PROPERTY_PLACE_HOLDER + " ?statement_node ." +
-                    "    {" +
-                    "      SELECT ?statement_node WHERE {" +
-                    "        ?statement_node ?statement_property wd:" + VALUE_PLACE_HOLDER + " ." +
-                    "      }" +
-                    "    }" +
-                    "    ?statement_node ?statement_property ?statement_value ." +
-                    "    OPTIONAL {" +
-                    "      ?statement_value ?reference_property ?reference_value ." +
-                    "    }" +
-                    "  }" +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}" +
-                    "OFFSET " + OFFSET_PLACE_HOLDER + " " +
-                    "LIMIT " + LIMIT_PLACE_HOLDER;
-
-    private static final String OFFSET_PARAMETER = "offset";
-    private static final String LIMIT_PARAMETER = "limit";
-    private static final String PROPERTY_PARAMETER = "property";
-    private static final String VALUE_PARAMETER = "value";
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_LIMIT = 50;
+    
     private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
 
     private class RequestParameters {
@@ -134,14 +51,14 @@ public class SearchServlet extends HttpServlet {
         boolean ok = processRequest(request, parameters, response);
         if (!ok) return;
         log.debug("Required parameters stored as fields in private class: {}", parameters);
-        TupleQueryResult suggestions = getSuggestions(parameters);
+        TupleQueryResult suggestions = getSearchSuggestions(parameters);
         sendResponse(response, suggestions, parameters);
         log.info("GET /search successful");
     }
 
     private boolean processRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         WikibaseDataModelValidator validator = new WikibaseDataModelValidator();
-        String datasetParameter = request.getParameter(DATASET_PARAMETER);
+        String datasetParameter = request.getParameter(ApiParameters.DATASET_PARAMETER);
         if (datasetParameter == null || datasetParameter.isEmpty()) {
             parameters.dataset = "all";
         } else {
@@ -155,7 +72,7 @@ public class SearchServlet extends HttpServlet {
                 return false;
             }
         }
-        String propertyParameter = request.getParameter(PROPERTY_PARAMETER);
+        String propertyParameter = request.getParameter(ApiParameters.PROPERTY_PARAMETER);
         if (propertyParameter == null || propertyParameter.isEmpty()) {
             parameters.property = "all";
         } else {
@@ -166,7 +83,7 @@ public class SearchServlet extends HttpServlet {
             }
             parameters.property = propertyParameter;
         }
-        String valueParameter = request.getParameter(VALUE_PARAMETER);
+        String valueParameter = request.getParameter(ApiParameters.VALUE_PARAMETER);
         if (valueParameter == null || valueParameter.isEmpty()) {
             parameters.value = null;
         } else {
@@ -178,7 +95,7 @@ public class SearchServlet extends HttpServlet {
             }
             parameters.value = valueParameter;
         }
-        String offsetParameter = request.getParameter(OFFSET_PARAMETER);
+        String offsetParameter = request.getParameter(ApiParameters.OFFSET_PARAMETER);
         if (offsetParameter == null || offsetParameter.isEmpty()) parameters.offset = DEFAULT_OFFSET;
         else {
             try {
@@ -190,7 +107,7 @@ public class SearchServlet extends HttpServlet {
                 return false;
             }
         }
-        String limitParameter = request.getParameter(LIMIT_PARAMETER);
+        String limitParameter = request.getParameter(ApiParameters.LIMIT_PARAMETER);
         if (limitParameter == null || limitParameter.isEmpty()) parameters.limit = DEFAULT_LIMIT;
         else {
             try {
@@ -207,7 +124,7 @@ public class SearchServlet extends HttpServlet {
 
     private void sendResponse(HttpServletResponse response, TupleQueryResult suggestions, RequestParameters parameters) throws IOException {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        JSONArray jsonSuggestions = formatSuggestions(suggestions, parameters);
+        JSONArray jsonSuggestions = formatSearchSuggestions(suggestions, parameters);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");
         } else if (jsonSuggestions.isEmpty()) {
@@ -215,32 +132,34 @@ public class SearchServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 jsonSuggestions.writeJSONString(pw);
             }
         }
     }
 
-    private TupleQueryResult getSuggestions(RequestParameters parameters) {
+    private TupleQueryResult getSearchSuggestions(RequestParameters parameters) {
         String query;
         if (parameters.dataset.equals("all")) {
-            if (parameters.value == null) query = ALL_DATASETS_QUERY;
-            else query = ALL_DATASETS_VALUE_QUERY.replace(VALUE_PLACE_HOLDER, parameters.value);
-        } else {
-            if (parameters.value == null) query = ONE_DATASET_QUERY.replace(DATASET_PLACE_HOLDER, parameters.dataset);
+            if (parameters.value == null) query = SparqlQueries.SEARCH_ALL_DATASETS_QUERY;
             else
-                query = ONE_DATASET_VALUE_QUERY.replace(DATASET_PLACE_HOLDER, parameters.dataset).replace(VALUE_PLACE_HOLDER, parameters.value);
+                query = SparqlQueries.SEARCH_ALL_DATASETS_VALUE_QUERY.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value);
+        } else {
+            if (parameters.value == null)
+                query = SparqlQueries.SEARCH_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset);
+            else
+                query = SparqlQueries.SEARCH_ONE_DATASET_VALUE_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset).replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value);
         }
-        query = query.replace(OFFSET_PLACE_HOLDER, String.valueOf(parameters.offset)).replace(LIMIT_PLACE_HOLDER, String.valueOf(parameters.limit));
-        query = parameters.property.equals("all") ? query.replace(PROPERTY_PLACE_HOLDER, "?property") : query.replace(PROPERTY_PLACE_HOLDER, "p:" + parameters.property);
-        return runSparqlQuery(query);
+        query = query.replace(SparqlQueries.OFFSET_PLACE_HOLDER, String.valueOf(parameters.offset)).replace(SparqlQueries.LIMIT_PLACE_HOLDER, String.valueOf(parameters.limit));
+        query = parameters.property.equals("all") ? query.replace(SparqlQueries.PROPERTY_PLACE_HOLDER, "?property") : query.replace(SparqlQueries.PROPERTY_PLACE_HOLDER, "p:" + parameters.property);
+        return Utils.runSparqlQuery(query);
     }
 
-    private JSONArray formatSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
+    private JSONArray formatSearchSuggestions(TupleQueryResult suggestions, RequestParameters parameters) {
         log.debug("Starting conversion of SPARQL results to QuickStatements");
         JSONArray jsonSuggestions = new JSONArray();
-        String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
+        String qualifierPrefix = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
         Map<String, StringBuilder> quickStatements = new HashMap<>();
         try {
@@ -248,28 +167,32 @@ public class SearchServlet extends HttpServlet {
                 BindingSet suggestion = suggestions.next();
                 Value datasetValue = suggestion.getValue("dataset");
                 String currentDataset = datasetValue == null ? parameters.dataset : datasetValue.stringValue();
-                String subject = suggestion.getValue("item").stringValue().substring(WIKIBASE_URIS.entity().length());
+                String subject = suggestion.getValue("item").stringValue().substring(Utils.WIKIBASE_URIS.entity().length());
                 Value mainPropertyValue = suggestion.getValue("property");
-                String mainProperty = mainPropertyValue == null ? parameters.property : mainPropertyValue.stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
-                String statementUuid = suggestion.getValue("statement_node").stringValue().substring(WIKIBASE_URIS.statement().length());
+                String mainProperty = mainPropertyValue == null ? parameters.property : mainPropertyValue.stringValue().substring(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
+                String statementUuid = suggestion.getValue("statement_node").stringValue().substring(Utils.WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
                 Value statementValue = suggestion.getValue("statement_value");
                 String qsKey = statementUuid + "|" + currentDataset;
                 log.debug("Current QuickStatement key from RDF statement node and dataset: {}", qsKey);
                 // Statement
-                if (statementProperty.startsWith(WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
+                if (statementProperty.startsWith(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
-                    String statement = subject + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue);
-                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with statement: [{}]", statement);
-                    else log.debug("Existing key. Will update QuickStatement [{}] with statement [{}]", quickStatement, statement);
+                    String statement = subject + "\t" + mainProperty + "\t" + Utils.rdfValueToQuickStatement(statementValue);
+                    if (quickStatement.length() == 0)
+                        log.debug("New key. Will start a new QuickStatement with statement: [{}]", statement);
+                    else
+                        log.debug("Existing key. Will update QuickStatement [{}] with statement [{}]", quickStatement, statement);
                     quickStatements.put(qsKey, quickStatement.insert(0, statement));
                 }
                 // Qualifier
                 else if (statementProperty.startsWith(qualifierPrefix)) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
-                    String qualifier = "\t" + statementProperty.substring(qualifierPrefix.length()) + "\t" + rdfValueToQuickStatement(statementValue);
-                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with qualifier: [{}]", qualifier);
-                    else log.debug("Existing key. Will update QuickStatement [{}] with qualifier [{}]", quickStatement, qualifier);
+                    String qualifier = "\t" + statementProperty.substring(qualifierPrefix.length()) + "\t" + Utils.rdfValueToQuickStatement(statementValue);
+                    if (quickStatement.length() == 0)
+                        log.debug("New key. Will start a new QuickStatement with qualifier: [{}]", qualifier);
+                    else
+                        log.debug("Existing key. Will update QuickStatement [{}] with qualifier [{}]", quickStatement, qualifier);
                     quickStatements.put(qsKey, quickStatement.append(qualifier));
                 }
                 // Reference
@@ -279,11 +202,13 @@ public class SearchServlet extends HttpServlet {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String reference =
                             "\t" +
-                                    referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
+                                    referenceProperty.substring(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
                                     "\t" +
-                                    rdfValueToQuickStatement(referenceValue);
-                    if (quickStatement.length() == 0) log.debug("New key. Will start a new QuickStatement with reference: [{}]", reference);
-                    else log.debug("Existing key. Will update QuickStatement [{}] with reference [{}]", quickStatement, reference);
+                                    Utils.rdfValueToQuickStatement(referenceValue);
+                    if (quickStatement.length() == 0)
+                        log.debug("New key. Will start a new QuickStatement with reference: [{}]", reference);
+                    else
+                        log.debug("Existing key. Will update QuickStatement [{}] with reference [{}]", quickStatement, reference);
                     quickStatements.put(qsKey, quickStatement.append(reference));
                 }
             }
