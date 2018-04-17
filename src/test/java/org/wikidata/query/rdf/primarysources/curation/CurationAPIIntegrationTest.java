@@ -70,7 +70,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         ContentType text = ContentType.TEXT_PLAIN;
         multipart.addTextBody(ApiParameters.DATASET_NAME_FORM_FIELD, IngestionAPIIntegrationTest.DATASET_NAME, text);
         multipart.addTextBody(ApiParameters.DATASET_DESCRIPTION_FORM_FIELD, IngestionAPIIntegrationTest.DATASET_DESCRIPTION, text);
-        multipart.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, IngestionAPIIntegrationTest.UPLOADER_NAME, text);
+        multipart.addTextBody(ApiParameters.USER_NAME_PARAMETER, IngestionAPIIntegrationTest.UPLOADER_NAME, text);
         multipart.addBinaryBody(IngestionAPIIntegrationTest.FILE_FIELD, testDataset);
         Request.Post(UPLOAD_ENDPOINT)
                 .body(multipart.build())

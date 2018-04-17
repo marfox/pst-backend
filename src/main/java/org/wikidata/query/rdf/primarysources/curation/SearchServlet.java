@@ -34,7 +34,6 @@ public class SearchServlet extends HttpServlet {
 
     private static final int DEFAULT_OFFSET = 0;
     private static final int DEFAULT_LIMIT = 50;
-    
     private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
 
     private class RequestParameters {

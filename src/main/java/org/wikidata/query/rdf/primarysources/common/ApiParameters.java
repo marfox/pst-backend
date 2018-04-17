@@ -12,16 +12,11 @@ public class ApiParameters {
     // from /curate
     public static final String STATEMENT_TYPE_JSON_KEY = "type";
     public static final String STATEMENT_STATE_JSON_KEY = "state";
-    public static final String USER_JSON_KEY = "user";
     public static final String QUICKSTATEMENT_JSON_KEY = "qs";
     public static final String DEFAULT_IO_MIME_TYPE = "application/json";
     // from /statistics
-    public static final String USER_PARAMETER = "user";
+    public static final String USER_NAME_PARAMETER = "user";
     // from /upload
-    /**
-     * Expected HTTP form field with the Wiki user name of the dataset provider.
-     */
-    public static final String USER_NAME_FORM_FIELD = "user";
     /**
      * Expected HTTP form field with the name of the dataset.
      */
@@ -31,10 +26,6 @@ public class ApiParameters {
      */
     public static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
     // from /update
-    /**
-     * Required HTML form field: the value should be the URI of the target dataset to be updated.
-     */
-    public static final String TARGET_DATASET_URI_FORM_FIELD = "dataset";
     /**
      * Required HTML form field: the value should be the file with the dataset to be removed.
      */

@@ -243,7 +243,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
         builder.addTextBody(ApiParameters.DATASET_NAME_FORM_FIELD, datasetName, textContentType);
         builder.addTextBody(ApiParameters.DATASET_DESCRIPTION_FORM_FIELD, DATASET_DESCRIPTION, textContentType);
-        builder.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
+        builder.addTextBody(ApiParameters.USER_NAME_PARAMETER, UPLOADER_NAME, textContentType);
         builder.addBinaryBody(FILE_FIELD, dataset);
         HttpEntity datasetUpload = builder.build();
         post.setEntity(datasetUpload);
@@ -254,8 +254,8 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         HttpPost post = new HttpPost(endpoint);
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         ContentType textContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
-        builder.addTextBody(ApiParameters.TARGET_DATASET_URI_FORM_FIELD, EXPECTED_DATASET_URI, textContentType);
-        builder.addTextBody(ApiParameters.USER_NAME_FORM_FIELD, UPLOADER_NAME, textContentType);
+        builder.addTextBody(ApiParameters.DATASET_PARAMETER, EXPECTED_DATASET_URI, textContentType);
+        builder.addTextBody(ApiParameters.USER_NAME_PARAMETER, UPLOADER_NAME, textContentType);
         builder.addBinaryBody(ApiParameters.REMOVE_FORM_FIELD, toRemove);
         builder.addBinaryBody(ApiParameters.ADD_FORM_FIELD, toAdd);
         HttpEntity update = builder.build();

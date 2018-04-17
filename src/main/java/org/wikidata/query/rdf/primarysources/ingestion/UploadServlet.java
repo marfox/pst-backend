@@ -212,7 +212,13 @@ public class UploadServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to send it.");
+            return false;
+        }
+        boolean validated = Utils.validateUserName(parameters.user);
+        if (!validated) {
+            log.warn("Invalid user name. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         if (parameters.datasetFileName == null) {
@@ -253,7 +259,7 @@ public class UploadServlet extends HttpServlet {
                 parameters.datasetDescription = value;
                 log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
                 return true;
-            case ApiParameters.USER_NAME_FORM_FIELD:
+            case ApiParameters.USER_NAME_PARAMETER:
                 log.info("User name detected. Will store the value '{}' as the uploader of the dataset", value);
                 parameters.user = value;
                 return true;

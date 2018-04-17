@@ -52,7 +52,7 @@ public class StatisticsServlet extends HttpServlet {
             return;
         }
         if (parameters.user != null) {
-            sendResponse(response, getUserStatistics(parameters.user), ApiParameters.USER_PARAMETER, parameters);
+            sendResponse(response, getUserStatistics(parameters.user), ApiParameters.USER_NAME_PARAMETER, parameters);
             log.info("GET /statistics for users successful");
         }
     }
@@ -84,7 +84,7 @@ public class StatisticsServlet extends HttpServlet {
                 parameters.dataset = datasetOrUserValue;
                 parameters.user = null;
                 return true;
-            case ApiParameters.USER_PARAMETER:
+            case ApiParameters.USER_NAME_PARAMETER:
                 boolean validated = Utils.validateUserName(datasetOrUserValue);
                 if (!validated) {
                     log.warn("Invalid user name. Will fail with a bad request");

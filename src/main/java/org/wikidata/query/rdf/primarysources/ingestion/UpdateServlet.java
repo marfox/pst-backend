@@ -256,11 +256,11 @@ public class UpdateServlet extends HttpServlet {
     private boolean handleFormField(InputStream stream, String fieldName, RequestParameters parameters, HttpServletResponse response) throws IOException {
         String formValue = Streams.asString(stream, StandardCharsets.UTF_8.name());
         switch (fieldName) {
-            case ApiParameters.USER_NAME_FORM_FIELD:
+            case ApiParameters.USER_NAME_PARAMETER:
                 log.info("User name form field '{}' with value '{}' detected.", fieldName, formValue);
                 parameters.user = formValue;
                 break;
-            case ApiParameters.TARGET_DATASET_URI_FORM_FIELD:
+            case ApiParameters.DATASET_PARAMETER:
                 log.info("Target dataset URI form field '{}' with value '{}' detected.", fieldName, formValue);
                 parameters.targetDatasetURI = URI.create(formValue);
                 break;
@@ -275,7 +275,13 @@ public class UpdateServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to send it.");
+            return false;
+        }
+        boolean validated = Utils.validateUserName(parameters.user);
+        if (!validated) {
+            log.warn("Invalid user name. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         if (parameters.targetDatasetURI == null) {

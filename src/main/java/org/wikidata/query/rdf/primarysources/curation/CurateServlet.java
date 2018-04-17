@@ -87,10 +87,16 @@ public class CurateServlet extends HttpServlet {
             return false;
         }
         parameters.state = givenState;
-        String givenUser = (String) body.get(ApiParameters.USER_JSON_KEY);
+        String givenUser = (String) body.get(ApiParameters.USER_NAME_PARAMETER);
         if (givenUser == null) {
             log.warn("No user name given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
+            return false;
+        }
+        boolean validated = Utils.validateUserName(givenUser);
+        if (!validated) {
+            log.warn("Invalid user name. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         parameters.user = givenUser;
@@ -247,10 +253,16 @@ public class CurateServlet extends HttpServlet {
             return false;
         }
         parameters.state = givenState;
-        String givenUser = (String) body.get(ApiParameters.USER_JSON_KEY);
+        String givenUser = (String) body.get(ApiParameters.USER_NAME_PARAMETER);
         if (givenUser == null) {
             log.error("No user name given. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required user name.");
+            return false;
+        }
+        boolean validated = Utils.validateUserName(givenUser);
+        if (!validated) {
+            log.warn("Invalid user name. Will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         parameters.user = givenUser;
