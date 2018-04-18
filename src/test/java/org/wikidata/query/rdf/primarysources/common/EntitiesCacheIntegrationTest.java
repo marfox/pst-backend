@@ -14,7 +14,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 
 import java.io.BufferedReader;

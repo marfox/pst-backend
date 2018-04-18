@@ -14,7 +14,7 @@ import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
-import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
 import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;

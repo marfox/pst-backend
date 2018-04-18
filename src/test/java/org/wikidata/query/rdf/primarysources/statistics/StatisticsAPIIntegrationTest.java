@@ -12,7 +12,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.wikidata.query.rdf.primarysources.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
 import org.wikidata.query.rdf.primarysources.common.Config;
 import org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
