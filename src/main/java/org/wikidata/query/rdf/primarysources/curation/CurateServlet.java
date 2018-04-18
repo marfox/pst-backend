@@ -369,7 +369,6 @@ public class CurateServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, JSONObject blazegraphResponse) throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         if (blazegraphResponse == null) response.setStatus(HttpServletResponse.SC_OK);
         else {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

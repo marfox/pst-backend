@@ -62,7 +62,6 @@ public class SessionHandler {
     }
 
     void sendResponse(HttpServletResponse response, JSONObject entities, String entityType) throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         if (entities == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when getting the list of " + entityType + ".");
         } else if (entities.isEmpty()) {

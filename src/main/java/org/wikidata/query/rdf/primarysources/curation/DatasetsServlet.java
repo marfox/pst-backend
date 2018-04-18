@@ -42,7 +42,6 @@ public class DatasetsServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, TupleQueryResult datasetsAndUsers) throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         JSONArray output = formatOutput(datasetsAndUsers);
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving datasets.");

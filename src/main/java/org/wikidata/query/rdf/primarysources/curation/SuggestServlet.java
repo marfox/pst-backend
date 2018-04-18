@@ -71,7 +71,6 @@ public class SuggestServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, RequestParameters parameters, TupleQueryResult suggestions) throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         JSONArray jsonSuggestions = Utils.formatSuggestions(suggestions, parameters.dataset, parameters.qId);
         if (jsonSuggestions == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving suggestions.");

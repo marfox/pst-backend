@@ -102,7 +102,6 @@ public class StatisticsServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletResponse response, JSONObject output, String datasetOrUser, RequestParameters parameters) throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving " + datasetOrUser + " statistics.");
         } else if (output.isEmpty()) {
