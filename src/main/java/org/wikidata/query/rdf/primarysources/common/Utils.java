@@ -204,7 +204,7 @@ public class Utils {
                 }
             }
         } catch (QueryEvaluationException qee) {
-            log.error("Failed evaluating the suggestion SPARQL query: {}", qee.getMessage());
+            log.error("Failed evaluating the suggestion query. The stack trace follows.", qee);
             return null;
         }
         log.debug("Converted QuickStatements: {}", quickStatements);

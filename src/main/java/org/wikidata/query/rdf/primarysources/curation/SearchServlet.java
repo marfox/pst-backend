@@ -211,7 +211,7 @@ public class SearchServlet extends HttpServlet {
                 }
             }
         } catch (QueryEvaluationException qee) {
-            log.error("Failed evaluating the suggestion SPARQL query: {}", qee.getMessage());
+            log.error("Failed evaluating the search query. The stack trace follows.", qee);
             return null;
         }
         log.debug("Converted QuickStatements: {}", quickStatements);
