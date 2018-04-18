@@ -304,8 +304,70 @@ public class SparqlQueries {
     /* END: statistics API */
 
 
-    /* Used by datasets statistics cache */
+    /* BEGIN: datasets statistics cache */
     static final String REFERENCES_COUNT_QUERY = "select ?graph (count(?reference) as ?count) where { graph ?graph { ?statement prov:wasDerivedFrom ?reference } } group by ?graph";
     static final String STATEMENTS_COUNT_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
+    /* END: datasets statistics cache */
+
+    /* BEGIN: entities cache */
+    // Also include qualifier values
+    static final String VALUES_ONE_DATASET_QUERY =
+            "SELECT DISTINCT ?value " +
+                    "WHERE {" +
+                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?st_node ." +
+                    "    ?st_node ?st_property ?value ." +
+                    "  }" +
+                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
+                    "}";
+    // Only consider main PIDs, not qualifiers or references
+    static final String PROPERTIES_ONE_DATASET_QUERY =
+            "SELECT DISTINCT ?property " +
+                    "WHERE {" +
+                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?statement_node ." +
+                    "  }" +
+                    "}";
+    // A single query for subjects, properties, and values is too heavy, so split into 3
+    static final String SUBJECTS_ONE_DATASET_QUERY =
+            "SELECT ?subject " + // No need for a DISTINCT here, one dataset should not have duplicate subjects
+                    "WHERE {" +
+                    "  GRAPH <" + DATASET_PLACE_HOLDER + "> {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?statement_node ." +
+                    "  }" +
+                    "}";
+    static final String SUBJECTS_ALL_DATASETS_QUERY =
+            "SELECT DISTINCT ?subject ?dataset " +
+                    "WHERE {" +
+                    "  GRAPH ?dataset {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?statement_node ." +
+                    "  }" +
+                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
+                    "}";
+    static final String PROPERTIES_ALL_DATASETS_QUERY =
+            "SELECT DISTINCT ?property ?dataset " +
+                    "WHERE {" +
+                    "  GRAPH ?dataset {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?statement_node ." +
+                    "  }" +
+                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
+                    "}";
+    static final String VALUES_ALL_DATASETS_QUERY =
+            "SELECT DISTINCT ?value ?dataset " +
+                    "WHERE {" +
+                    "  GRAPH ?dataset {" +
+                    "    ?subject a wikibase:Item ;" +
+                    "      ?property ?st_node ." +
+                    "    ?st_node ?st_property ?value ." +
+                    "  }" +
+                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
+                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
+                    "}";
+    /* END: entities cache */
 
 }

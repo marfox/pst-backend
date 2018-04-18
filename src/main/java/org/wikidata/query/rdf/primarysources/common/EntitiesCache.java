@@ -32,65 +32,6 @@ public class EntitiesCache {
     public static final Path PROPERTIES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "properties.json");
     public static final Path VALUES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "values.json");
 
-    // A single query for subjects, properties, and values is too heavy, so split into 3
-    private static final String SUBJECTS_ONE_DATASET_QUERY =
-            "SELECT ?subject " + // No need for a DISTINCT here, one dataset should not have duplicate subjects
-                    "WHERE {" +
-                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?statement_node ." +
-                    "  }" +
-                    "}";
-    // Only consider main PIDs, not qualifiers or references
-    private static final String PROPERTIES_ONE_DATASET_QUERY =
-            "SELECT DISTINCT ?property " +
-                    "WHERE {" +
-                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?statement_node ." +
-                    "  }" +
-                    "}";
-    // Also include qualifier values
-    private static final String VALUES_ONE_DATASET_QUERY =
-            "SELECT DISTINCT ?value " +
-                    "WHERE {" +
-                    "  GRAPH <" + SparqlQueries.DATASET_PLACE_HOLDER + "> {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?st_node ." +
-                    "    ?st_node ?st_property ?value ." +
-                    "  }" +
-                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
-                    "}";
-    private static final String SUBJECTS_ALL_DATASETS_QUERY =
-            "SELECT DISTINCT ?subject ?dataset " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?statement_node ." +
-                    "  }" +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}";
-    private static final String PROPERTIES_ALL_DATASETS_QUERY =
-            "SELECT DISTINCT ?property ?dataset " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?statement_node ." +
-                    "  }" +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}";
-    private static final String VALUES_ALL_DATASETS_QUERY =
-            "SELECT DISTINCT ?value ?dataset " +
-                    "WHERE {" +
-                    "  GRAPH ?dataset {" +
-                    "    ?subject a wikibase:Item ;" +
-                    "      ?property ?st_node ." +
-                    "    ?st_node ?st_property ?value ." +
-                    "  }" +
-                    "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
-                    "  FILTER STRENDS(str(?dataset), \"new\") ." +
-                    "}";
-
     private static final Logger log = LoggerFactory.getLogger(EntitiesCache.class);
 
     // Run when a change to a dataset is made through the ingestion API
@@ -137,15 +78,15 @@ public class EntitiesCache {
         int namespaceIndex;
         switch (entityType) {
             case "subject":
-                query = SUBJECTS_ALL_DATASETS_QUERY;
+                query = SparqlQueries.SUBJECTS_ALL_DATASETS_QUERY;
                 namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             case "property":
-                query = PROPERTIES_ALL_DATASETS_QUERY;
+                query = SparqlQueries.PROPERTIES_ALL_DATASETS_QUERY;
                 namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
                 break;
             case "value":
-                query = VALUES_ALL_DATASETS_QUERY;
+                query = SparqlQueries.VALUES_ALL_DATASETS_QUERY;
                 namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             default:
@@ -242,15 +183,15 @@ public class EntitiesCache {
         int namespaceIndex;
         switch (entityType) {
             case "subject":
-                query = SUBJECTS_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                query = SparqlQueries.SUBJECTS_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
                 namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             case "property":
-                query = PROPERTIES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                query = SparqlQueries.PROPERTIES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
                 namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
                 break;
             case "value":
-                query = VALUES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+                query = SparqlQueries.VALUES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
                 namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
                 break;
             default:
