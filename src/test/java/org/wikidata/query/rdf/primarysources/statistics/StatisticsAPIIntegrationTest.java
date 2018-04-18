@@ -12,11 +12,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
-import org.wikidata.query.rdf.primarysources.common.Config;
-import org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache;
-import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
-import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
+import org.wikidata.query.rdf.primarysources.common.*;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;
 
@@ -48,17 +44,17 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         testDataset = new File(Resources.getResource(CurationAPIIntegrationTest.TEST_DATASET_FILE_NAME).toURI());
     }
 
-    @Before
-    public void uploadTestDataset() throws Exception {
-        CurationAPIIntegrationTest.uploadTestDataset(testDataset);
-    }
-
     @AfterClass
     public static void deleteCache() throws Exception {
         Files.deleteIfExists(Config.DATASETS_CACHE_PATH);
         Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
         Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
         Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);
+    }
+
+    @Before
+    public void uploadTestDataset() throws Exception {
+        CurationAPIIntegrationTest.uploadTestDataset(testDataset);
     }
 
     @Test
@@ -119,9 +115,9 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .discardContent();
+            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+            .execute()
+            .discardContent();
         JSONObject stats = testCorrectCall(builder, parser, "user", "IMCurator");
         long activities = (long) stats.get("activities");
         assertEquals(1, activities);
@@ -136,9 +132,9 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
     private JSONObject testCorrectCall(URIBuilder builder, JSONParser parser, String parameter, String value) throws Exception {
         builder.setParameter(parameter, value);
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONObject.class));
         return (JSONObject) parsed;
@@ -147,7 +143,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
     private HttpResponse testClientError(URIBuilder builder, String datasetOrUser, String value) throws Exception {
         builder.setParameter(datasetOrUser, value);
         return Request.Get(builder.build())
-                .execute()
-                .returnResponse();
+            .execute()
+            .returnResponse();
     }
 }

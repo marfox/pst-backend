@@ -27,7 +27,7 @@ public class CacheUpdater implements ServletContextListener {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
         service.scheduleAtFixedRate(() -> EntitiesCache.dumpAllEntities(), Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT);
         log.info("Primary sources tool entities cache update scheduled: will run every {} {}, {} {} after the server starts.",
-                Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
+            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
         return service;
     }
 
@@ -36,7 +36,7 @@ public class CacheUpdater implements ServletContextListener {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
         service.scheduleAtFixedRate(() -> DatasetsStatisticsCache.dumpStatistics(), Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT);
         log.info("Primary sources tool dataset statistics cache update scheduled: will run every {} {}, {} {} after the server starts.",
-                Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
+            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
         return service;
     }
 

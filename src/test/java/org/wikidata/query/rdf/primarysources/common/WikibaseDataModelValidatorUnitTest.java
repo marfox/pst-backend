@@ -57,8 +57,8 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
 
     private static InputStream openTestDatasetStream(String fileName) throws IOException {
         return Resources.asByteSource(
-                Resources.getResource(fileName))
-                .openBufferedStream();
+            Resources.getResource(fileName))
+            .openBufferedStream();
     }
 
     @Test
@@ -102,7 +102,7 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidSubjectAndObject = vf.createStatement(invalidSubject, validProperty, invalidObject);
 
         assertEquals(Arrays.asList(invalidSubject.stringValue(), invalidProperty.stringValue(), invalidObject.stringValue()),
-                validator.validateItemTriple(totallyInvalid));
+            validator.validateItemTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateItemTriple(totallyValid));
         assertEquals(Arrays.asList(invalidSubject.stringValue()), validator.validateItemTriple(withInvalidSubject));
         assertEquals(Arrays.asList(invalidProperty.stringValue()), validator.validateItemTriple(withInvalidProperty));
@@ -118,18 +118,18 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
 
         // Tricky invalid triple components
         Resource subjectWithInvalidUUID = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)) +
-                "-this-is-not-a-uuid");
+            100000)) +
+            "-this-is-not-a-uuid");
         URI propertyWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.STATEMENT_VALUE) + "P"
-                + String.valueOf(randomIntBetween(1, 100000)));
+            + String.valueOf(randomIntBetween(1, 100000)));
         Value objectWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.value() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)));
+            100000)));
         Value objectWithTypo = vf.createURI("http://www.wikidata.orge/entiti/" + "Q" + String.valueOf(randomIntBetween(1, 100000)));
 
         // Valid triple components
         Resource validSubject = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q666-" + UUID.randomUUID().toString());
         URI validProperty = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.STATEMENT) + "P" + String.valueOf(
-                randomIntBetween(1, 100000)));
+            randomIntBetween(1, 100000)));
         Value validObject = vf.createLiteral(randomFloat());
 
         // Combine valid and invalid components into a set of test triples
@@ -144,18 +144,18 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidUUID, validProperty, objectWithInvalidNamespace);
 
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
-                validator.validatePropertyTriple(totallyInvalid));
+            validator.validatePropertyTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validatePropertyTriple(totallyValid));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validatePropertyTriple(withInvalidSubject));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validatePropertyTriple(withTypoObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
-                withInvalidSubjectAndProperty));
+            withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
-                withInvalidPropertyAndObject));
+            withInvalidPropertyAndObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
-                withInvalidSubjectAndObject));
+            withInvalidSubjectAndObject));
     }
 
     @Test
@@ -164,8 +164,8 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
 
         // Tricky invalid triple components
         Resource subjectWithInvalidUUID = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)) +
-                "-this-is-not-a-uuid");
+            100000)) +
+            "-this-is-not-a-uuid");
         URI invalidProperty = vf.createURI(Provenance.NAMESPACE + "wasderivedfrom");
         Value objectWithInvalidHash = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.reference() + "IdontTh1nkImag00dHash");
 
@@ -185,17 +185,17 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidUUID, validProperty, objectWithInvalidHash);
 
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), invalidProperty.stringValue(), objectWithInvalidHash.stringValue()),
-                validator.validateReferenceTriple(totallyInvalid));
+            validator.validateReferenceTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateReferenceTriple(totallyValid));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validateReferenceTriple(withInvalidSubject));
         assertEquals(Arrays.asList(invalidProperty.stringValue()), validator.validateReferenceTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), invalidProperty.stringValue()), validator.validateReferenceTriple(
-                withInvalidSubjectAndProperty));
+            withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(invalidProperty.stringValue(), objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(
-                withInvalidPropertyAndObject));
+            withInvalidPropertyAndObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(
-                withInvalidSubjectAndObject));
+            withInvalidSubjectAndObject));
 
     }
 
@@ -205,17 +205,17 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
 
         // Tricky invalid triple components
         Resource subjectWithInvalidUUID = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)) +
-                "-this-is-not-a-uuid");
+            100000)) +
+            "-this-is-not-a-uuid");
         URI propertyWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.QUALIFIER_VALUE) + "P"
-                + String.valueOf(randomIntBetween(1, 100000)));
+            + String.valueOf(randomIntBetween(1, 100000)));
         Value objectWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.reference() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)));
+            100000)));
 
         // Valid triple components
         Resource validSubject = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.statement() + "Q666-" + UUID.randomUUID().toString());
         URI validProperty = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.QUALIFIER) + "P" + String.valueOf(
-                randomIntBetween(1, 100000)));
+            randomIntBetween(1, 100000)));
         Value validObject = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.entity() + "Q" + String.valueOf(randomIntBetween(1, 100000)));
 
         // Combine valid and invalid components into a set of test triples
@@ -229,17 +229,17 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidUUID, validProperty, objectWithInvalidNamespace);
 
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
-                validator.validateQualifierTriple(totallyInvalid));
+            validator.validateQualifierTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateQualifierTriple(totallyValid));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validateQualifierTriple(withInvalidSubject));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(
-                withInvalidSubjectAndProperty));
+            withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(
-                withInvalidPropertyAndObject));
+            withInvalidPropertyAndObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(
-                withInvalidSubjectAndObject));
+            withInvalidSubjectAndObject));
     }
 
     @Test
@@ -249,15 +249,15 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         // Tricky invalid triple components
         Resource subjectWithInvalidHash = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.reference() + "IdontTh1nkImag00dHash");
         URI propertyWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.REFERENCE_VALUE) + "P"
-                + String.valueOf(randomIntBetween(1, 100000)));
+            + String.valueOf(randomIntBetween(1, 100000)));
         Value objectWithInvalidNamespace = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.entityData() + "Q" + String.valueOf(randomIntBetween(1,
-                100000)));
+            100000)));
         Value objectWithTypo = vf.createURI("http://wwww.wikidata.org/entit/" + "Q" + String.valueOf(randomIntBetween(1, 100000)));
 
         // Valid triple components
         Resource validSubject = createValidReferenceNode(vf);
         URI validProperty = vf.createURI(WikibaseDataModelValidator.VALID_NAMESPACES.property(WikibaseUris.PropertyType.REFERENCE) + "P" + String.valueOf(
-                randomIntBetween(1, 100000)));
+            randomIntBetween(1, 100000)));
         Value validObject = vf.createURI("https://en.wikipedia.org");
 
         // Combine valid and invalid components into a set of test triples
@@ -272,19 +272,19 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         Statement withInvalidSubjectAndObject = vf.createStatement(subjectWithInvalidHash, validProperty, objectWithInvalidNamespace);
 
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
-                validator.validateReferenceValueTriple(totallyInvalid));
+            validator.validateReferenceValueTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateReferenceValueTriple(totallyValid));
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue()), validator.validateReferenceValueTriple(withInvalidSubject));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidProperty));
         assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validateReferenceValueTriple(withTypoObject));
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(
-                withInvalidSubjectAndProperty));
+            withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator
-                .validateReferenceValueTriple(
-                        withInvalidPropertyAndObject));
+            .validateReferenceValueTriple(
+                withInvalidPropertyAndObject));
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(
-                withInvalidSubjectAndObject));
+            withInvalidSubjectAndObject));
     }
 
     @Test

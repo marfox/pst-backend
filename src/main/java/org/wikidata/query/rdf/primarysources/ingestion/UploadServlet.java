@@ -54,14 +54,6 @@ public class UploadServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(UploadServlet.class);
 
-    private class RequestParameters {
-        public Properties dataLoaderProperties;
-        public String user;
-        public String datasetFileName;
-        public String datasetURI;
-        public String datasetDescription;
-    }
-
     /**
      * {@link Properties} required for the Blazegraph bulk load service, to set up the data loader.
      * See https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Load_Configuration
@@ -127,8 +119,8 @@ public class UploadServlet extends HttpServlet {
         if (tempDatasets.isEmpty()) {
             log.warn("No file passed the data model validation. Will fail with a 202 status code");
             response.sendError(HttpServletResponse.SC_ACCEPTED, "The request succeeded, but no content complies with the Wikidata RDF data model." +
-                    "Nothing will be uploaded. Please check the " +
-                    "<a href=\"https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model\">documentation</a> and try again.");
+                "Nothing will be uploaded. Please check the " +
+                "<a href=\"https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model\">documentation</a> and try again.");
             return;
         }
         log.debug("Valid files that will be uploaded: {}", tempDatasets);
@@ -168,8 +160,8 @@ public class UploadServlet extends HttpServlet {
      * @throws IOException if an error is detected when operating on the form fields.
      */
     private boolean processRequest(HttpServletRequest request, HttpServletResponse response, WikibaseDataModelValidator validator, Map<String, AbstractMap
-            .SimpleImmutableEntry<RDFFormat, Model>>
-            validRDFDatasets, RequestParameters parameters) throws IOException {
+        .SimpleImmutableEntry<RDFFormat, Model>>
+        validRDFDatasets, RequestParameters parameters) throws IOException {
         boolean isMultipart = ServletFileUpload.isMultipartContent(request);
         if (isMultipart) {
             ServletFileUpload upload = new ServletFileUpload();
@@ -203,7 +195,7 @@ public class UploadServlet extends HttpServlet {
             String actualContentType = request.getContentType();
             log.warn("Not a multipart content type: {} Will fail with a bad request", actualContentType);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "You should upload your dataset as a file using multipart/form-data content type, not " +
-                    actualContentType + ". Please fix your HTTP request and try again.");
+                actualContentType + ". Please fix your HTTP request and try again.");
             return false;
         }
         return true;
@@ -246,27 +238,27 @@ public class UploadServlet extends HttpServlet {
         String field = item.getFieldName();
         String value = Streams.asString(fieldStream);
         switch (field) {
-            case ApiParameters.DATASET_NAME_FORM_FIELD:
-                log.info("Dataset name detected. Will build a sanitized ASCII URI out of value '{}' as the named graph where the " +
-                        "dataset will be stored.", value);
-                parameters.datasetURI = Utils.mintDatasetURI(value);
-                String defaultGraph = "defaultGraph";
-                parameters.dataLoaderProperties.setProperty(defaultGraph, parameters.datasetURI);
-                log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", defaultGraph, parameters.dataLoaderProperties.getProperty(defaultGraph));
-                return true;
-            case ApiParameters.DATASET_DESCRIPTION_FORM_FIELD:
-                log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
-                parameters.datasetDescription = value;
-                log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
-                return true;
-            case ApiParameters.USER_NAME_PARAMETER:
-                log.info("User name detected. Will store the value '{}' as the uploader of the dataset", value);
-                parameters.user = value;
-                return true;
-            default:
-                log.warn("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", field, value);
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected form field '" + field + "' with value '" + value + "'");
-                return false;
+        case ApiParameters.DATASET_NAME_FORM_FIELD:
+            log.info("Dataset name detected. Will build a sanitized ASCII URI out of value '{}' as the named graph where the " +
+                "dataset will be stored.", value);
+            parameters.datasetURI = Utils.mintDatasetURI(value);
+            String defaultGraph = "defaultGraph";
+            parameters.dataLoaderProperties.setProperty(defaultGraph, parameters.datasetURI);
+            log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", defaultGraph, parameters.dataLoaderProperties.getProperty(defaultGraph));
+            return true;
+        case ApiParameters.DATASET_DESCRIPTION_FORM_FIELD:
+            log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
+            parameters.datasetDescription = value;
+            log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
+            return true;
+        case ApiParameters.USER_NAME_PARAMETER:
+            log.info("User name detected. Will store the value '{}' as the uploader of the dataset", value);
+            parameters.user = value;
+            return true;
+        default:
+            log.warn("Unexpected form field '{}' with value '{}'. Will fail with a a bad request", field, value);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unexpected form field '" + field + "' with value '" + value + "'");
+            return false;
         }
     }
 
@@ -286,9 +278,9 @@ public class UploadServlet extends HttpServlet {
         RDFFormat format = Utils.handleRdfFormat(contentType, fileName);
         if (format == null) {
             log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
-                    fileName, contentType);
+                fileName, contentType);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset '" + fileName +
-                    "' does not match any RDF format. Both the file content type '" + contentType + "' and the extension are invalid. Please fix this and try again.");
+                "' does not match any RDF format. Both the file content type '" + contentType + "' and the extension are invalid. Please fix this and try again.");
             return null;
         }
         Model validSyntax;
@@ -296,9 +288,9 @@ public class UploadServlet extends HttpServlet {
             validSyntax = validator.checkSyntax(fieldStream, RdfVocabulary.BASE_URI, format);
         } catch (RDFParseException rpe) {
             log.warn("The dataset is not valid RDF. Error at line {}, column {}. Will fail with a bad request", rpe.getLineNumber(), rpe
-                    .getColumnNumber());
+                .getColumnNumber());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Your dataset is not valid RDF. Found an error at line " + rpe.getLineNumber() +
-                    ", column " + rpe.getColumnNumber() + ". Please fix it and try again");
+                ", column " + rpe.getColumnNumber() + ". Please fix it and try again");
             return null;
         }
         return new AbstractMap.SimpleImmutableEntry<>(format, validSyntax);
@@ -308,8 +300,8 @@ public class UploadServlet extends HttpServlet {
      * @throws IOException if an error occurs while getting the response output writer
      */
     private void sendResponse(HttpServletResponse response, List<String> notUploaded, Map<String, List<String>> invalid, AbstractMap.SimpleImmutableEntry<Integer, List<String>>
-            dataLoaderResponse)
-            throws IOException {
+        dataLoaderResponse)
+        throws IOException {
         int dataLoaderResponseCode = dataLoaderResponse.getKey();
         List<String> dataLoaderResponseContent = dataLoaderResponse.getValue();
         // The final response code is the data loader one
@@ -319,7 +311,7 @@ public class UploadServlet extends HttpServlet {
         try (PrintWriter pw = response.getWriter()) {
             for (String dataset : notUploaded)
                 pw.println("Dataset '" + dataset + "' was not uploaded, " +
-                        "since no content complied with the Wikidata RDF data model.");
+                    "since no content complied with the Wikidata RDF data model.");
             for (String dataset : invalid.keySet()) {
                 List<String> invalidComponents = invalid.get(dataset);
                 if (invalidComponents.isEmpty()) {
@@ -346,7 +338,7 @@ public class UploadServlet extends HttpServlet {
      * @throws IOException if an input or output error is detected when the client sends the request to the data loader servlet
      */
     private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(List<File> tempDatasets, RequestParameters parameters, HttpServletResponse response) throws
-            IOException {
+        IOException {
         List<String> responseContent = new ArrayList<>();
         StringBuilder datasets = new StringBuilder();
         for (File tempDataset : tempDatasets) datasets.append(tempDataset.getPath()).append(", ");
@@ -365,22 +357,22 @@ public class UploadServlet extends HttpServlet {
         URI uri;
         try {
             uri = builder
-                    .setScheme("http")
-                    .setHost(Config.BLAZEGRAPH_HOST)
-                    .setPort(Config.BLAZEGRAPH_PORT)
-                    .setPath(Config.BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
-                    .build();
+                .setScheme("http")
+                .setHost(Config.BLAZEGRAPH_HOST)
+                .setPort(Config.BLAZEGRAPH_PORT)
+                .setPath(Config.BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
+                .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph data loader URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Something went wrong while uploading the datasets. " +
-                            "Reason: failed building the Blazegraph data loader URI.");
+                "Something went wrong while uploading the datasets. " +
+                    "Reason: failed building the Blazegraph data loader URI.");
             return null;
         }
         dataLoaderResponse = Request.Post(uri)
-                .bodyByteArray(props, ContentType.TEXT_PLAIN)
-                .execute()
-                .returnResponse();
+            .bodyByteArray(props, ContentType.TEXT_PLAIN)
+            .execute()
+            .returnResponse();
         log.debug("Response from Blazegraph data loader: {}", dataLoaderResponse);
         status = dataLoaderResponse.getStatusLine().getStatusCode();
         // Get the data loader response only if it went wrong
@@ -421,33 +413,41 @@ public class UploadServlet extends HttpServlet {
         URI uri;
         try {
             uri = builder
-                    .setScheme("http")
-                    .setHost(Config.BLAZEGRAPH_HOST)
-                    .setPort(Config.BLAZEGRAPH_PORT)
-                    .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
-                    .build();
+                .setScheme("http")
+                .setHost(Config.BLAZEGRAPH_HOST)
+                .setPort(Config.BLAZEGRAPH_PORT)
+                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph SPARQL endpoint URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
-                            "Reason: failed building the Blazegraph SPARQL endpoint URI.");
+                "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
+                    "Reason: failed building the Blazegraph SPARQL endpoint URI.");
             return false;
         }
         HttpResponse blazegraphResponse = Request.Post(uri)
-                .bodyString(toBeAdded.toString(), ContentType.create("text/x-nquads"))
-                .execute()
-                .returnResponse();
+            .bodyString(toBeAdded.toString(), ContentType.create("text/x-nquads"))
+            .execute()
+            .returnResponse();
         log.debug("Response from Blazegraph SPARQL endpoint for metadata quads: {}", blazegraphResponse);
         int status = blazegraphResponse.getStatusLine().getStatusCode();
         if (status != HttpServletResponse.SC_OK) {
             log.error("Failed sending the metadata quads to Blazegraph, got status code {}", status);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
-                            "Reason: failed sending metadata to Blazegraph.");
+                "Something went wrong while adding metadata that links your user name to the dataset you uploaded. " +
+                    "Reason: failed sending metadata to Blazegraph.");
             return false;
         } else {
             log.info("Successfully added metadata quads: {}", toBeAdded);
             return true;
         }
+    }
+
+    private class RequestParameters {
+        public Properties dataLoaderProperties;
+        public String user;
+        public String datasetFileName;
+        public String datasetURI;
+        public String datasetDescription;
     }
 }

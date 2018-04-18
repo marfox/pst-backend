@@ -31,11 +31,6 @@ public class RandomServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(RandomServlet.class);
 
-    private class RequestParameters {
-        private String dataset;
-        private String qId;
-    }
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
@@ -111,10 +106,15 @@ public class RandomServlet extends HttpServlet {
             } catch (URISyntaxException use) {
                 log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                        "Parse error at index " + use.getIndex() + ".");
+                    "Parse error at index " + use.getIndex() + ".");
                 return false;
             }
         }
         return true;
+    }
+
+    private class RequestParameters {
+        private String dataset;
+        private String qId;
     }
 }

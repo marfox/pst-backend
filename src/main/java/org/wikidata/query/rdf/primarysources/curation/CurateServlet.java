@@ -43,17 +43,6 @@ public class CurateServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(CurateServlet.class);
 
-    private class RequestParameters {
-        private String qId;
-        private String pId;
-        private String mainPId;
-        private Value value;
-        private String type;
-        private String state;
-        private String user;
-        private String dataset;
-    }
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
@@ -72,7 +61,7 @@ public class CurateServlet extends HttpServlet {
         } catch (ParseException pe) {
             log.warn("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed JSON request body. Parse error at index "
-                    + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
+                + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
             return false;
         }
         String givenState = (String) body.get(ApiParameters.STATEMENT_STATE_JSON_KEY);
@@ -83,7 +72,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenState.equals("approved") && !givenState.equals("rejected") && !givenState.equals("duplicate") && !givenState.equals("blacklisted")) {
             log.warn("Invalid statement state: {}. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement state: '" + givenState + "'. " +
-                    "Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
+                "Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
             return false;
         }
         parameters.state = givenState;
@@ -111,7 +100,7 @@ public class CurateServlet extends HttpServlet {
         } catch (URISyntaxException use) {
             log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                    "Parse error at index " + use.getIndex() + ".");
+                "Parse error at index " + use.getIndex() + ".");
             return false;
         }
         parameters.dataset = givenDataset.replace("/new", "");
@@ -123,7 +112,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenType.equals("claim") && !givenType.equals("qualifier") && !givenType.equals("reference")) {
             log.warn("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement type: '" + givenType + "'. " +
-                    "Must be one of 'claim', 'qualifier', 'reference'.");
+                "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
         }
         parameters.type = givenType;
@@ -151,7 +140,7 @@ public class CurateServlet extends HttpServlet {
         } catch (ParseException pe) {
             log.error("Malformed JSON request body. Parse error at index {}, reason: {}", pe.getPosition(), pe.getUnexpectedObject());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed JSON request body. Parse error at index "
-                    + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
+                + pe.getPosition() + ", reason: " + pe.getUnexpectedObject().toString());
             return false;
         }
         String givenQId = (String) body.get(ApiParameters.QID_PARAMETER);
@@ -237,7 +226,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenType.equals("claim") && !givenType.equals("qualifier") && !givenType.equals("reference")) {
             log.error("Invalid statement type: {}. Must be one of 'claim', 'qualifier', 'reference'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement type: '" + givenType + "'. " +
-                    "Must be one of 'claim', 'qualifier', 'reference'.");
+                "Must be one of 'claim', 'qualifier', 'reference'.");
             return false;
         }
         parameters.type = givenType;
@@ -249,7 +238,7 @@ public class CurateServlet extends HttpServlet {
         } else if (!givenState.equals("approved") && !givenState.equals("rejected")) {
             log.error("Invalid statement state: {}. Must be either 'approved' or 'rejected'. Will fail with a bad request");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid statement state: '" + givenState + "'. " +
-                    "Must be either 'approved' or 'rejected'.");
+                "Must be either 'approved' or 'rejected'.");
             return false;
         }
         parameters.state = givenState;
@@ -277,7 +266,7 @@ public class CurateServlet extends HttpServlet {
         } catch (URISyntaxException use) {
             log.error("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                    "Parse error at index " + use.getIndex() + ".");
+                "Parse error at index " + use.getIndex() + ".");
             return false;
         }
         parameters.dataset = givenDataset.replace("/new", "");
@@ -287,54 +276,54 @@ public class CurateServlet extends HttpServlet {
     private JSONObject changeState(RequestParameters parameters) throws IOException {
         String query = null;
         switch (parameters.type) {
-            case "claim":
-                query = parameters.state.equals("approved") ? SparqlQueries.CLAIM_APPROVAL_QUERY : SparqlQueries.CLAIM_REJECTION_QUERY;
-                query = query
-                        .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
-                        .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
-                        .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
-                        .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
-                        .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
-                        .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
-                query = parameters.value instanceof org.openrdf.model.URI
-                        ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                        : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
-                break;
-            case "qualifier":
-                query = SparqlQueries.QUALIFIER_CURATION_QUERY
-                        .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
-                        .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
-                        .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
-                        .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
-                        .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
-                        .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
-                query = parameters.value instanceof org.openrdf.model.URI
-                        ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                        : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
-                break;
-            case "reference":
-                query = SparqlQueries.REFERENCE_CURATION_QUERY
-                        .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
-                        .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
-                        .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
-                        .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
-                        .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
-                        .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
-                query = parameters.value instanceof org.openrdf.model.URI
-                        ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                        : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
-                break;
+        case "claim":
+            query = parameters.state.equals("approved") ? SparqlQueries.CLAIM_APPROVAL_QUERY : SparqlQueries.CLAIM_REJECTION_QUERY;
+            query = query
+                .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
+                .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
+                .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
+                .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
+                .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
+            query = parameters.value instanceof org.openrdf.model.URI
+                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+            break;
+        case "qualifier":
+            query = SparqlQueries.QUALIFIER_CURATION_QUERY
+                .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
+                .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
+                .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
+                .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
+                .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
+            query = parameters.value instanceof org.openrdf.model.URI
+                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+            break;
+        case "reference":
+            query = SparqlQueries.REFERENCE_CURATION_QUERY
+                .replace(SparqlQueries.USER_PLACE_HOLDER, parameters.user)
+                .replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset)
+                .replace(SparqlQueries.STATE_PLACE_HOLDER, parameters.state)
+                .replace(SparqlQueries.QID_PLACE_HOLDER, parameters.qId)
+                .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
+                .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
+            query = parameters.value instanceof org.openrdf.model.URI
+                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+            break;
         }
         log.debug("SPARQL update query to be sent to Blazegraph: {}", query);
         URIBuilder builder = new URIBuilder();
         URI uri;
         try {
             uri = builder
-                    .setScheme("http")
-                    .setHost(Config.BLAZEGRAPH_HOST)
-                    .setPort(Config.BLAZEGRAPH_PORT)
-                    .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
-                    .build();
+                .setScheme("http")
+                .setHost(Config.BLAZEGRAPH_HOST)
+                .setPort(Config.BLAZEGRAPH_PORT)
+                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             JSONObject toBeReturned = new JSONObject();
@@ -344,10 +333,10 @@ public class CurateServlet extends HttpServlet {
         log.debug("URI built for Blazegraph SPARQL endpoint: {}", uri);
         HttpResponse response;
         response = Request.Post(uri)
-                .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
-                .bodyForm(Form.form().add("update", query).build())
-                .execute()
-                .returnResponse();
+            .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
+            .bodyForm(Form.form().add("update", query).build())
+            .execute()
+            .returnResponse();
         log.debug("Response from Blazegraph SPARQL endpoint: {}", response);
         int status = response.getStatusLine().getStatusCode();
         // Get the SPARQL update response only if it went wrong
@@ -400,20 +389,31 @@ public class CurateServlet extends HttpServlet {
         parameters.mainPId = mainProperty;
         List<String> qualifierOrReference = Arrays.asList(elements).subList(3, elements.length);
         switch (parameters.type) {
-            case "claim":
-                parameters.pId = mainProperty;
-                parameters.value = Utils.quickStatementValueToRdf(elements[2]);
-                break;
-            case "qualifier":
-                parameters.pId = qualifierOrReference.get(0);
-                parameters.value = Utils.quickStatementValueToRdf(qualifierOrReference.get(1));
-                break;
-            case "reference":
-                parameters.pId = qualifierOrReference.get(0).replace('S', 'P');
-                parameters.value = Utils.quickStatementValueToRdf(qualifierOrReference.get(1));
-                break;
+        case "claim":
+            parameters.pId = mainProperty;
+            parameters.value = Utils.quickStatementValueToRdf(elements[2]);
+            break;
+        case "qualifier":
+            parameters.pId = qualifierOrReference.get(0);
+            parameters.value = Utils.quickStatementValueToRdf(qualifierOrReference.get(1));
+            break;
+        case "reference":
+            parameters.pId = qualifierOrReference.get(0).replace('S', 'P');
+            parameters.value = Utils.quickStatementValueToRdf(qualifierOrReference.get(1));
+            break;
         }
         return true;
+    }
+
+    private class RequestParameters {
+        private String qId;
+        private String pId;
+        private String mainPId;
+        private Value value;
+        private String type;
+        private String state;
+        private String user;
+        private String dataset;
     }
 
 }

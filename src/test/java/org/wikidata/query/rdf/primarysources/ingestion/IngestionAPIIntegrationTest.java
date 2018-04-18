@@ -39,17 +39,16 @@ import java.util.Set;
  */
 public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegrationTestBase {
 
-    private static final String BASE_ENDPOINT = "http://localhost:9999/bigdata";
-    private static final String GOOD_DATASET_FILE_NAME = "good_chuck_berry.ttl"; // Valid data model
-    private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // 2 valid triples
-    private static final String BAD_DATASET_FILE_NAME = "bad_chuck_berry.ttl"; // Invalid data model
-    private static final String BAD_RDF_FILE_NAME = "just_bad_rdf.ttl"; // Invalid RDF
     public static final String DATASET_NAME = "chuck berry";
     public static final String EXPECTED_DATASET_URI = "http://chuck-berry/new";
     public static final String DATASET_DESCRIPTION = "An amazing dataset for tests";
     public static final String UPLOADER_NAME = "IMDataProvider";
     public static final String FILE_FIELD = "dataset";
-
+    private static final String BASE_ENDPOINT = "http://localhost:9999/bigdata";
+    private static final String GOOD_DATASET_FILE_NAME = "good_chuck_berry.ttl"; // Valid data model
+    private static final String PARTIALLY_BAD_DATASET_FILE_NAME = "partially_bad_chuck_berry.ttl"; // 2 valid triples
+    private static final String BAD_DATASET_FILE_NAME = "bad_chuck_berry.ttl"; // Invalid data model
+    private static final String BAD_RDF_FILE_NAME = "just_bad_rdf.ttl"; // Invalid RDF
     private static URI uploadEndpoint;
     private static URI updateEndpoint;
     private static File goodDataset;
@@ -128,7 +127,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
     @Test
     public void testPartiallyBadDatasetUpload() throws Exception {
         CloseableHttpResponse partiallyBadResponse = postDatasetUpload(uploadEndpoint, partiallyBadDataset, "T3rr|i|Blę  <<>>  & dATaæš#et" +
-                "     4 sure");
+            "     4 sure");
         String expectedDatasetName = "http://t3rrible-dataset-4-sure/new";
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());

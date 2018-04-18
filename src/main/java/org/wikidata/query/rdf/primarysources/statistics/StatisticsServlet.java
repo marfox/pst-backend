@@ -33,11 +33,6 @@ public class StatisticsServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(StatisticsServlet.class);
 
-    private class RequestParameters {
-        public String dataset;
-        public String user;
-    }
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
@@ -82,32 +77,32 @@ public class StatisticsServlet extends HttpServlet {
             return false;
         }
         switch (datasetOrUser) {
-            case ApiParameters.DATASET_PARAMETER:
-                try {
-                    new URI(datasetOrUserValue);
-                } catch (URISyntaxException use) {
-                    log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                            "Parse error at index " + use.getIndex() + ".");
-                    return false;
-                }
-                parameters.dataset = datasetOrUserValue;
-                parameters.user = null;
-                return true;
-            case ApiParameters.USER_NAME_PARAMETER:
-                boolean validated = Utils.validateUserName(datasetOrUserValue);
-                if (!validated) {
-                    log.warn("Invalid user name. Will fail with a bad request");
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
-                    return false;
-                }
-                parameters.user = datasetOrUserValue;
-                parameters.dataset = null;
-                return true;
-            default:
-                log.warn("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid required parameter: '" + datasetOrUser + "'. Use one of 'dataset' or 'user");
+        case ApiParameters.DATASET_PARAMETER:
+            try {
+                new URI(datasetOrUserValue);
+            } catch (URISyntaxException use) {
+                log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
+                    "Parse error at index " + use.getIndex() + ".");
                 return false;
+            }
+            parameters.dataset = datasetOrUserValue;
+            parameters.user = null;
+            return true;
+        case ApiParameters.USER_NAME_PARAMETER:
+            boolean validated = Utils.validateUserName(datasetOrUserValue);
+            if (!validated) {
+                log.warn("Invalid user name. Will fail with a bad request");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+                return false;
+            }
+            parameters.user = datasetOrUserValue;
+            parameters.dataset = null;
+            return true;
+        default:
+            log.warn("Invalid required parameter: {}. Will fail with a bad request", datasetOrUser);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid required parameter: '" + datasetOrUser + "'. Use one of 'dataset' or 'user");
+            return false;
         }
     }
 
@@ -176,9 +171,9 @@ public class StatisticsServlet extends HttpServlet {
             if (result.hasNext()) {
                 int activities = Integer.parseInt(result.next().getValue("activities").stringValue());
                 if (result.hasNext()) log.warn("The user statistics query yielded more than one result. " +
-                        "This should not happen, please check the database. " +
-                        "Only the first result will be used. " +
-                        "Query: {}. Result: {}", query, result);
+                    "This should not happen, please check the database. " +
+                    "Only the first result will be used. " +
+                    "Query: {}. Result: {}", query, result);
                 stats.put("user", user);
                 stats.put("activities", activities);
             }
@@ -187,5 +182,10 @@ public class StatisticsServlet extends HttpServlet {
             return null;
         }
         return stats;
+    }
+
+    private class RequestParameters {
+        public String dataset;
+        public String user;
     }
 }

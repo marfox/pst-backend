@@ -77,21 +77,21 @@ public class EntitiesCache {
         String query;
         int namespaceIndex;
         switch (entityType) {
-            case "subject":
-                query = SparqlQueries.SUBJECTS_ALL_DATASETS_QUERY;
-                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
-                break;
-            case "property":
-                query = SparqlQueries.PROPERTIES_ALL_DATASETS_QUERY;
-                namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
-                break;
-            case "value":
-                query = SparqlQueries.VALUES_ALL_DATASETS_QUERY;
-                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
-                break;
-            default:
-                log.error("Unexpected entity type '{}'. The cache for those entities will not be available", entityType);
-                return null;
+        case "subject":
+            query = SparqlQueries.SUBJECTS_ALL_DATASETS_QUERY;
+            namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
+            break;
+        case "property":
+            query = SparqlQueries.PROPERTIES_ALL_DATASETS_QUERY;
+            namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
+            break;
+        case "value":
+            query = SparqlQueries.VALUES_ALL_DATASETS_QUERY;
+            namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
+            break;
+        default:
+            log.error("Unexpected entity type '{}'. The cache for those entities will not be available", entityType);
+            return null;
         }
         JSONObject entitiesJson = new JSONObject();
         Map<String, Set<String>> entitiesMap = new HashMap<>();
@@ -108,7 +108,7 @@ public class EntitiesCache {
             }
         } catch (QueryEvaluationException qee) {
             log.error("Failed evaluating the SPARQL query that fetches " + entityType + " items. " +
-                    "The corresponding cache will not be available. Query: '" + query + "'", qee);
+                "The corresponding cache will not be available. Query: '" + query + "'", qee);
             return null;
         }
         for (String dataset : entitiesMap.keySet()) {
@@ -160,19 +160,19 @@ public class EntitiesCache {
     private static Path getCachePath(String entityType) {
         Path cache;
         switch (entityType) {
-            case "subject":
-                cache = SUBJECTS_CACHE_FILE;
-                break;
-            case "property":
-                cache = PROPERTIES_CACHE_FILE;
-                break;
-            case "value":
-                cache = VALUES_CACHE_FILE;
-                break;
-            default:
-                log.error("Invalid entity type '{}'. Expected one of 'subject', 'property' or 'value'. " +
-                        "The cache for those entities will not be available", entityType);
-                return null;
+        case "subject":
+            cache = SUBJECTS_CACHE_FILE;
+            break;
+        case "property":
+            cache = PROPERTIES_CACHE_FILE;
+            break;
+        case "value":
+            cache = VALUES_CACHE_FILE;
+            break;
+        default:
+            log.error("Invalid entity type '{}'. Expected one of 'subject', 'property' or 'value'. " +
+                "The cache for those entities will not be available", entityType);
+            return null;
         }
         return cache;
     }
@@ -182,22 +182,22 @@ public class EntitiesCache {
         String query;
         int namespaceIndex;
         switch (entityType) {
-            case "subject":
-                query = SparqlQueries.SUBJECTS_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
-                break;
-            case "property":
-                query = SparqlQueries.PROPERTIES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
-                break;
-            case "value":
-                query = SparqlQueries.VALUES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
-                namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
-                break;
-            default:
-                log.error("Invalid entity type '{}'. Expected one of 'subject', 'property' or 'value'. " +
-                        "The cache for those entities will not be available", entityType);
-                return null;
+        case "subject":
+            query = SparqlQueries.SUBJECTS_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+            namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
+            break;
+        case "property":
+            query = SparqlQueries.PROPERTIES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+            namespaceIndex = Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length();
+            break;
+        case "value":
+            query = SparqlQueries.VALUES_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+            namespaceIndex = Utils.WIKIBASE_URIS.entity().length();
+            break;
+        default:
+            log.error("Invalid entity type '{}'. Expected one of 'subject', 'property' or 'value'. " +
+                "The cache for those entities will not be available", entityType);
+            return null;
         }
         TupleQueryResult results = Utils.runSparqlQuery(query);
         try {

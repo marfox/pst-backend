@@ -53,7 +53,7 @@ public class SessionHandler {
             } catch (URISyntaxException use) {
                 log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                        "Parse error at index " + use.getIndex() + ".");
+                    "Parse error at index " + use.getIndex() + ".");
                 return false;
             }
         }
@@ -79,18 +79,18 @@ public class SessionHandler {
     JSONObject getEntities(String entityType) {
         Path cache;
         switch (entityType) {
-            case "subjects":
-                cache = EntitiesCache.SUBJECTS_CACHE_FILE;
-                break;
-            case "properties":
-                cache = EntitiesCache.PROPERTIES_CACHE_FILE;
-                break;
-            case "values":
-                cache = EntitiesCache.VALUES_CACHE_FILE;
-                break;
-            default:
-                log.error("Unexpected entity type: {}. The cache for those entities cannot be retrieved", entityType);
-                return null;
+        case "subjects":
+            cache = EntitiesCache.SUBJECTS_CACHE_FILE;
+            break;
+        case "properties":
+            cache = EntitiesCache.PROPERTIES_CACHE_FILE;
+            break;
+        case "values":
+            cache = EntitiesCache.VALUES_CACHE_FILE;
+            break;
+        default:
+            log.error("Unexpected entity type: {}. The cache for those entities cannot be retrieved", entityType);
+            return null;
         }
         JSONParser parser = new JSONParser();
         Object parsed;

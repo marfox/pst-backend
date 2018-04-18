@@ -19,6 +19,7 @@ public class Config {
     public static final String BLAZEGRAPH_HOST = System.getenv("HOST");
     public static final int BLAZEGRAPH_PORT = Integer.parseInt(System.getenv("PORT"));
     public static final String BLAZEGRAPH_CONTEXT = "/" + System.getenv("CONTEXT");
+    public static final Path DATASETS_CACHE_PATH = Paths.get(System.getenv("DATASETS_CACHE"));
     // Cache
     static final TimeUnit CACHE_UPDATE_UNIT = TimeUnit.valueOf(System.getenv("CACHE_UPDATE_TIME_UNIT"));
     static final long CACHE_UPDATE_INITIAL_DELAY = Long.parseLong(System.getenv("CACHE_UPDATE_INITIAL_DELAY"));
@@ -29,5 +30,4 @@ public class Config {
      when Jetty is fired up, the listener CacheUpdater looks for that variable.
     */
     static final String ENTITIES_CACHE_DIR = System.getenv("ENTITIES_CACHE");
-    public static final Path DATASETS_CACHE_PATH = Paths.get(System.getenv("DATASETS_CACHE"));
 }

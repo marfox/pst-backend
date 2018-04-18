@@ -42,10 +42,10 @@ public class WikibaseDataModelValidator {
      * </ul>
      */
     public static final Map<String, Pattern> TERM_VALIDATORS = ImmutableMap.of(
-            "item", Pattern.compile("^Q\\d+$"),
-            "property", Pattern.compile("^P\\d+$"),
-            "statement", Pattern.compile("^Q\\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
-            "reference", Pattern.compile("^[0-9a-f]{40}$"));
+        "item", Pattern.compile("^Q\\d+$"),
+        "property", Pattern.compile("^P\\d+$"),
+        "statement", Pattern.compile("^Q\\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
+        "reference", Pattern.compile("^[0-9a-f]{40}$"));
 
     /**
      * The set of Wikidata namespaces.
@@ -340,9 +340,9 @@ public class WikibaseDataModelValidator {
         int status;
         try {
             status = Request.Get(uri)
-                    .connectTimeout(RESOLVE_URL_TIMEOUT)
-                    .execute()
-                    .returnResponse().getStatusLine().getStatusCode();
+                .connectTimeout(RESOLVE_URL_TIMEOUT)
+                .execute()
+                .returnResponse().getStatusLine().getStatusCode();
         } catch (IOException ioe) {
             log.error("Not resolvable: {}. Reason: {}", resource, ioe.getClass().getSimpleName());
             return false;

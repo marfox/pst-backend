@@ -114,9 +114,9 @@ public class EntitiesCacheIntegrationTest extends AbstractRdfRepositoryIntegrati
         multipart.addTextBody("user", "IMDataProvider", ContentType.TEXT_PLAIN);
         multipart.addBinaryBody("dataset", dataset);
         Request.Post(CurationAPIIntegrationTest.UPLOAD_ENDPOINT)
-                .body(multipart.build())
-                .execute()
-                .discardContent();
+            .body(multipart.build())
+            .execute()
+            .discardContent();
     }
 
     @Test

@@ -65,21 +65,21 @@ public class DatasetsStatisticsCache {
                 String state = graphParts[graphParts.length - 1];
                 JSONObject currentStats = (JSONObject) stats.getOrDefault(key, new JSONObject());
                 switch (state) {
-                    case "new":
-                        currentStats.put("missing_" + statementsOrReferences, count);
-                        break;
-                    case "approved":
-                        currentStats.put("approved_" + statementsOrReferences, count);
-                        break;
-                    case "rejected":
-                        currentStats.put("rejected_" + statementsOrReferences, count);
-                        break;
-                    case "duplicate":
-                        currentStats.put("duplicate_" + statementsOrReferences, count);
-                        break;
-                    case "blacklisted":
-                        currentStats.put("blacklisted_" + statementsOrReferences, count);
-                        break;
+                case "new":
+                    currentStats.put("missing_" + statementsOrReferences, count);
+                    break;
+                case "approved":
+                    currentStats.put("approved_" + statementsOrReferences, count);
+                    break;
+                case "rejected":
+                    currentStats.put("rejected_" + statementsOrReferences, count);
+                    break;
+                case "duplicate":
+                    currentStats.put("duplicate_" + statementsOrReferences, count);
+                    break;
+                case "blacklisted":
+                    currentStats.put("blacklisted_" + statementsOrReferences, count);
+                    break;
                 }
                 stats.put(key, currentStats);
             }

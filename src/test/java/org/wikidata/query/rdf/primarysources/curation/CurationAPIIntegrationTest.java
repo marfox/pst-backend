@@ -73,9 +73,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         multipart.addTextBody(ApiParameters.USER_NAME_PARAMETER, IngestionAPIIntegrationTest.UPLOADER_NAME, text);
         multipart.addBinaryBody(IngestionAPIIntegrationTest.FILE_FIELD, testDataset);
         Request.Post(UPLOAD_ENDPOINT)
-                .body(multipart.build())
-                .execute()
-                .discardContent();
+            .body(multipart.build())
+            .execute()
+            .discardContent();
     }
 
     @Before
@@ -88,9 +88,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         URIBuilder builder = new URIBuilder(datasetsEndpoint);
         JSONParser parser = new JSONParser();
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray datasets = (JSONArray) parsed;
@@ -105,9 +105,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         JSONParser parser = new JSONParser();
         // Default behavior
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
@@ -116,9 +116,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         // Dataset parameter
         builder.setParameter("dataset", "http://chuck-berry/new");
         responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         suggestions = (JSONArray) parsed;
@@ -131,9 +131,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         // Success
         builder.setParameter("qid", TEST_QID);
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         JSONParser parser = new JSONParser();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
@@ -165,10 +165,10 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         // Failure
         builder.setParameter("qid", "Q666");
         int status = Request.Get(builder.build())
-                .execute()
-                .returnResponse()
-                .getStatusLine()
-                .getStatusCode();
+            .execute()
+            .returnResponse()
+            .getStatusLine()
+            .getStatusCode();
         assertEquals(404, status);
     }
 
@@ -189,8 +189,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         builder.clearParameters();
         builder.setParameter("value", "Q666");
         HttpResponse response = Request.Get(builder.build())
-                .execute()
-                .returnResponse();
+            .execute()
+            .returnResponse();
         // No statement with value Q666 exists in the test dataset
         assertEquals(404, response.getStatusLine().getStatusCode());
     }
@@ -199,9 +199,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         builder.clearParameters();
         builder.setParameter("property", "P999");
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
@@ -212,8 +212,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         builder.clearParameters();
         builder.setParameter("offset", "20");
         HttpResponse response = Request.Get(builder.build())
-                .execute()
-                .returnResponse();
+            .execute()
+            .returnResponse();
         assertEquals(404, response.getStatusLine().getStatusCode());
     }
 
@@ -221,9 +221,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         builder.clearParameters();
         builder.setParameter("offset", "10");
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
@@ -233,9 +233,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     private void testSearchDefaultBehavior(URIBuilder builder, JSONParser parser) throws Exception {
         builder.clearParameters();
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
@@ -247,9 +247,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         builder.clearParameters();
         builder.setParameter("limit", "12");
         String responseContent = Request.Get(builder.build())
-                .execute()
-                .returnContent()
-                .asString();
+            .execute()
+            .returnContent()
+            .asString();
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
@@ -265,9 +265,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "approved");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .discardContent();
+            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+            .execute()
+            .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -294,9 +294,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .discardContent();
+            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+            .execute()
+            .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -323,9 +323,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "approved");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .discardContent();
+            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+            .execute()
+            .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
@@ -351,9 +351,9 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         curated.put("state", "rejected");
         curated.put("user", "IMCurator");
         Request.Post(curateEndpoint)
-                .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .discardContent();
+            .bodyString(curated.toJSONString(), ContentType.APPLICATION_JSON)
+            .execute()
+            .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
         TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");

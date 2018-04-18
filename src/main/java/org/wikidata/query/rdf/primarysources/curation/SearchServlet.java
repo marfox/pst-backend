@@ -36,14 +36,6 @@ public class SearchServlet extends HttpServlet {
     private static final int DEFAULT_LIMIT = 50;
     private static final Logger log = LoggerFactory.getLogger(SearchServlet.class);
 
-    private class RequestParameters {
-        private String dataset;
-        private String property;
-        private String value;
-        private int offset;
-        private int limit;
-    }
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
@@ -67,7 +59,7 @@ public class SearchServlet extends HttpServlet {
             } catch (URISyntaxException use) {
                 log.warn("Invalid dataset URI: {}. Parse error at index {}. Will fail with a bad request", use.getInput(), use.getIndex());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid dataset URI: <" + use.getInput() + ">. " +
-                        "Parse error at index " + use.getIndex() + ".");
+                    "Parse error at index " + use.getIndex() + ".");
                 return false;
             }
         }
@@ -89,7 +81,7 @@ public class SearchServlet extends HttpServlet {
             if (!validator.isValidTerm(valueParameter, "item")) {
                 log.warn("Invalid QID: {}. The value must be a Wikidata item. Will fail with a bad request.", valueParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid QID: '" + valueParameter + "'" +
-                        "The value must be a Wikidata item.");
+                    "The value must be a Wikidata item.");
                 return false;
             }
             parameters.value = valueParameter;
@@ -102,7 +94,7 @@ public class SearchServlet extends HttpServlet {
             } catch (NumberFormatException nfe) {
                 log.warn("Invalid offset: {}. Does not look like an integer number. Will fail with a bad request", offsetParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid offset: " + offsetParameter + ". " +
-                        "Does not look like an integer number.");
+                    "Does not look like an integer number.");
                 return false;
             }
         }
@@ -114,7 +106,7 @@ public class SearchServlet extends HttpServlet {
             } catch (NumberFormatException nfe) {
                 log.warn("Invalid limit: {}. Does not look like an integer number. Will fail with a bad request", limitParameter);
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid limit: " + limitParameter + ". " +
-                        "Does not look like an integer number.");
+                    "Does not look like an integer number.");
                 return false;
             }
         }
@@ -199,10 +191,10 @@ public class SearchServlet extends HttpServlet {
                     Value referenceValue = suggestion.getValue("reference_value");
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String reference =
+                        "\t" +
+                            referenceProperty.substring(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
                             "\t" +
-                                    referenceProperty.substring(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
-                                    "\t" +
-                                    Utils.rdfValueToQuickStatement(referenceValue);
+                            Utils.rdfValueToQuickStatement(referenceValue);
                     if (quickStatement.length() == 0)
                         log.debug("New key. Will start a new QuickStatement with reference: [{}]", reference);
                     else
@@ -226,6 +218,14 @@ public class SearchServlet extends HttpServlet {
             jsonSuggestions.add(jsonSuggestion);
         }
         return jsonSuggestions;
+    }
+
+    private class RequestParameters {
+        private String dataset;
+        private String property;
+        private String value;
+        private int offset;
+        private int limit;
     }
 
 }

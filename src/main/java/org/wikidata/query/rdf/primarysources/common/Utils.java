@@ -50,7 +50,7 @@ public class Utils {
      * The less verbose RDF format is the default.
      */
     public static final RDFFormat DEFAULT_RDF_FORMAT = RDFFormat.TURTLE;
-
+    public static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
     private static final Object DEFAULT_ALTITUDE = null;
     private static final int DEFAULT_TIMEZONE = 0;
     private static final int DEFAULT_TIME_BEFORE = 0;
@@ -58,9 +58,7 @@ public class Utils {
     private static final int DEFAULT_TIME_PRECISION = 9;
     private static final String DEFAULT_CALENDAR_MODEL = "http://www.wikidata.org/entity/Q1985727";
     private static final String DEFAULT_UNIT = "1";
-
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
-    public static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
     // Value data types matchers
     private static final Pattern TIME = Pattern.compile("^[+-]\\d+-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ/\\d+$");
     private static final Pattern LOCATION = Pattern.compile("^@([+\\-]?\\d+(?:.\\d+)?)/([+\\-]?\\d+(?:.\\d+))?$");
@@ -73,12 +71,12 @@ public class Utils {
         URI uri;
         try {
             uri = builder
-                    .setScheme("http")
-                    .setHost(Config.BLAZEGRAPH_HOST)
-                    .setPort(Config.BLAZEGRAPH_PORT)
-                    .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
-                    .setParameter("query", query)
-                    .build();
+                .setScheme("http")
+                .setHost(Config.BLAZEGRAPH_HOST)
+                .setPort(Config.BLAZEGRAPH_PORT)
+                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .setParameter("query", query)
+                .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
             return null;
@@ -87,9 +85,9 @@ public class Utils {
         InputStream results;
         try {
             results = Request.Get(uri)
-                    .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
-                    .execute()
-                    .returnContent().asStream();
+                .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
+                .execute()
+                .returnContent().asStream();
         } catch (IOException ioe) {
             log.error("An I/O error occurred while sending the SPARQL query to Blazegraph. Query: " + query, ioe);
             return null;
@@ -192,10 +190,10 @@ public class Utils {
                     Value referenceValue = suggestion.getValue("reference_value");
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String reference =
+                        "\t" +
+                            referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
                             "\t" +
-                                    referenceProperty.substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length()).replace("P", "S") +
-                                    "\t" +
-                                    rdfValueToQuickStatement(referenceValue);
+                            rdfValueToQuickStatement(referenceValue);
                     if (quickStatement.length() == 0)
                         log.debug("New key. Will start a new QuickStatement with reference: [{}]", reference);
                     else
@@ -310,7 +308,7 @@ public class Utils {
         JSONObject dataValue = new JSONObject();
         JSONObject finalValue = new JSONObject();
         String referencePid = suggestion.getValue("reference_property").stringValue()
-                .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
+            .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
         Value referenceValue = suggestion.getValue("reference_value");
         String finalValueType = null;
         if (referenceValue instanceof org.openrdf.model.URI) {
@@ -405,32 +403,32 @@ public class Utils {
             JSONObject objectValue;
             String stringValue;
             switch (dataValueType) {
-                case "wikibase-entityid":
-                    try {
-                        objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
-                    } catch (ParseException pe) {
-                        log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
-                        return null;
-                    }
-                    String id = Long.toString((long) objectValue.get("numeric-id"));
-                    return vf.createURI(WIKIBASE_URIS.entity(), "Q" + id);
-                case "string":
-                    stringValue = (String) dataValue.get("value");
-                    try {
-                        // URL
-                        return vf.createURI(stringValue);
-                    } catch (IllegalArgumentException iae) {
-                        // String
-                        return vf.createLiteral(stringValue);
-                    }
-                case "monolingualtext":
-                    try {
-                        objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
-                    } catch (ParseException pe) {
-                        log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
-                        return null;
-                    }
-                    return vf.createLiteral((String) objectValue.get("text"), (String) objectValue.get("language"));
+            case "wikibase-entityid":
+                try {
+                    objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
+                } catch (ParseException pe) {
+                    log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
+                    return null;
+                }
+                String id = Long.toString((long) objectValue.get("numeric-id"));
+                return vf.createURI(WIKIBASE_URIS.entity(), "Q" + id);
+            case "string":
+                stringValue = (String) dataValue.get("value");
+                try {
+                    // URL
+                    return vf.createURI(stringValue);
+                } catch (IllegalArgumentException iae) {
+                    // String
+                    return vf.createLiteral(stringValue);
+                }
+            case "monolingualtext":
+                try {
+                    objectValue = (JSONObject) p.parse((String) dataValue.get("value"));
+                } catch (ParseException pe) {
+                    log.error("Malformed reference JSON value. Parse error at index {}", pe.getPosition());
+                    return null;
+                }
+                return vf.createLiteral((String) objectValue.get("text"), (String) objectValue.get("language"));
             }
         } else return null;
         return null;
