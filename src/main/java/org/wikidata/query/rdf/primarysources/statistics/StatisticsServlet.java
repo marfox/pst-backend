@@ -64,10 +64,15 @@ public class StatisticsServlet extends HttpServlet {
 
     private boolean processRequest(HttpServletRequest request, RequestParameters parameters, HttpServletResponse response) throws IOException {
         Enumeration<String> params = request.getParameterNames();
+        if (!params.hasMoreElements()) {
+            log.warn("No parameters given, will fail with a bad request");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No parameters given. Either 'dataset' or 'user' required");
+            return false;
+        }
         String datasetOrUser = params.nextElement();
         if (params.hasMoreElements()) {
             log.warn("More than one parameter given, will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one parameter is required, either 'dataset' or 'user");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only one parameter is required, either 'dataset' or 'user'");
             return false;
         }
         String datasetOrUserValue = request.getParameter(datasetOrUser);
