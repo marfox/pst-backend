@@ -25,9 +25,13 @@ public class PropertiesServlet extends HttpServlet {
         boolean ok = sh.processRequest(request, response);
         if (!ok) return;
         JSONObject entities = sh.getEntities(ENTITY_TYPE);
-        log.info("Loaded {} from cache", ENTITY_TYPE);
-        sh.sendResponse(response, entities, ENTITY_TYPE);
-        log.info("GET /properties successful");
+        if (entities == null) {
+            sh.sendResponse(response, entities, ENTITY_TYPE);
+        } else {
+            log.info("Loaded {} from cache", ENTITY_TYPE);
+            sh.sendResponse(response, entities, ENTITY_TYPE);
+            log.info("GET /properties successful");
+        }
     }
 
 }

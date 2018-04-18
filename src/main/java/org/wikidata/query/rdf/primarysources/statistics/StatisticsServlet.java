@@ -46,10 +46,15 @@ public class StatisticsServlet extends HttpServlet {
         log.debug("Required parameters stored as fields in private class: {}", parameters);
         if (parameters.dataset != null) {
             JSONObject datasetStatistics = getDatasetStatistics(parameters.dataset);
-            if (datasetStatistics != null) log.info("Loaded datasets statistics from cache");
-            sendResponse(response, datasetStatistics, ApiParameters.DATASET_PARAMETER, parameters);
-            log.info("GET /statistics for datasets successful");
-            return;
+            if (datasetStatistics == null) {
+                sendResponse(response, datasetStatistics, ApiParameters.DATASET_PARAMETER, parameters);
+                return;
+            } else {
+                log.info("Loaded datasets statistics from cache");
+                sendResponse(response, datasetStatistics, ApiParameters.DATASET_PARAMETER, parameters);
+                log.info("GET /statistics for datasets successful");
+                return;
+            }
         }
         if (parameters.user != null) {
             sendResponse(response, getUserStatistics(parameters.user), ApiParameters.USER_NAME_PARAMETER, parameters);
@@ -117,7 +122,7 @@ public class StatisticsServlet extends HttpServlet {
         }
     }
 
-    private JSONObject getDatasetStatistics(String dataset) throws IOException {
+    private JSONObject getDatasetStatistics(String dataset) {
         JSONParser parser = new JSONParser();
         Object parsed;
         try (BufferedReader reader = Files.newBufferedReader(Config.DATASETS_CACHE_PATH)) {
@@ -127,6 +132,9 @@ public class StatisticsServlet extends HttpServlet {
                 log.error("Malformed JSON datasets statistics. Parse error at index {}. Please check {}", pe.getPosition(), Config.DATASETS_CACHE_PATH);
                 return null;
             }
+        } catch (IOException ioe) {
+            log.error("Failed to load the datasets cache file: {}. Reason: {}", Config.DATASETS_CACHE_PATH, ioe.getClass().getSimpleName());
+            return null;
         }
         JSONObject allStats = (JSONObject) parsed;
         Object datasetStats = allStats.get(dataset);

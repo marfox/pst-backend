@@ -54,7 +54,7 @@ public class RandomServlet extends HttpServlet {
         log.info("GET /random successful");
     }
 
-    private Set<String> readCachedSubjectSet(String dataset) throws IOException {
+    private Set<String> readCachedSubjectSet(String dataset) {
         Set<String> subjectSet = new HashSet<>();
         JSONParser parser = new JSONParser();
         Object parsed;
@@ -65,6 +65,9 @@ public class RandomServlet extends HttpServlet {
                 log.error("Malformed JSON subject list. Parse error at index {}. Please check {}", pe.getPosition(), EntitiesCache.SUBJECTS_CACHE_FILE);
                 return null;
             }
+        } catch (IOException ioe) {
+            log.error("Failed to load the subjects cache file: {}. Reason: {}", EntitiesCache.SUBJECTS_CACHE_FILE, ioe.getClass().getSimpleName());
+            return null;
         }
         JSONObject subjects = (JSONObject) parsed;
         if (dataset.equals("all"))

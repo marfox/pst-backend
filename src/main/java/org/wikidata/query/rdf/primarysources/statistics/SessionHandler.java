@@ -76,7 +76,7 @@ public class SessionHandler {
         }
     }
 
-    JSONObject getEntities(String entityType) throws IOException {
+    JSONObject getEntities(String entityType) {
         Path cache;
         switch (entityType) {
             case "subjects":
@@ -101,6 +101,9 @@ public class SessionHandler {
                 log.error("The {} cache is malformed JSON. Parse error at index {}. Please check {}", entityType, pe.getPosition(), cache);
                 return null;
             }
+        } catch (IOException ioe) {
+            log.error("Failed to load the {} cache file: {}. Reason: {}", entityType, cache, ioe.getClass().getSimpleName());
+            return null;
         }
         JSONObject allEntities = (JSONObject) parsed;
         if (dataset.equals("all")) {
