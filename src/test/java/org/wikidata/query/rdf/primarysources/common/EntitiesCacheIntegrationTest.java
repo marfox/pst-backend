@@ -1,7 +1,13 @@
 package org.wikidata.query.rdf.primarysources.common;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.google.common.io.Resources;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -16,13 +22,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs

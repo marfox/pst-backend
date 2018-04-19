@@ -1,5 +1,23 @@
 package org.wikidata.query.rdf.primarysources.ingestion;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
@@ -20,19 +38,12 @@ import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.primarysources.common.*;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.Config;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
+import org.wikidata.query.rdf.primarysources.common.Utils;
+import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 /**
  * This Web service allows a third-party data provider to update a given dataset.
@@ -50,13 +61,9 @@ import java.util.List;
  * Created on Jul 20, 2017.
  */
 public class UpdateServlet extends HttpServlet {
-    /**
-     * Temporary file name of the dataset to be removed, which must be stored in the server local file system.
-     */
+    // Temporary file name of the dataset to be removed, which must be stored in the server local file system.
     private static final String TEMP_DATASET_TO_BE_REMOVED_FILE_NAME = "to_be_removed";
-    /**
-     * Temporary file name of the dataset to be added, which must be stored in the server local file system.
-     */
+    // Temporary file name of the dataset to be added, which must be stored in the server local file system.
     private static final String TEMP_DATASET_TO_BE_ADDED_FILE_NAME = "to_be_added";
 
     private static final Logger log = LoggerFactory.getLogger(UpdateServlet.class);
@@ -120,7 +127,8 @@ public class UpdateServlet extends HttpServlet {
          */
         AbstractMap.SimpleImmutableEntry<Integer, List<String>> parsedUpdateResponse;
         try {
-            parsedUpdateResponse = sendUpdateToBlazegraph(parameters.targetDatasetURI, toBeRemoved, parameters.removeDatasetFormat, parameters.removeDatasetFileName, toBeAdded,
+            parsedUpdateResponse = sendUpdateToBlazegraph(parameters.targetDatasetURI, toBeRemoved, parameters.removeDatasetFormat, parameters
+                    .removeDatasetFileName, toBeAdded,
                 parameters.addDatasetFormat, parameters.addDatasetFileName);
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph update URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
@@ -154,7 +162,8 @@ public class UpdateServlet extends HttpServlet {
      *
      * @throws IOException if an error is detected when operating on the files
      */
-    private boolean handleFileField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response, WikibaseDataModelValidator validator) throws
+    private boolean handleFileField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response,
+                                    WikibaseDataModelValidator validator) throws
         IOException {
         String fieldName = item.getFieldName();
         String fileName = item.getName();
@@ -240,28 +249,33 @@ public class UpdateServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to " +
+                "send it.");
             return false;
         }
         boolean validated = Utils.validateUserName(parameters.user);
         if (!validated) {
             log.warn("Invalid user name. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following " +
+                "characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         if (parameters.targetDatasetURI == null) {
             log.warn("No dataset URI given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset URI given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset URI given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD +
+                "' to send it.");
             return false;
         }
         if (parameters.removeDatasetFileName == null) {
             log.warn("No dataset file to be removed. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be removed given. Please use the field '" + ApiParameters.REMOVE_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be removed given. Please use the field '" + ApiParameters
+                .REMOVE_FORM_FIELD + "' to send it.");
             return false;
         }
         if (parameters.addDatasetFileName == null) {
             log.warn("No dataset file to be added. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be added given. Please use the field '" + ApiParameters.ADD_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset file to be added given. Please use the field '" + ApiParameters.ADD_FORM_FIELD
+                + "' to send it.");
             return false;
         }
         return true;
@@ -412,37 +426,28 @@ public class UpdateServlet extends HttpServlet {
     }
 
     private class RequestParameters {
-        /**
-         * The client user name.
-         */
-        public String user;
-        /**
-         * The target dataset URI to be updated.
-         */
-        public URI targetDatasetURI;
-        /**
-         * The file name of the dataset to be removed, as given by the client.
-         */
-        public String removeDatasetFileName;
-        /**
-         * The RDF format of the dataset to be removed.
-         */
-        public RDFFormat removeDatasetFormat;
-        /**
-         * The RDF {@link Model} of the dataset to be removed, which has passed the syntax check.
-         */
-        public Model removeDatasetWithValidSyntax;
-        /**
-         * The file name of the dataset to be added, as given by the client.
-         */
-        public String addDatasetFileName;
-        /**
-         * The RDF format of the dataset to be added.
-         */
-        public RDFFormat addDatasetFormat;
-        /**
-         * The RDF {@link Model} of the dataset to be added, which has passed the syntax check.
-         */
-        public Model addDatasetWithValidSyntax;
+        // The updater user name.
+        private String user;
+        // The target dataset URI to be updated.
+        private URI targetDatasetURI;
+        // The file name of the dataset to be removed, as given by the client.
+        private String removeDatasetFileName;
+        // The RDF format of the dataset to be removed.
+        private RDFFormat removeDatasetFormat;
+        // The RDF {@link Model} of the dataset to be removed, which has passed the syntax check.
+        private Model removeDatasetWithValidSyntax;
+        // The file name of the dataset to be added, as given by the client.
+        private String addDatasetFileName;
+        // The RDF format of the dataset to be added.
+        private RDFFormat addDatasetFormat;
+        // The RDF {@link Model} of the dataset to be added, which has passed the syntax check.
+        private Model addDatasetWithValidSyntax;
+
+        @Override
+        public String toString() {
+            return String.format("user = %s; target URI = %s; dataset to be removed: file name = %s; format = %s; valid RDF model = %s; dataset to be added: " +
+                    "file name = %s; format = %s; valid RDF model = %s", user, targetDatasetURI, removeDatasetFileName, removeDatasetFormat,
+                removeDatasetWithValidSyntax, addDatasetFileName, addDatasetFormat, addDatasetWithValidSyntax);
+        }
     }
 }

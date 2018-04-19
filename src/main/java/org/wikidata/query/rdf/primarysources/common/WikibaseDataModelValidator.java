@@ -1,6 +1,16 @@
 package org.wikidata.query.rdf.primarysources.common;
 
-import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.http.client.fluent.Request;
 import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
@@ -15,12 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Validates a given dataset against the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">Wikidata RDF data model</a>

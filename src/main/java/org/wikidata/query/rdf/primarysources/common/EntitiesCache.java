@@ -1,5 +1,19 @@
 package org.wikidata.query.rdf.primarysources.common;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -11,28 +25,20 @@ import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.common.uri.RDF;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
  * Created on Dec 07, 2017.
  */
-public class EntitiesCache {
+public final class EntitiesCache {
 
     public static final Path SUBJECTS_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "subjects.json");
     public static final Path PROPERTIES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "properties.json");
     public static final Path VALUES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "values.json");
-
     private static final Logger log = LoggerFactory.getLogger(EntitiesCache.class);
+
+    private EntitiesCache() {
+    }
 
     // Run when a change to a dataset is made through the ingestion API
     public static void cacheDatasetEntities(String dataset) {

@@ -1,24 +1,5 @@
 package org.wikidata.query.rdf.primarysources.ingestion;
 
-import com.google.common.io.Resources;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.hamcrest.Matchers;
-import org.junit.*;
-import org.openrdf.query.BindingSet;
-import org.openrdf.query.TupleQueryResult;
-import org.wikidata.query.rdf.common.uri.Ontology;
-import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
-import org.wikidata.query.rdf.primarysources.common.ApiParameters;
-import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
-import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
-
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +12,31 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.openrdf.query.BindingSet;
+import org.openrdf.query.TupleQueryResult;
+import org.wikidata.query.rdf.common.uri.Ontology;
+import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
+
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs

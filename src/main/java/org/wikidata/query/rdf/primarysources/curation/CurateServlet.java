@@ -1,5 +1,19 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
@@ -15,19 +29,6 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.Config;
 import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
 import org.wikidata.query.rdf.primarysources.common.Utils;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -67,7 +68,8 @@ public class CurateServlet extends HttpServlet {
         String givenState = (String) body.get(ApiParameters.STATEMENT_STATE_JSON_KEY);
         if (givenState == null) {
             log.warn("No state given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required state. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required state. Must be one of 'approved', 'rejected', 'duplicate', or " +
+                "'blacklisted'.");
             return false;
         } else if (!givenState.equals("approved") && !givenState.equals("rejected") && !givenState.equals("duplicate") && !givenState.equals("blacklisted")) {
             log.warn("Invalid statement state: {}. Must be one of 'approved', 'rejected', 'duplicate', or 'blacklisted'. Will fail with a bad request");
@@ -85,7 +87,8 @@ public class CurateServlet extends HttpServlet {
         boolean validated = Utils.validateUserName(givenUser);
         if (!validated) {
             log.warn("Invalid user name. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters " +
+                "are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         parameters.user = givenUser;
@@ -251,7 +254,8 @@ public class CurateServlet extends HttpServlet {
         boolean validated = Utils.validateUserName(givenUser);
         if (!validated) {
             log.warn("Invalid user name. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + givenUser + "'. The following characters " +
+                "are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         parameters.user = givenUser;
@@ -407,13 +411,19 @@ public class CurateServlet extends HttpServlet {
 
     private class RequestParameters {
         private String qId;
-        private String pId;
         private String mainPId;
+        private String pId;
         private Value value;
         private String type;
         private String state;
         private String user;
         private String dataset;
+
+        @Override
+        public String toString() {
+            return String.format("statement type = %s; state = %s; QID = %s; main PID = %s; %s PID = %s; value = %s; dataset = %s; user = %s", type, state,
+                qId, mainPId, type, pId, value, dataset, user);
+        }
     }
 
 }

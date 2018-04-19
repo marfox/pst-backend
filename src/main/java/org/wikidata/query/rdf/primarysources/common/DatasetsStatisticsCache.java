@@ -1,5 +1,9 @@
 package org.wikidata.query.rdf.primarysources.common;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+
 import org.json.simple.JSONObject;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.QueryEvaluationException;
@@ -7,18 +11,17 @@ import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
  * Created on Dec 20, 2017.
  */
-public class DatasetsStatisticsCache {
+public final class DatasetsStatisticsCache {
 
     private static final Logger log = LoggerFactory.getLogger(DatasetsStatisticsCache.class);
+
+    private DatasetsStatisticsCache() {
+    }
 
     public static void dumpStatistics() {
         /*

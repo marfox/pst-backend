@@ -1,5 +1,13 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.openrdf.query.BindingSet;
@@ -11,13 +19,6 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
 import org.wikidata.query.rdf.primarysources.common.Utils;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Map;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
@@ -25,7 +26,8 @@ import java.util.Map;
  */
 public class DatasetsServlet extends HttpServlet {
 
-    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> { ?dataset <" + RdfVocabulary.UPLOADED_BY_PREDICATE + "> ?user } }";
+    private static final String QUERY = "SELECT ?dataset ?user WHERE { GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> { ?dataset <" + RdfVocabulary
+        .UPLOADED_BY_PREDICATE + "> ?user } }";
     private static final Logger log = LoggerFactory.getLogger(DatasetsServlet.class);
 
     @Override

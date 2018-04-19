@@ -1,5 +1,16 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.openrdf.model.Value;
@@ -14,16 +25,6 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
 import org.wikidata.query.rdf.primarysources.common.Utils;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -139,10 +140,13 @@ public class SearchServlet extends HttpServlet {
             if (parameters.value == null)
                 query = SparqlQueries.SEARCH_ONE_DATASET_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset);
             else
-                query = SparqlQueries.SEARCH_ONE_DATASET_VALUE_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset).replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value);
+                query = SparqlQueries.SEARCH_ONE_DATASET_VALUE_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, parameters.dataset).replace(SparqlQueries
+                    .ITEM_VALUE_PLACE_HOLDER, parameters.value);
         }
-        query = query.replace(SparqlQueries.OFFSET_PLACE_HOLDER, String.valueOf(parameters.offset)).replace(SparqlQueries.LIMIT_PLACE_HOLDER, String.valueOf(parameters.limit));
-        query = parameters.property.equals("all") ? query.replace(SparqlQueries.PROPERTY_PLACE_HOLDER, "?property") : query.replace(SparqlQueries.PROPERTY_PLACE_HOLDER, "p:" + parameters.property);
+        query = query.replace(SparqlQueries.OFFSET_PLACE_HOLDER, String.valueOf(parameters.offset)).replace(SparqlQueries.LIMIT_PLACE_HOLDER, String.valueOf(
+            parameters.limit));
+        query = parameters.property.equals("all") ? query.replace(SparqlQueries.PROPERTY_PLACE_HOLDER, "?property") : query.replace(SparqlQueries
+            .PROPERTY_PLACE_HOLDER, "p:" + parameters.property);
         return Utils.runSparqlQuery(query);
     }
 
@@ -159,13 +163,14 @@ public class SearchServlet extends HttpServlet {
                 String currentDataset = datasetValue == null ? parameters.dataset : datasetValue.stringValue();
                 String subject = suggestion.getValue("item").stringValue().substring(Utils.WIKIBASE_URIS.entity().length());
                 Value mainPropertyValue = suggestion.getValue("property");
-                String mainProperty = mainPropertyValue == null ? parameters.property : mainPropertyValue.stringValue().substring(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
+                String mainProperty = mainPropertyValue == null ? parameters.property : mainPropertyValue.stringValue().substring(Utils.WIKIBASE_URIS
+                    .property(WikibaseUris.PropertyType.CLAIM).length());
                 String statementUuid = suggestion.getValue("statement_node").stringValue().substring(Utils.WIKIBASE_URIS.statement().length());
                 String statementProperty = suggestion.getValue("statement_property").stringValue();
                 Value statementValue = suggestion.getValue("statement_value");
                 String qsKey = statementUuid + "|" + currentDataset;
                 log.debug("Current QuickStatement key from RDF statement node and dataset: {}", qsKey);
-                // Statement
+                // Check statement, qualifier, reference
                 if (statementProperty.startsWith(Utils.WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String statement = subject + "\t" + mainProperty + "\t" + Utils.rdfValueToQuickStatement(statementValue);
@@ -174,9 +179,7 @@ public class SearchServlet extends HttpServlet {
                     else
                         log.debug("Existing key. Will update QuickStatement [{}] with statement [{}]", quickStatement, statement);
                     quickStatements.put(qsKey, quickStatement.insert(0, statement));
-                }
-                // Qualifier
-                else if (statementProperty.startsWith(qualifierPrefix)) {
+                } else if (statementProperty.startsWith(qualifierPrefix)) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String qualifier = "\t" + statementProperty.substring(qualifierPrefix.length()) + "\t" + Utils.rdfValueToQuickStatement(statementValue);
                     if (quickStatement.length() == 0)
@@ -184,9 +187,7 @@ public class SearchServlet extends HttpServlet {
                     else
                         log.debug("Existing key. Will update QuickStatement [{}] with qualifier [{}]", quickStatement, qualifier);
                     quickStatements.put(qsKey, quickStatement.append(qualifier));
-                }
-                // Reference
-                else if (statementProperty.equals(referencePrefix)) {
+                } else if (statementProperty.equals(referencePrefix)) {
                     String referenceProperty = suggestion.getValue("reference_property").stringValue();
                     Value referenceValue = suggestion.getValue("reference_value");
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
@@ -226,6 +227,11 @@ public class SearchServlet extends HttpServlet {
         private String value;
         private int offset;
         private int limit;
+
+        @Override
+        public String toString() {
+            return String.format("dataset = %s; PID filter = %s; value filter = %s; SPARQL offset = %d; limit = %d", dataset, property, value, offset, limit);
+        }
     }
 
 }

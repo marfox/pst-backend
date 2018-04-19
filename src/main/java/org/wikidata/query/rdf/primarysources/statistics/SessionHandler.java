@@ -1,16 +1,5 @@
 package org.wikidata.query.rdf.primarysources.statistics;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.primarysources.common.ApiParameters;
-import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,6 +8,18 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -40,7 +41,8 @@ public class SessionHandler {
         }
         if (params.size() == 1 && !params.keySet().contains(ApiParameters.DATASET_PARAMETER)) {
             log.warn("Invalid optional parameter given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid optional parameter given. Only '" + ApiParameters.DATASET_PARAMETER + "' is allowed");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid optional parameter given. Only '" + ApiParameters.DATASET_PARAMETER + "' is " +
+                "allowed");
             return false;
         }
         String datasetParameter = request.getParameter(ApiParameters.DATASET_PARAMETER);

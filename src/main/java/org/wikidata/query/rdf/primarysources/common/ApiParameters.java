@@ -5,7 +5,8 @@ package org.wikidata.query.rdf.primarysources.common;
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
-public class ApiParameters {
+public final class ApiParameters {
+
     // from /suggest
     public static final String DATASET_PARAMETER = "dataset";
     public static final String QID_PARAMETER = "qid";
@@ -16,20 +17,20 @@ public class ApiParameters {
     public static final String DEFAULT_IO_MIME_TYPE = "application/json";
     // from /statistics
     public static final String USER_NAME_PARAMETER = "user";
-    // from /upload
     /**
      * Expected HTTP form field with the name of the dataset.
      */
     public static final String DATASET_NAME_FORM_FIELD = "name";
+    // from /upload
     /**
      * Optional HTTP form field with the dataset description.
      */
     public static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
-    // from /update
     /**
      * Required HTML form field: the value should be the file with the dataset to be removed.
      */
     public static final String REMOVE_FORM_FIELD = "remove";
+    // from /update
     /**
      * Required HTML form field: the value should be the file with the dataset to be added.
      */
@@ -58,4 +59,7 @@ public class ApiParameters {
     public static final String LIMIT_PARAMETER = "limit";
     public static final String PROPERTY_PARAMETER = "property";
     public static final String VALUE_PARAMETER = "value";
+
+    private ApiParameters() {
+    }
 }

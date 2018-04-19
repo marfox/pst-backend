@@ -1,5 +1,17 @@
 package org.wikidata.query.rdf.primarysources.statistics;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.Enumeration;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -12,17 +24,6 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.Config;
 import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
 import org.wikidata.query.rdf.primarysources.common.Utils;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.Enumeration;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -93,7 +94,8 @@ public class StatisticsServlet extends HttpServlet {
             boolean validated = Utils.validateUserName(datasetOrUserValue);
             if (!validated) {
                 log.warn("Invalid user name. Will fail with a bad request");
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + datasetOrUserValue + "'. The " +
+                    "following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
                 return false;
             }
             parameters.user = datasetOrUserValue;
@@ -110,7 +112,8 @@ public class StatisticsServlet extends HttpServlet {
         if (output == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Something went wrong when retrieving " + datasetOrUser + " statistics.");
         } else if (output.isEmpty()) {
-            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + parameters.dataset + "> ." : "No activity for user '" + parameters.user + "'.";
+            String errorMessage = datasetOrUser.equals("dataset") ? "No statistics available for dataset <" + parameters.dataset + "> ." : "No activity for " +
+                "user '" + parameters.user + "'.";
             log.warn(errorMessage + " Will fail with a not found");
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
@@ -185,7 +188,12 @@ public class StatisticsServlet extends HttpServlet {
     }
 
     private class RequestParameters {
-        public String dataset;
-        public String user;
+        private String dataset;
+        private String user;
+
+        @Override
+        public String toString() {
+            return String.format("dataset = %s; user = %s", dataset, user);
+        }
     }
 }

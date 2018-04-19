@@ -1,12 +1,29 @@
 package org.wikidata.query.rdf.primarysources.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.Normalizer;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.openrdf.model.*;
+import org.openrdf.model.Literal;
+import org.openrdf.model.Model;
+import org.openrdf.model.Resource;
+import org.openrdf.model.Value;
+import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.vocabulary.RDF;
@@ -28,21 +45,12 @@ import org.wikidata.query.rdf.common.uri.Ontology;
 import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.Normalizer;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
-public class Utils {
+public final class Utils {
 
     public static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
@@ -64,6 +72,9 @@ public class Utils {
     private static final Pattern LOCATION = Pattern.compile("^@([+\\-]?\\d+(?:.\\d+)?)/([+\\-]?\\d+(?:.\\d+))?$");
     private static final Pattern QUANTITY = Pattern.compile("^[+-]\\d+(\\.\\d+)?$");
     private static final Pattern MONOLINGUAL_TEXT = Pattern.compile("^(\\w+):(\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")$");
+
+    private Utils() {
+    }
 
     public static TupleQueryResult runSparqlQuery(String query) {
         log.debug("SPARQL query to be sent to Blazegraph: {}", query);
@@ -129,18 +140,14 @@ public class Utils {
                 String latitude = point.getLatitude();
                 String longitude = point.getLongitude();
                 return "@" + latitude + "/" + longitude;
-            }
-            // Time
-            else if (dataType.equals(XMLSchema.DATETIME)) {
+            } else if (dataType.equals(XMLSchema.DATETIME)) { // Time
                 WikibaseDate date = WikibaseDate.fromString(literal.getLabel());
                 // The Blazegraph data loader converts '00' to '01'
                 // Guess precision based on '01' values
                 if (date.day() > 1) return date.toString() + "/11";
                 else if (date.month() > 1) return date.toString() + "/10";
                 else return date.toString() + "/9";
-            }
-            // Quantity
-            else if (dataType.equals(XMLSchema.DECIMAL)) {
+            } else if (dataType.equals(XMLSchema.DECIMAL)) { // Quantity
                 return literal.getLabel();
             }
         }
@@ -164,7 +171,7 @@ public class Utils {
                 Value statementValue = suggestion.getValue("statement_value");
                 String qsKey = statementUuid + "|" + currentDataset;
                 log.debug("Current QuickStatement key from RDF statement node and dataset: {}", qsKey);
-                // Statement
+                // Check statement, qualifier, reference
                 if (statementProperty.startsWith(WIKIBASE_URIS.property(WikibaseUris.PropertyType.STATEMENT))) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String statement = subjectQid + "\t" + mainProperty + "\t" + rdfValueToQuickStatement(statementValue);
@@ -173,9 +180,7 @@ public class Utils {
                     else
                         log.debug("Existing key. Will update QuickStatement [{}] with statement [{}]", quickStatement, statement);
                     quickStatements.put(qsKey, quickStatement.insert(0, statement));
-                }
-                // Qualifier
-                else if (statementProperty.startsWith(qualifierPrefix)) {
+                } else if (statementProperty.startsWith(qualifierPrefix)) {
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
                     String qualifier = "\t" + statementProperty.substring(qualifierPrefix.length()) + "\t" + rdfValueToQuickStatement(statementValue);
                     if (quickStatement.length() == 0)
@@ -183,9 +188,7 @@ public class Utils {
                     else
                         log.debug("Existing key. Will update QuickStatement [{}] with qualifier [{}]", quickStatement, qualifier);
                     quickStatements.put(qsKey, quickStatement.append(qualifier));
-                }
-                // Reference
-                else if (statementProperty.equals(referencePrefix)) {
+                } else if (statementProperty.equals(referencePrefix)) {
                     String referenceProperty = suggestion.getValue("reference_property").stringValue();
                     Value referenceValue = suggestion.getValue("reference_value");
                     StringBuilder quickStatement = quickStatements.getOrDefault(qsKey, new StringBuilder());
@@ -234,9 +237,7 @@ public class Utils {
                 int id = Integer.parseInt(uri.getLocalName().replaceFirst("^Q", ""));
                 jsonValue.put("entity-type", "item");
                 jsonValue.put("numeric-id", id);
-            }
-            // URL
-            else return value.stringValue();
+            } else return value.stringValue(); // URL
         } else if (value instanceof Literal) {
             Literal literal = (Literal) value;
             org.openrdf.model.URI dataType = literal.getDatatype();
@@ -247,9 +248,7 @@ public class Utils {
             else if (language != null) {
                 jsonValue.put("language", language);
                 jsonValue.put("text", literal.getLabel());
-            }
-            // Globe coordinate
-            else if (dataType.toString().equals(GeoSparql.WKT_LITERAL)) {
+            } else if (dataType.toString().equals(GeoSparql.WKT_LITERAL)) { // Globe coordinate
                 WikibasePoint point = new WikibasePoint(literal.getLabel());
                 String latitude = point.getLatitude();
                 String longitude = point.getLongitude();
@@ -260,9 +259,7 @@ public class Utils {
                 jsonValue.put("precision", computeCoordinatesPrecision(latitude, longitude));
                 jsonValue.put("globe", globe);
                 jsonValue.put("altitude", DEFAULT_ALTITUDE);
-            }
-            // Time
-            else if (dataType.equals(XMLSchema.DATETIME)) {
+            } else if (dataType.equals(XMLSchema.DATETIME)) { // Time
                 WikibaseDate date = WikibaseDate.fromString(literal.getLabel()).cleanWeirdStuff();
                 jsonValue.put("time", date.toString());
                 jsonValue.put("timezone", DEFAULT_TIMEZONE);
@@ -270,9 +267,7 @@ public class Utils {
                 jsonValue.put("after", DEFAULT_TIME_AFTER);
                 jsonValue.put("precision", DEFAULT_TIME_PRECISION);
                 jsonValue.put("calendarmodel", DEFAULT_CALENDAR_MODEL);
-            }
-            // Quantity
-            else if (dataType.equals(XMLSchema.DECIMAL)) {
+            } else if (dataType.equals(XMLSchema.DECIMAL)) { // Quantity
                 jsonValue.put("amount", literal.getLabel());
                 jsonValue.put("unit", DEFAULT_UNIT);
             }
@@ -295,7 +290,8 @@ public class Utils {
     }
 
     public static TupleQueryResult getSuggestions(String dataset, String subjectQid) {
-        String query = dataset.equals("all") ? SparqlQueries.SUGGEST_ALL_DATASETS_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid) : SparqlQueries.SUGGEST_ONE_DATASET_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid).replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
+        String query = dataset.equals("all") ? SparqlQueries.SUGGEST_ALL_DATASETS_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid) : SparqlQueries
+            .SUGGEST_ONE_DATASET_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid).replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
         return runSparqlQuery(query);
     }
 
@@ -458,33 +454,25 @@ public class Utils {
         if (jsonObjectValue.containsValue("item")) {
             String id = Long.toString((long) jsonObjectValue.get("numeric-id"));
             return vf.createURI(WIKIBASE_URIS.entity(), "Q" + id);
-        }
-        // Monolingual text
-        else if (jsonObjectValue.containsKey("language")) {
+        } else if (jsonObjectValue.containsKey("language")) { // Monolingual text
             return vf.createLiteral((String) jsonObjectValue.get("text"), (String) jsonObjectValue.get("language"));
-        }
-        // Globe coordinate
-        else if (jsonObjectValue.containsKey("globe")) {
+        } else if (jsonObjectValue.containsKey("globe")) { // Globe coordinate
             String[] latLong = new String[2];
             latLong[0] = Double.toString((double) jsonObjectValue.get("latitude"));
             latLong[1] = Double.toString((double) jsonObjectValue.get("longitude"));
             WikibasePoint point = new WikibasePoint(latLong, (String) jsonObjectValue.get("globe"));
             return vf.createLiteral(point.toString(), GeoSparql.WKT_LITERAL);
-        }
-        // Time
-        else if (jsonObjectValue.containsKey("time")) {
+        } else if (jsonObjectValue.containsKey("time")) { // Time
             WikibaseDate date = WikibaseDate.fromString((String) jsonObjectValue.get("time"));
             return vf.createLiteral(date.toString(WikibaseDate.ToStringFormat.DATE_TIME), XMLSchema.DATETIME);
-        }
-        // Quantity
-        else if (jsonObjectValue.containsKey("amount")) {
+        } else if (jsonObjectValue.containsKey("amount")) { // Quantity
             return vf.createLiteral((String) jsonObjectValue.get("amount"), XMLSchema.DECIMAL);
         }
         return null;
     }
 
     /**
-     * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2
+     * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2 .
      */
     public static boolean validateUserName(String userName) {
         Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");

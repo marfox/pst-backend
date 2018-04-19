@@ -1,7 +1,10 @@
 package org.wikidata.query.rdf.primarysources.statistics;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
@@ -10,16 +13,22 @@ import org.hamcrest.Matchers;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.wikidata.query.rdf.primarysources.common.*;
+import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
+import org.wikidata.query.rdf.primarysources.common.Config;
+import org.wikidata.query.rdf.primarysources.common.DatasetsStatisticsCache;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
 import org.wikidata.query.rdf.primarysources.curation.CurationAPIIntegrationTest;
 import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs

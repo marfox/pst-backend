@@ -1,14 +1,15 @@
 package org.wikidata.query.rdf.primarysources.common;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.net.URI;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import org.wikidata.query.rdf.tool.rdf.RdfRepository;
 
-import java.net.URI;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 /**
  * Superclass of integration tests that an RDF repository and clear it between

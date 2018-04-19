@@ -1,5 +1,14 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONArray;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
@@ -7,14 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.Utils;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -82,8 +83,13 @@ public class SuggestServlet extends HttpServlet {
     }
 
     private class RequestParameters {
-        public String dataset;
-        public String qId;
+        private String dataset;
+        private String qId;
+
+        @Override
+        public String toString() {
+            return String.format("dataset = %s; QID = %s", dataset, qId);
+        }
     }
 
 }

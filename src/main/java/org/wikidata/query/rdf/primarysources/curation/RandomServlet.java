@@ -1,5 +1,21 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -10,17 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.common.Utils;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.*;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -116,5 +121,10 @@ public class RandomServlet extends HttpServlet {
     private class RequestParameters {
         private String dataset;
         private String qId;
+
+        @Override
+        public String toString() {
+            return String.format("dataset = %s; QID = %s", dataset, qId);
+        }
     }
 }

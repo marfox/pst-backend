@@ -1,21 +1,5 @@
 package org.wikidata.query.rdf.primarysources.common;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.google.common.io.Resources;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.openrdf.model.*;
-import org.openrdf.model.impl.TreeModel;
-import org.openrdf.model.impl.ValueFactoryImpl;
-import org.openrdf.model.util.Models;
-import org.openrdf.rio.RDFFormat;
-import org.openrdf.rio.RDFParseException;
-import org.openrdf.rio.Rio;
-import org.wikidata.query.rdf.common.uri.Provenance;
-import org.wikidata.query.rdf.common.uri.WikibaseUris;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -25,6 +9,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.openrdf.model.Model;
+import org.openrdf.model.Resource;
+import org.openrdf.model.Statement;
+import org.openrdf.model.URI;
+import org.openrdf.model.Value;
+import org.openrdf.model.ValueFactory;
+import org.openrdf.model.impl.TreeModel;
+import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.model.util.Models;
+import org.openrdf.rio.RDFFormat;
+import org.openrdf.rio.RDFParseException;
+import org.openrdf.rio.Rio;
+import org.wikidata.query.rdf.common.uri.Provenance;
+import org.wikidata.query.rdf.common.uri.WikibaseUris;
+
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs

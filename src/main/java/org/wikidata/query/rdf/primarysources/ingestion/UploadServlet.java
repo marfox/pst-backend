@@ -1,6 +1,27 @@
 package org.wikidata.query.rdf.primarysources.ingestion;
 
-import com.google.common.io.Resources;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
@@ -19,21 +40,18 @@ import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wikidata.query.rdf.primarysources.common.*;
+import org.wikidata.query.rdf.primarysources.common.ApiParameters;
+import org.wikidata.query.rdf.primarysources.common.Config;
+import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
+import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
+import org.wikidata.query.rdf.primarysources.common.Utils;
+import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.*;
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * @since 0.2.5
  * Created on Jul 04, 2017.
  */
 public class UploadServlet extends HttpServlet {
@@ -204,13 +222,15 @@ public class UploadServlet extends HttpServlet {
     private boolean checkRequiredFields(RequestParameters parameters, HttpServletResponse response) throws IOException {
         if (parameters.user == null) {
             log.warn("No user name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No user name given. Please use the field '" + ApiParameters.USER_NAME_PARAMETER + "' to " +
+                "send it.");
             return false;
         }
         boolean validated = Utils.validateUserName(parameters.user);
         if (!validated) {
             log.warn("Invalid user name. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Illegal characters found in the user name: '" + parameters.user + "'. The following " +
+                "characters are not allowed: : / ? # [ ] @ ! $ & ' ( ) * + , ; =");
             return false;
         }
         if (parameters.datasetFileName == null) {
@@ -220,7 +240,8 @@ public class UploadServlet extends HttpServlet {
         }
         if (parameters.datasetURI == null) {
             log.warn("No dataset name given. Will fail with a bad request");
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset name given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD + "' to send it.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No dataset name given. Please use the field '" + ApiParameters.DATASET_NAME_FORM_FIELD +
+                "' to send it.");
             return false;
         }
         if (parameters.datasetDescription == null) {
@@ -234,7 +255,8 @@ public class UploadServlet extends HttpServlet {
      *
      * @throws IOException in case of troubles when reading the field value or sending the bad request
      */
-    private boolean handleFormField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response) throws IOException {
+    private boolean handleFormField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response) throws
+        IOException {
         String field = item.getFieldName();
         String value = Streams.asString(fieldStream);
         switch (field) {
@@ -244,7 +266,8 @@ public class UploadServlet extends HttpServlet {
             parameters.datasetURI = Utils.mintDatasetURI(value);
             String defaultGraph = "defaultGraph";
             parameters.dataLoaderProperties.setProperty(defaultGraph, parameters.datasetURI);
-            log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", defaultGraph, parameters.dataLoaderProperties.getProperty(defaultGraph));
+            log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", defaultGraph, parameters.dataLoaderProperties.getProperty(
+                defaultGraph));
             return true;
         case ApiParameters.DATASET_DESCRIPTION_FORM_FIELD:
             log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
@@ -269,7 +292,8 @@ public class UploadServlet extends HttpServlet {
      * @throws IOException if an error is detected when operating on the file
      */
     private AbstractMap.SimpleImmutableEntry<RDFFormat, Model> handleFileField(FileItemStream item, InputStream fieldStream, RequestParameters parameters,
-                                                                               WikibaseDataModelValidator validator, HttpServletResponse response) throws IOException {
+                                                                               WikibaseDataModelValidator validator, HttpServletResponse response) throws
+        IOException {
         String fieldName = item.getFieldName();
         String fileName = item.getName();
         String contentType = item.getContentType();
@@ -280,7 +304,8 @@ public class UploadServlet extends HttpServlet {
             log.warn("Both the content type and the extension are invalid for file '{}': {}. Will fail with a bad request",
                 fileName, contentType);
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The dataset '" + fileName +
-                "' does not match any RDF format. Both the file content type '" + contentType + "' and the extension are invalid. Please fix this and try again.");
+                "' does not match any RDF format. Both the file content type '" + contentType + "' and the extension are invalid. Please fix this and try " +
+                "again.");
             return null;
         }
         Model validSyntax;
@@ -299,7 +324,8 @@ public class UploadServlet extends HttpServlet {
     /**
      * @throws IOException if an error occurs while getting the response output writer
      */
-    private void sendResponse(HttpServletResponse response, List<String> notUploaded, Map<String, List<String>> invalid, AbstractMap.SimpleImmutableEntry<Integer, List<String>>
+    private void sendResponse(HttpServletResponse response, List<String> notUploaded, Map<String, List<String>> invalid, AbstractMap
+        .SimpleImmutableEntry<Integer, List<String>>
         dataLoaderResponse)
         throws IOException {
         int dataLoaderResponseCode = dataLoaderResponse.getKey();
@@ -337,7 +363,8 @@ public class UploadServlet extends HttpServlet {
      *
      * @throws IOException if an input or output error is detected when the client sends the request to the data loader servlet
      */
-    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(List<File> tempDatasets, RequestParameters parameters, HttpServletResponse response) throws
+    private AbstractMap.SimpleImmutableEntry<Integer, List<String>> sendDatasetsToDataLoader(List<File> tempDatasets, RequestParameters parameters,
+                                                                                             HttpServletResponse response) throws
         IOException {
         List<String> responseContent = new ArrayList<>();
         StringBuilder datasets = new StringBuilder();
@@ -380,7 +407,8 @@ public class UploadServlet extends HttpServlet {
             log.info("The datasets ingestion into Blazegraph went fine");
         } else {
             log.error("Failed ingesting one or more datasets into Blazegraph. HTTP error code: {}", status);
-            try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(dataLoaderResponse.getEntity().getContent(), StandardCharsets.UTF_8))) {
+            try (BufferedReader responseReader = new BufferedReader(new InputStreamReader(dataLoaderResponse.getEntity().getContent(), StandardCharsets
+                .UTF_8))) {
                 String line;
                 while ((line = responseReader.readLine()) != null) {
                     responseContent.add(line);
@@ -444,10 +472,16 @@ public class UploadServlet extends HttpServlet {
     }
 
     private class RequestParameters {
-        public Properties dataLoaderProperties;
-        public String user;
-        public String datasetFileName;
-        public String datasetURI;
-        public String datasetDescription;
+        private Properties dataLoaderProperties;
+        private String user;
+        private String datasetFileName;
+        private String datasetURI;
+        private String datasetDescription;
+
+        @Override
+        public String toString() {
+            return String.format("user = %s; dataset file name = %s; URI = %s; description = %s; Blazegraph data loader properties = %s", user,
+                datasetFileName, datasetURI, datasetDescription, dataLoaderProperties);
+        }
     }
 }

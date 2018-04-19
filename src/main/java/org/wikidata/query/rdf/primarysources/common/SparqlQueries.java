@@ -5,7 +5,7 @@ package org.wikidata.query.rdf.primarysources.common;
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
-public class SparqlQueries {
+public final class SparqlQueries {
 
     /* Query place holders */
     public static final String USER_PLACE_HOLDER = "${USER}";
@@ -19,7 +19,6 @@ public class SparqlQueries {
     public static final String OFFSET_PLACE_HOLDER = "${OFFSET}";
     public static final String LIMIT_PLACE_HOLDER = "${LIMIT}";
     public static final String QID_PLACE_HOLDER = "${QID}";
-
     /* BEGIN: curation API */
     // Used by /curate
     // Approve claim + eventual qualifiers
@@ -299,10 +298,10 @@ public class SparqlQueries {
             "}";
     /* END: statistics API */
     /* BEGIN: datasets statistics cache */
-    static final String REFERENCES_COUNT_QUERY = "select ?graph (count(?reference) as ?count) where { graph ?graph { ?statement prov:wasDerivedFrom ?reference } } group by ?graph";
-    static final String STATEMENTS_COUNT_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
-    /* END: datasets statistics cache */
-
+    static final String REFERENCES_COUNT_QUERY = "select ?graph (count(?reference) as ?count) where { graph ?graph { ?statement prov:wasDerivedFrom " +
+        "?reference } } group by ?graph";
+    static final String STATEMENTS_COUNT_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER " +
+        "STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
     /* BEGIN: entities cache */
     // Also include qualifier values
     static final String VALUES_ONE_DATASET_QUERY =
@@ -315,6 +314,7 @@ public class SparqlQueries {
             "  }" +
             "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
             "}";
+    /* END: datasets statistics cache */
     // Only consider main PIDs, not qualifiers or references
     static final String PROPERTIES_ONE_DATASET_QUERY =
         "SELECT DISTINCT ?property " +
@@ -362,6 +362,9 @@ public class SparqlQueries {
             "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
             "  FILTER STRENDS(str(?dataset), \"new\") ." +
             "}";
+
+    private SparqlQueries() {
+    }
     /* END: entities cache */
 
 }

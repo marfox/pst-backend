@@ -9,7 +9,8 @@ import java.util.concurrent.TimeUnit;
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
-public class Config {
+public final class Config {
+
     /**
      * Endpoint name of the Blazegraph SPARQL service.
      */
@@ -30,4 +31,7 @@ public class Config {
      when Jetty is fired up, the listener CacheUpdater looks for that variable.
     */
     static final String ENTITIES_CACHE_DIR = System.getenv("ENTITIES_CACHE");
+
+    private Config() {
+    }
 }
