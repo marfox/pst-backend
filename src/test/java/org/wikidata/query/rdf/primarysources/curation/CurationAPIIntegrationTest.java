@@ -1,7 +1,13 @@
 package org.wikidata.query.rdf.primarysources.curation;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
@@ -11,7 +17,11 @@ import org.hamcrest.Matchers;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.primarysources.common.AbstractRdfRepositoryIntegrationTestBase;
@@ -19,13 +29,8 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.ingestion.IngestionAPIIntegrationTest;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.google.common.io.Resources;
 
 /**
  * @author Marco Fossati - User:Hjfocs
@@ -55,7 +60,6 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         randomEndpoint = URI.create(BASE_ENDPOINT + "/random");
         datasetsEndpoint = URI.create(BASE_ENDPOINT + "/datasets");
         testDataset = new File(Resources.getResource(TEST_DATASET_FILE_NAME).toURI());
-        EntitiesCache.dumpAllEntities();
     }
 
     @AfterClass
@@ -101,6 +105,7 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
 
     @Test
     public void testRandom() throws Exception {
+        EntitiesCache.dumpAllEntities();
         URIBuilder builder = new URIBuilder(randomEndpoint);
         JSONParser parser = new JSONParser();
         // Default behavior
@@ -139,9 +144,12 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
         assertEquals(5, suggestions.size());
-        TupleQueryResult statements = rdfRepository().query("select (count(?s) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?s . filter contains(str(?p), \"statement/\") . } }");
-        TupleQueryResult qualifiers = rdfRepository().query("select (count(?q) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?q . filter contains(str(?p), \"qualifier/\") . } }");
-        TupleQueryResult references = rdfRepository().query("select (count(?r) as ?count) where { graph <http://chuck-berry/new> { ?x prov:wasDerivedFrom ?r . } }");
+        TupleQueryResult statements = rdfRepository().query("select (count(?s) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?s . filter contains" +
+            "(str(?p), \"statement/\") . } }");
+        TupleQueryResult qualifiers = rdfRepository().query("select (count(?q) as ?count) where { graph <http://chuck-berry/new> { ?x ?p ?q . filter contains" +
+            "(str(?p), \"qualifier/\") . } }");
+        TupleQueryResult references = rdfRepository().query("select (count(?r) as ?count) where { graph <http://chuck-berry/new> { ?x prov:wasDerivedFrom ?r " +
+            ". } }");
         int expectedStatements = Integer.valueOf(statements.next().getValue("count").stringValue());
         int expectedQualifers = Integer.valueOf(qualifiers.next().getValue("count").stringValue());
         int expectedReferences = Integer.valueOf(references.next().getValue("count").stringValue());
@@ -270,7 +278,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
             .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
-        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
+        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), " +
+            "\"chuck-berry\") . } }");
         int approved = Integer.valueOf(approvedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
@@ -299,14 +308,16 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
             .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
-        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
+        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), " +
+            "\"chuck-berry\") . } }");
         int rejected = Integer.valueOf(rejectedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
         assertEquals(total - stillNew, rejected);
         /* Reject everything:
            1 main node (wd:Q5921 p:P999 wds:xxx) + 1 statement (wds:xxx ps:P999 "Maybelline") + 3 qualifiers + 1 reference node + 1 reference value
-           + 1 twin main node (wd:Q5921 p:P999 wds:yyy) + 1 twin statement (wds:yyy ps:P999 "Maybelline") needed for another reference + 1 reference node + 1 reference value
+           + 1 twin main node (wd:Q5921 p:P999 wds:yyy) + 1 twin statement (wds:yyy ps:P999 "Maybelline") needed for another reference + 1 reference node + 1
+            reference value
            Total rejected = 11
          */
         assertEquals(11, rejected);
@@ -317,7 +328,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     @Test
     public void testApproveReference() throws Exception {
         JSONObject curated = new JSONObject();
-        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
+        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia" +
+            ".org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
         curated.put("type", "reference");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "approved");
@@ -328,7 +340,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
             .discardContent();
         TupleQueryResult approvedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/approved> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
-        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
+        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), " +
+            "\"chuck-berry\") . } }");
         int approved = Integer.valueOf(approvedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
@@ -345,7 +358,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
     @Test
     public void testRejectReference() throws Exception {
         JSONObject curated = new JSONObject();
-        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
+        curated.put("qs", TEST_QID + "\tP18\t\"http://commons.wikimedia" +
+            ".org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg\"\tS854\t\"https://travisraminproducer.bandcamp.com/\"");
         curated.put("type", "reference");
         curated.put("dataset", "http://chuck-berry/new");
         curated.put("state", "rejected");
@@ -356,7 +370,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
             .discardContent();
         TupleQueryResult rejectedResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/rejected> { ?s ?p ?o . } }");
         TupleQueryResult stillNewResult = rdfRepository().query("select (count (?s) as ?count) where { graph <http://chuck-berry/new> { ?s ?p ?o . } }");
-        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), \"chuck-berry\") . } }");
+        TupleQueryResult totalResult = rdfRepository().query("select (count (?s) as ?count) where { graph ?g { ?s ?p ?o . filter contains(str(?g), " +
+            "\"chuck-berry\") . } }");
         int rejected = Integer.valueOf(rejectedResult.next().getValue("count").stringValue());
         int stillNew = Integer.valueOf(stillNewResult.next().getValue("count").stringValue());
         int total = Integer.valueOf(totalResult.next().getValue("count").stringValue());
