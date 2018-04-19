@@ -76,6 +76,12 @@ public final class Utils {
     private Utils() {
     }
 
+    /**
+     * Run a SPARQL query to the Blazegraph internal endpoint.
+     *
+     * @param query the SPARQL query
+     * @return the query result, or {@code null} if something goes wrong
+     */
     public static TupleQueryResult runSparqlQuery(String query) {
         log.debug("SPARQL query to be sent to Blazegraph: {}", query);
         URIBuilder builder = new URIBuilder();
@@ -119,6 +125,12 @@ public final class Utils {
         }
     }
 
+    /**
+     * Convert a RDF value (i.e., the triple object) to a QuickStatement one.
+     *
+     * @param value the RDF value
+     * @return the QuickStatement value
+     */
     public static String rdfValueToQuickStatement(Value value) {
         if (value instanceof org.openrdf.model.URI) {
             org.openrdf.model.URI uri = (org.openrdf.model.URI) value;
@@ -154,15 +166,23 @@ public final class Utils {
         return null;
     }
 
-    public static JSONArray formatSuggestions(TupleQueryResult suggestions, String datasetUri, String subjectQid) {
+    /**
+     * Convert a SPARQL query result into a JSON with QuickStatement suitable for the front end.
+     *
+     * @param queryResult the SPARQL query result
+     * @param datasetUri  the dataset URI
+     * @param subjectQid  the subject QID
+     * @return an array of JSON objects, each representing a statement suggestion to be curated
+     */
+    public static JSONArray formatSuggestions(TupleQueryResult queryResult, String datasetUri, String subjectQid) {
         log.debug("Starting conversion of SPARQL results to QuickStatements");
         JSONArray jsonSuggestions = new JSONArray();
         String qualifierPrefix = WIKIBASE_URIS.property(WikibaseUris.PropertyType.QUALIFIER);
         String referencePrefix = Provenance.WAS_DERIVED_FROM;
         Map<String, StringBuilder> quickStatements = new HashMap<>();
         try {
-            while (suggestions.hasNext()) {
-                BindingSet suggestion = suggestions.next();
+            while (queryResult.hasNext()) {
+                BindingSet suggestion = queryResult.next();
                 Value datasetValue = suggestion.getValue("dataset");
                 String currentDataset = datasetValue == null ? datasetUri : datasetValue.stringValue();
                 String mainProperty = suggestion.getValue("property").stringValue().substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.CLAIM).length());
@@ -223,10 +243,11 @@ public final class Utils {
     }
 
     /**
-     * Handle the data type and format the value to a JSON suitable for the Wikidata API.
-     * See https://www.wikidata.org/wiki/Special:ListDatatypes
+     * Convert a RDF value (i.e., the triple object) to a JSON suitable for the Wikidata API.
+     * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
      *
-     * @return the value as a String
+     * @param value the RDF value
+     * @return the Wikidata API JSON <i>as a string</i>, as this is the weird way the API works
      */
     public static String rdfValueToWikidataJson(Value value) {
         JSONObject jsonValue = new JSONObject();
@@ -289,6 +310,13 @@ public final class Utils {
         else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
     }
 
+    /**
+     * Run a SPARQL query to the Blazegraph internal endpoint to retrieve all new statements of a subject item that need curation.
+     *
+     * @param dataset the dataset URI, or {@code all} to look into the whole database
+     * @param subjectQid the subject QID
+     * @return the query result, or {@code null} if something goes wrong
+     */
     public static TupleQueryResult getSuggestions(String dataset, String subjectQid) {
         String query = dataset.equals("all") ? SparqlQueries.SUGGEST_ALL_DATASETS_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid) : SparqlQueries
             .SUGGEST_ONE_DATASET_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid).replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
@@ -341,6 +369,12 @@ public final class Utils {
         return jsonSuggestion;
     }
 
+    /**
+     * Convert a QuickStatement value to a RDF one.
+     *
+     * @param qsValue the QuickStatement value
+     * @return the RDF value
+     */
     public static Value quickStatementValueToRdf(String qsValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
         if (VALIDATOR.isValidTerm(qsValue, "item")) {
@@ -389,6 +423,13 @@ public final class Utils {
         }
     }
 
+    /**
+     * Convert a Wikidata API JSON <i>reference</i> value to a RDF one.
+     * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
+     *
+     * @param jsonValue the Wikidata API JSON reference value
+     * @return the RDF value
+     */
     public static Value wikidataJsonReferenceValueToRdf(Object jsonValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
         JSONParser p = new JSONParser();
@@ -430,6 +471,13 @@ public final class Utils {
         return null;
     }
 
+    /**
+     * Convert a Wikidata API JSON value to a RDF one.
+     * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
+     *
+     * @param jsonValue the Wikidata API JSON value
+     * @return the RDF value
+     */
     public static Value wikidataJsonValueToRdf(Object jsonValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
         JSONParser parser = new JSONParser();
@@ -472,7 +520,11 @@ public final class Utils {
     }
 
     /**
+     * Validate a Wiki user name.
      * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2 .
+     *
+     * @param userName the Wiki user name
+     * @return {@code true} if valid, {@code false} otherwise
      */
     public static boolean validateUserName(String userName) {
         Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
@@ -484,7 +536,15 @@ public final class Utils {
         return true;
     }
 
-    public static void addTypeToSubjectItems(Model dataset, String uri) {
+    /**
+     * Add an <i>instance-of</i> quad to each subject node in a RDF dataset. For instance:
+     * {@code wd:Q666 rdf:type wikibase:Item <http://strephit/new>}
+     * This should optimize the execution of queries on subject items.
+     *
+     * @param dataset the RDF dataset
+     * @param datasetUri the dataset URI
+     */
+    public static void addTypeToSubjectItems(Model dataset, String datasetUri) {
         Set<Resource> subjects = dataset.subjects();
         Set<org.openrdf.model.URI> items = new HashSet<>();
         for (Resource s : subjects) {
@@ -492,7 +552,7 @@ public final class Utils {
             if (subject.getNamespace().equals(WIKIBASE_URIS.entity())) items.add(subject);
         }
         for (org.openrdf.model.URI item : items)
-            dataset.add(item, RDF.TYPE, new URIImpl(Ontology.ITEM), new URIImpl(uri));
+            dataset.add(item, RDF.TYPE, new URIImpl(Ontology.ITEM), new URIImpl(datasetUri));
         log.debug("Added a (item, rdf:type, wikibase:Item) triple to each subject item: {}", items);
     }
 
@@ -500,6 +560,10 @@ public final class Utils {
      * Try to find a suitable RDF format for a given file name.
      * If the part has no content type, guess the format based on the file name extension.
      * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
+     *
+     * @param contentType the eventual content type declared in a HTTP request header
+     * @param fileName    the dataset file name
+     * @return the RDF format
      */
     public static RDFFormat handleRdfFormat(String contentType, String fileName) {
         // If the content type is not explicilty RDF, still try to guess based on the file name extension
@@ -509,6 +573,9 @@ public final class Utils {
 
     /**
      * Build a sanitized ASCII URI out of a given dataset name.
+     *
+     * @param datasetName the dataset name
+     * @return the sanitized dataset URI
      */
     public static String mintDatasetURI(String datasetName) {
         // Delete any character that is not a letter, a number, or a whitespace, as we want to mint readable URIs

@@ -23,11 +23,12 @@ public final class DatasetsStatisticsCache {
     private DatasetsStatisticsCache() {
     }
 
+    /**
+     * Dump datasets statistics to a cache file.
+     * The task runs on an independent thread, see {@link CacheUpdater#scheduleDatasetsStatsUpdate()}
+     * Log anything that may be thrown to avoid a silent death if something goes wrong.
+     */
     public static void dumpStatistics() {
-        /*
-         The task runs on an independent thread, so prevent it from dying quietly if something goes wrong.
-         Log anything that may be thrown.
-          */
         try {
             JSONObject statementsStats = fetchStatistics("statements");
             if (statementsStats == null) return;

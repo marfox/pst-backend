@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -40,17 +43,24 @@ public final class EntitiesCache {
     private EntitiesCache() {
     }
 
-    // Run when a change to a dataset is made through the ingestion API
+    /**
+     * Dump datasets entities (subjects, properties, item values) to separate cache files.
+     * Runs when a change to a dataset is made through the ingestion API,
+     * see {@link org.wikidata.query.rdf.primarysources.ingestion.UploadServlet#doPost(HttpServletRequest, HttpServletResponse)}
+     *
+     * @param dataset the dataset URI
+     */
     public static void cacheDatasetEntities(String dataset) {
         ExecutorService service = ForkJoinPool.commonPool();
         service.submit(() -> dumpDatasetEntities(dataset));
     }
 
+    /**
+     * Dump all entities (subjects, properties, item values) to separate cache files.
+     * The task runs on an independent thread, see {@link CacheUpdater#scheduleEntitiesUpdate()}
+     * Log anything that may be thrown to avoid a silent death if something goes wrong.
+     */
     public static void dumpAllEntities() {
-        /*
-         The task runs on an independent thread, so prevent it from dying quietly if something goes wrong.
-         Log anything that may be thrown.
-          */
         try {
             String subject = "subject";
             String property = "property";
