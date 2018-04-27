@@ -12,7 +12,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * A caching system for datasets statistics.
+ * It stores total and missing statements and references count per dataset.
+ * The cache file is serialized in JSON and looks like this:
+ * <code>{
+ * "http://a-dataset-URI": {
+ * "total_statements": 2001,
+ * "missing_statements": 666,
+ * "missing_references": 1984,
+ * "total_references": 1269
+ * }
+ * }</code>
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Dec 20, 2017.
  */

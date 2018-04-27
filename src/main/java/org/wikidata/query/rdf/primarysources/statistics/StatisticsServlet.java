@@ -26,7 +26,11 @@ import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
 import org.wikidata.query.rdf.primarysources.common.Utils;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * Get counts of curation activities on a dataset or of a user.
+ * <p>
+ * This service is part of the Wikidata primary sources tool <i>Statistics API</i>.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Dec 20, 2017.
  */

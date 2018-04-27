@@ -22,11 +22,13 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * Shared logic for request and response processing of {@link PropertiesServlet} and {@link ValuesServlet}.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Feb 28, 2018.
  */
-public class SessionHandler {
+class SessionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(SessionHandler.class);
 

@@ -46,19 +46,18 @@ import org.wikidata.query.rdf.common.uri.Provenance;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
 /**
+ * A set of static utility methods used across services for pre- and post-processing purposes.
+ *
  * @author Marco Fossati - User:Hjfocs
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
 public final class Utils {
 
-    public static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
-    /**
-     * The less verbose RDF format is the default.
-     */
-    public static final RDFFormat DEFAULT_RDF_FORMAT = RDFFormat.TURTLE;
     public static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
+    private static final RDFFormat DEFAULT_RDF_FORMAT = RDFFormat.TURTLE;
+    private static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     private static final Object DEFAULT_ALTITUDE = null;
     private static final int DEFAULT_TIMEZONE = 0;
     private static final int DEFAULT_TIME_BEFORE = 0;
@@ -313,7 +312,7 @@ public final class Utils {
     /**
      * Run a SPARQL query to the Blazegraph internal endpoint to retrieve all new statements of a subject item that need curation.
      *
-     * @param dataset the dataset URI, or {@code all} to look into the whole database
+     * @param dataset    the dataset URI, or {@code all} to look into the whole database
      * @param subjectQid the subject QID
      * @return the query result, or {@code null} if something goes wrong
      */
@@ -541,7 +540,7 @@ public final class Utils {
      * {@code wd:Q666 rdf:type wikibase:Item <http://strephit/new>}
      * This should optimize the execution of queries on subject items.
      *
-     * @param dataset the RDF dataset
+     * @param dataset    the RDF dataset
      * @param datasetUri the dataset URI
      */
     public static void addTypeToSubjectItems(Model dataset, String datasetUri) {

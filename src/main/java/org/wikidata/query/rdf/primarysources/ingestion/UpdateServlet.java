@@ -46,18 +46,20 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 /**
- * This Web service allows a third-party data provider to update a given dataset.
- * It accepts the upload of 2 files, one with the data to be removed, and one with the data to be added.
+ * Allow a third-party data provider to upload a dataset.
+ * This service accepts one or more files.
+ * They must comply with the Wikidata RDF data model.
+ * See the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">specifications</a>.
  * <p>
- * The service is part of the Wikidata primary sources tool Ingestion API:
- * see <a href="https://www.wikidata.org/wiki/Wikidata:Primary_sources_tool">this document</a> for details on the tool architecture.
+ * This service is part of the Wikidata primary sources tool <i>Ingestion API</i>:
+ * see <a href="https://upload.wikimedia.org/wikipedia/commons/a/a7/Wikidata_primary_sources_tool_architecture_v2.svg">this picture</a>
+ * for an overview of the tool architecture.
  * <p>
- * It consumes the Blazegraph API
- * <a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29">update with multi-part request body</a>
- * service.
+ * It interacts with the Blazegraph storage engine via the
+ * <a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Data_Load">bulk data load</a> service.
  *
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Jul 20, 2017.
  */
 public class UpdateServlet extends HttpServlet {
@@ -152,7 +154,8 @@ public class UpdateServlet extends HttpServlet {
         /*
          * Build the final response
          */
-        respond(response, parameters.removeDatasetFileName, parameters.addDatasetFileName, toBeRemovedInvalid, toBeAddedInvalid, parsedUpdateResponse);
+        sendResponse(response, parameters.targetDatasetURI.toString(), parsedUpdateResponse, parameters.removeDatasetFileName, parameters.addDatasetFileName,
+            toBeRemovedInvalid, toBeAddedInvalid);
         log.info("POST /update successful");
     }
 
@@ -324,7 +327,7 @@ public class UpdateServlet extends HttpServlet {
             log.warn("The request succeeded, but no content in the dataset to be removed passed the data model validation. Nothing will be removed from " +
                 "Blazegraph");
             nothingRemoved = "The dataset to be removed '" + removeDatasetFileName + "' has no content that complies with the Wikidata RDF data model." +
-                "Nothing will be added. Please check the documentation next time: https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model";
+                " Nothing will be added. Please check the documentation next time: https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model";
         }
         if (!toBeAdded.isEmpty()) {
             // Set a suitable extension based on the RDF format
@@ -337,7 +340,7 @@ public class UpdateServlet extends HttpServlet {
             log.warn("The request succeeded, but no content in the dataset to be added passed the data model validation. Nothing will be added to " +
                 "Blazegraph");
             nothingAdded = "The dataset to be added '" + addDatasetFileName + "' has no content that complies with the Wikidata RDF data model." +
-                "Nothing will be added. Please check the documentation next time: https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model";
+                " Nothing will be added. Please check the documentation next time: https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model";
         }
         if (nothingRemoved != null && nothingAdded != null) {
             return null;
@@ -377,6 +380,7 @@ public class UpdateServlet extends HttpServlet {
             log.info("The dataset update (remove + add) into Blazegraph went fine");
         } else {
             log.error("Failed updating the dataset into Blazegraph, HTTP error code: {}", updateResponse.getStatusLine().getStatusCode());
+            updateResponseContent.add("Error response from Blazegraph:");
             try (BufferedReader updateResponseReader = new BufferedReader(new InputStreamReader(updateResponse.getEntity().getContent(), StandardCharsets
                 .UTF_8))) {
                 String line;
@@ -396,8 +400,9 @@ public class UpdateServlet extends HttpServlet {
      *
      * @throws IOException if an error is detected when writing the response
      */
-    private void respond(HttpServletResponse response, String removeDatasetFileName, String addDatasetFileName, List<String> toBeRemovedInvalid, List<String>
-        toBeAddedInvalid, AbstractMap.SimpleImmutableEntry<Integer, List<String>> parsedUpdateResponse) throws IOException {
+    private void sendResponse(HttpServletResponse response, String dataset, AbstractMap.SimpleImmutableEntry<Integer, List<String>> parsedUpdateResponse,
+                              String removeDatasetFileName, String addDatasetFileName, List<String> toBeRemovedInvalid, List<String> toBeAddedInvalid)
+        throws IOException {
         List<String> updateResponseContent = parsedUpdateResponse.getValue();
         // The final response code is the Blazegraph service one
         response.setStatus(parsedUpdateResponse.getKey());
@@ -410,17 +415,21 @@ public class UpdateServlet extends HttpServlet {
                 }
             }
             if (!toBeRemovedInvalid.isEmpty()) {
-                pw.println("Dataset to be removed '" + removeDatasetFileName + "', list of invalid components:");
+                pw.println("Dataset '" + dataset + "' partially updated.");
+                pw.println("The dataset to be removed '" + removeDatasetFileName + "' has the following invalid content that was discarded:");
                 for (String invalidComponent : toBeRemovedInvalid) {
                     pw.println(invalidComponent);
                 }
             }
             if (!toBeAddedInvalid.isEmpty()) {
-                pw.println("Dataset to be added '" + addDatasetFileName + "', list of invalid components:");
+                pw.println("Dataset '" + dataset + "' partially updated.");
+                pw.println("The dataset to be added '" + addDatasetFileName + "' has the following invalid content that was discarded:");
                 for (String invalidComponent : toBeAddedInvalid) {
                     pw.println(invalidComponent);
                 }
             }
+            if (updateResponseContent.isEmpty() && toBeRemovedInvalid.isEmpty() && toBeAddedInvalid.isEmpty())
+                pw.println("Dataset '" + dataset + "' successfully updated.");
             pw.flush();
         }
     }

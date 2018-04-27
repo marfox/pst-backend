@@ -14,7 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * Adds the {@code Access-Control-Allow-Origin: *} HTTP header (AKA <i>CORS</i>) to a server response.
+ * This header is needed because the primary sources tool front end runs on <i>wikidata.org</i>, while the back end is deployed on <i>pst.wmflabs.org</i>.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Apr 16, 2018.
  */

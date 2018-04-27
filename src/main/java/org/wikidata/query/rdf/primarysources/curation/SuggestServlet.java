@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.json.simple.JSONArray;
+import org.openrdf.model.Value;
 import org.openrdf.query.TupleQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,21 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
 import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 
 /**
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * Get statements to be curated about a given subject item.
+ * <p>
+ * The output statements are serialized in <i>QuickStatements</i>.
+ * See the <a href="https://www.wikidata.org/wiki/Help:QuickStatements#Command_sequence_syntax">syntax specifications</a>.
+ * <p>
+ * Support for <i>Wikidata JSON</i> output can be implemented as a method similar to {@link Utils#formatSuggestions(TupleQueryResult, String, String)} in
+ * {@link SuggestServlet#sendResponse(HttpServletResponse, RequestParameters, TupleQueryResult)}.
+ * The conversion logic between Wikidata RDF and Wikidata JSON is already available, see for instance {@link Utils#rdfValueToWikidataJson(Value)}.
+ * <p>
+ * This service is part of the Wikidata primary sources tool <i>Curation API</i>:
+ * see <a href="https://upload.wikimedia.org/wikipedia/commons/a/a7/Wikidata_primary_sources_tool_architecture_v2.svg">this picture</a>
+ * for an overview of the tool architecture.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Aug 04, 2017.
  */
 public class SuggestServlet extends HttpServlet {

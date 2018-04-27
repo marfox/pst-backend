@@ -171,7 +171,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse goodResponse = postDatasetUpdate(updateEndpoint, goodDataset, goodDataset);
         List<String> goodResponseContent = readResponse(goodResponse);
-        assertTrue(goodResponseContent.isEmpty());
+        assertEquals(1, goodResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, goodResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wdref:288ab581e7d2d02995a26dfa8b091d96e78457fc pr:P143 wd:Q206855 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }");
@@ -185,7 +185,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         CloseableHttpResponse partiallyBadResponse = postDatasetUpdate(updateEndpoint, goodDataset, partiallyBadDataset);
         String expectedDatasetName = EXPECTED_DATASET_URI;
         List<String> partiallyBadResponseContent = readResponse(partiallyBadResponse);
-        assertEquals(10, partiallyBadResponseContent.size());
+        assertEquals(11, partiallyBadResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, partiallyBadResponse.getStatusLine().getStatusCode());
         assertTrue(rdfRepository().ask("ask where { wd:Q5921 p:P18 wds:Q5921-583C7277-B344-4C96-8CF2-0557C2D0CD34 }"));
         TupleQueryResult updatedStatements = rdfRepository().query("select * where { graph <" + expectedDatasetName + "> { ?s ?p ?o } }");
@@ -199,7 +199,7 @@ public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegratio
         postDatasetUpload(uploadEndpoint, goodDataset, DATASET_NAME);
         CloseableHttpResponse badResponse = postDatasetUpdate(updateEndpoint, goodDataset, badDataset);
         List<String> badResponseContent = readResponse(badResponse);
-        assertEquals(12, badResponseContent.size());
+        assertEquals(13, badResponseContent.size());
         assertEquals(HttpServletResponse.SC_OK, badResponse.getStatusLine().getStatusCode());
         assertFalse(rdfRepository().ask("ask where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }"));
         assertFalse(rdfRepository().query("select * where { graph <" + EXPECTED_DATASET_URI + "> { ?s ?p ?o } }").hasNext());

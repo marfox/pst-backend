@@ -1,7 +1,9 @@
 package org.wikidata.query.rdf.primarysources.common;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * A set of Web API parameter names used by the Wikidata primary sources tool.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */
@@ -26,11 +28,11 @@ public final class ApiParameters {
      * Optional HTTP form field with the dataset description.
      */
     public static final String DATASET_DESCRIPTION_FORM_FIELD = "description";
+    // from /update
     /**
      * Required HTML form field: the value should be the file with the dataset to be removed.
      */
     public static final String REMOVE_FORM_FIELD = "remove";
-    // from /update
     /**
      * Required HTML form field: the value should be the file with the dataset to be added.
      */

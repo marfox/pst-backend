@@ -29,7 +29,21 @@ import org.wikidata.query.rdf.common.uri.RDF;
 import org.wikidata.query.rdf.common.uri.WikibaseUris;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * A caching system for entities: subjects, properties and value items.
+ * It stores all the available QIDs or PIDs per dataset.
+ * The cache file is serialized in JSON and looks like this:
+ * <code>{
+ * "http://a-dataset-URI": [
+ * "Q1500155",
+ * "Q4347501",
+ * "Q4768592",
+ * "Q2852786",
+ * "Q356342",
+ * ...
+ * ]
+ * }</code>
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Dec 07, 2017.
  */

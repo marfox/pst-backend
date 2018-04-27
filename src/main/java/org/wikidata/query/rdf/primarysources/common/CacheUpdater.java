@@ -13,7 +13,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * A scheduler to periodically update the entity and datasets statistics cache files.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Dec 12, 2017.
  */

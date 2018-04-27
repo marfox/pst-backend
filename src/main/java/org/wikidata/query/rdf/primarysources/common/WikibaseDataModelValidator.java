@@ -31,8 +31,8 @@ import com.google.common.collect.ImmutableMap;
  * Validates a given dataset against the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">Wikidata RDF data model</a>
  * The dataset undergoes RDF syntax check first, then the actual data model validation.
  *
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Jun 19, 2017.
  */
 public class WikibaseDataModelValidator {

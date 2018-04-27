@@ -26,7 +26,7 @@ import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.google.common.io.Resources;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Dec 11, 2017.
  */

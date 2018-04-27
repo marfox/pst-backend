@@ -31,8 +31,32 @@ import org.wikidata.query.rdf.primarysources.common.SparqlQueries;
 import org.wikidata.query.rdf.primarysources.common.Utils;
 
 /**
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * Allow a data curator to curate a statement.
+ * A statement can be one of the following types:
+ * <ul>
+ * <li>{@code claim}, an unreferenced claim;</li>
+ * <li>{@code reference}, a referenced claim;</li>
+ * <li>{@code qualifier}, a claim qualifier.</li>
+ * </ul>
+ * The curator can label a statement with one of the following states:
+ * <ul>
+ * <li>approved;</li>
+ * <li>rejected;</li>
+ * <li>duplicate;</li>
+ * <li>blacklisted.</li>
+ * </ul>
+ * <p>
+ * The statement should be serialized in <i>QuickStatements</i>.
+ * See the <a href="https://www.wikidata.org/wiki/Help:QuickStatements#Command_sequence_syntax">syntax specifications</a>.
+ * <i>Wikidata JSON</i> is also supported (see {@link CurateServlet#processMwApiBodyRequest(HttpServletRequest, RequestParameters, HttpServletResponse)}),
+ * although the request handling logic must be implemented in {@link CurateServlet#doPost(HttpServletRequest, HttpServletResponse)}.
+ * <p>
+ * This service is part of the Wikidata primary sources tool <i>Curation API</i>:
+ * see <a href="https://upload.wikimedia.org/wikipedia/commons/a/a7/Wikidata_primary_sources_tool_architecture_v2.svg">this picture</a>
+ * for an overview of the tool architecture.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Aug 30, 2017.
  */
 public class CurateServlet extends HttpServlet {

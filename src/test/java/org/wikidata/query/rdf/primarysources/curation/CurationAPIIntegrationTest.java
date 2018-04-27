@@ -235,7 +235,8 @@ public class CurationAPIIntegrationTest extends AbstractRdfRepositoryIntegration
         Object parsed = parser.parse(responseContent);
         Assert.assertThat(parsed, Matchers.instanceOf(JSONArray.class));
         JSONArray suggestions = (JSONArray) parsed;
-        assertEquals(5, suggestions.size());
+        // The number of suggestions
+        assertThat(suggestions.size(), Matchers.isIn(Arrays.asList(4, 5)));
     }
 
     private void testSearchDefaultBehavior(URIBuilder builder, JSONParser parser) throws Exception {

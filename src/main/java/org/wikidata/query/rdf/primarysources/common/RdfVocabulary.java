@@ -6,7 +6,9 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import org.wikidata.query.rdf.primarysources.ingestion.UploadServlet;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * A set of RDF namespaces and URIs used by the Wikidata primary sources tool.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Apr 17, 2018.
  */

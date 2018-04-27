@@ -11,7 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * Get the list of available item values, i.e., values that are <i>QID</i>s.
+ * <p>
+ * This service is part of the Wikidata primary sources tool <i>Statistics API</i>.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Feb 27, 2018.
  */

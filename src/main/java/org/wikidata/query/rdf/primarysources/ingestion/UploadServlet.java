@@ -50,7 +50,20 @@ import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 import com.google.common.io.Resources;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * Allow a third-party data provider to update an existing dataset.
+ * This service accepts the upload of 2 files, one with the data to be removed, and one with the data to be added.
+ * Both must comply with the Wikidata RDF data model.
+ * See the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">specifications</a>.
+ * <p>
+ * This service is part of the Wikidata primary sources tool <i>Ingestion API</i>:
+ * see <a href="https://upload.wikimedia.org/wikipedia/commons/a/a7/Wikidata_primary_sources_tool_architecture_v2.svg">this picture</a>
+ * for an overview of the tool architecture.
+ * <p>
+ * It interacts with the Blazegraph storage engine via the
+ * <a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29">update with multi-part request body</a>
+ * service.
+ *
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Jul 04, 2017.
  */
