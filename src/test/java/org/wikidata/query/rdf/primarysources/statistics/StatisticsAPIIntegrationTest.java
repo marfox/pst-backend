@@ -31,7 +31,7 @@ import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.google.common.io.Resources;
 
 /**
- * @author Marco Fossati - User:Hjfocs
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
  * @since 0.2.5
  * Created on Jan 05, 2018.
  */
@@ -68,22 +68,22 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @Test
     public void testProperties() throws Exception {
-        testPropertiesOrValues(propertiesEndpoint, 2, "P18");
+        testPropertiesOrValues(propertiesEndpoint, "P18");
     }
 
     @Test
     public void testValues() throws Exception {
-        testPropertiesOrValues(valuesEndpoint, 2, "Q123456");
+        testPropertiesOrValues(valuesEndpoint, "Q123456");
     }
 
-    private void testPropertiesOrValues(URI endpoint, int expectedListSize, String expectedEntity) throws Exception {
+    private void testPropertiesOrValues(URI endpoint, String expectedEntity) throws Exception {
         EntitiesCache.dumpAllEntities();
         URIBuilder builder = new URIBuilder(endpoint);
         JSONParser parser = new JSONParser();
         // Proper call
         JSONObject jsonResponse = testCorrectCall(builder, parser, "dataset", IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
         JSONArray entities = (JSONArray) jsonResponse.get(IngestionAPIIntegrationTest.EXPECTED_DATASET_URI);
-        assertEquals(expectedListSize, entities.size());
+        assertEquals(2, entities.size());
         assertTrue(entities.contains(expectedEntity));
         // Bad call
         HttpResponse httpResponse = testClientError(builder, "rock'n'roll", "will save us");

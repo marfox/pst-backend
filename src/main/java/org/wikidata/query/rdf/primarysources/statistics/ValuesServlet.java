@@ -31,7 +31,7 @@ public class ValuesServlet extends HttpServlet {
         if (!ok) return;
         JSONObject entities = sh.getEntities(ENTITY_TYPE);
         if (entities == null) {
-            sh.sendResponse(response, entities, ENTITY_TYPE);
+            sh.sendResponse(response, null, ENTITY_TYPE);
         } else {
             log.info("Loaded {} from cache", ENTITY_TYPE);
             sh.sendResponse(response, entities, ENTITY_TYPE);

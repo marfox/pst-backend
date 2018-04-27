@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -38,6 +37,10 @@ import com.google.common.collect.ImmutableMap;
 public class WikibaseDataModelValidator {
 
     /**
+     * The set of Wikidata namespaces.
+     */
+    static final WikibaseUris VALID_NAMESPACES = WikibaseUris.WIKIDATA;
+    /**
      * Map of regular expressions that validate the following Wikidata terms:
      * <ul>
      * <li>item, e.g., <code>Q9521</code>;</li>
@@ -46,17 +49,11 @@ public class WikibaseDataModelValidator {
      * <li>reified reference, e.g., <code>288ab581e7d2d02995a26dfa8b091d96e78457fc</code>.</li>
      * </ul>
      */
-    public static final Map<String, Pattern> TERM_VALIDATORS = ImmutableMap.of(
+    private static final Map<String, Pattern> TERM_VALIDATORS = ImmutableMap.of(
         "item", Pattern.compile("^Q\\d+$"),
         "property", Pattern.compile("^P\\d+$"),
         "statement", Pattern.compile("^Q\\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
         "reference", Pattern.compile("^[0-9a-f]{40}$"));
-
-    /**
-     * The set of Wikidata namespaces.
-     */
-    static final WikibaseUris VALID_NAMESPACES = WikibaseUris.WIKIDATA;
-
     /**
      * 3 characters is the maximum value to consider a given resource as invalid due to a typo.
      */
@@ -92,18 +89,18 @@ public class WikibaseDataModelValidator {
      * @param itemTriple - the Item triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
-    public List<String> validateItemTriple(Statement itemTriple) {
+    List<String> validateItemTriple(Statement itemTriple) {
         List<String> invalid = new ArrayList<>();
         String subject = itemTriple.getSubject().stringValue();
-        if (!isValidTripleComponent(subject, VALID_NAMESPACES.entity(), "item")) {
+        if (isInvalidTripleComponent(subject, VALID_NAMESPACES.entity(), "item")) {
             invalid.add(subject);
         }
         String predicate = itemTriple.getPredicate().stringValue();
-        if (!isValidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.CLAIM), "property")) {
+        if (isInvalidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.CLAIM), "property")) {
             invalid.add(predicate);
         }
         String object = itemTriple.getObject().stringValue();
-        if (!isValidTripleComponent(object, VALID_NAMESPACES.statement(), "statement")) {
+        if (isInvalidTripleComponent(object, VALID_NAMESPACES.statement(), "statement")) {
             invalid.add(object);
         }
         return invalid;
@@ -119,28 +116,28 @@ public class WikibaseDataModelValidator {
      * @param propertyTriple - the Item triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
-    public List<String> validatePropertyTriple(Statement propertyTriple) {
+    List<String> validatePropertyTriple(Statement propertyTriple) {
         List<String> invalid = new ArrayList<>();
         String subject = propertyTriple.getSubject().stringValue();
-        if (!isValidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
+        if (isInvalidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
             invalid.add(subject);
         }
         String predicate = propertyTriple.getPredicate().stringValue();
-        if (!isValidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.STATEMENT), "property")) {
+        if (isInvalidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.STATEMENT), "property")) {
             invalid.add(predicate);
         }
         // The object can be a a literal, an Item, or a URL
         Value object = propertyTriple.getObject();
         if (object instanceof URI) {
             String objectString = object.stringValue();
-            if (!isValidTripleComponent(objectString, VALID_NAMESPACES.entity(), "item")) {
+            if (isInvalidTripleComponent(objectString, VALID_NAMESPACES.entity(), "item")) {
                 // Not an Item, if it starts with "http://www.wikidata.org/", it probably means that an invalid Wikidata resource is used
                 if (objectString.startsWith(VALID_NAMESPACES.root() + "/")) {
                     log.error("Probably a Wikidata term, but not an Item: {}", objectString);
                     invalid.add(objectString);
                 } else {
                     // Check if it's a typo via edit distance between the current namespace and the valid one
-                    int distance = computeNamespaceDistance(objectString, VALID_NAMESPACES.entity(), "item");
+                    int distance = computeNamespaceDistance(objectString, VALID_NAMESPACES.entity());
                     if (distance <= EDIT_DISTANCE_THRESHOLD) {
                         log.error("Probably a typo: {}", objectString);
                         invalid.add(objectString);
@@ -161,10 +158,10 @@ public class WikibaseDataModelValidator {
      * @param referenceTriple - the reference triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
-    public List<String> validateReferenceTriple(Statement referenceTriple) {
+    List<String> validateReferenceTriple(Statement referenceTriple) {
         List<String> invalid = new ArrayList<>();
         String subject = referenceTriple.getSubject().stringValue();
-        if (!isValidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
+        if (isInvalidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
             invalid.add(subject);
         }
         String predicate = referenceTriple.getPredicate().stringValue();
@@ -172,7 +169,7 @@ public class WikibaseDataModelValidator {
             invalid.add(predicate);
         }
         String object = referenceTriple.getObject().stringValue();
-        if (!isValidTripleComponent(object, VALID_NAMESPACES.reference(), "reference")) {
+        if (isInvalidTripleComponent(object, VALID_NAMESPACES.reference(), "reference")) {
             invalid.add(object);
         }
         return invalid;
@@ -188,21 +185,21 @@ public class WikibaseDataModelValidator {
      * @param qualifierTriple - the qualifier triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
-    public List<String> validateQualifierTriple(Statement qualifierTriple) {
+    List<String> validateQualifierTriple(Statement qualifierTriple) {
         List<String> invalid = new ArrayList<>();
         String subject = qualifierTriple.getSubject().stringValue();
-        if (!isValidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
+        if (isInvalidTripleComponent(subject, VALID_NAMESPACES.statement(), "statement")) {
             invalid.add(subject);
         }
         String predicate = qualifierTriple.getPredicate().stringValue();
-        if (!isValidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.QUALIFIER), "property")) {
+        if (isInvalidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.QUALIFIER), "property")) {
             invalid.add(predicate);
         }
         // The object can be a a literal or an Item
         Value object = qualifierTriple.getObject();
         if (object instanceof URI) {
             String objectString = object.stringValue();
-            if (!isValidTripleComponent(objectString, VALID_NAMESPACES.entity(), "item")) {
+            if (isInvalidTripleComponent(objectString, VALID_NAMESPACES.entity(), "item")) {
                 invalid.add(objectString);
             }
         }
@@ -218,26 +215,26 @@ public class WikibaseDataModelValidator {
      * @param referenceValueTriple - the reference value triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
-    public List<String> validateReferenceValueTriple(Statement referenceValueTriple) {
+    List<String> validateReferenceValueTriple(Statement referenceValueTriple) {
         List<String> invalid = new ArrayList<>();
         String subject = referenceValueTriple.getSubject().stringValue();
-        if (!isValidTripleComponent(subject, VALID_NAMESPACES.reference(), "reference")) {
+        if (isInvalidTripleComponent(subject, VALID_NAMESPACES.reference(), "reference")) {
             invalid.add(subject);
         }
         String predicate = referenceValueTriple.getPredicate().stringValue();
-        if (!isValidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.REFERENCE), "property")) {
+        if (isInvalidTripleComponent(predicate, VALID_NAMESPACES.property(WikibaseUris.PropertyType.REFERENCE), "property")) {
             invalid.add(predicate);
         }
         // The object can be an Item, or a URL
         String object = referenceValueTriple.getObject().stringValue();
-        if (!isValidTripleComponent(object, VALID_NAMESPACES.entity(), "item")) {
+        if (isInvalidTripleComponent(object, VALID_NAMESPACES.entity(), "item")) {
             // Not an Item, if it starts with "http://www.wikidata.org/", it probably means that an invalid Wikidata resource is used
             if (object.startsWith(VALID_NAMESPACES.root() + "/")) {
                 log.error("Probably a Wikidata term, but not an Item: {}", object);
                 invalid.add(object);
             } else {
                 // Check if it's a typo via edit distance between the current namespace and the valid one
-                int distance = computeNamespaceDistance(object, VALID_NAMESPACES.entity(), "item");
+                int distance = computeNamespaceDistance(object, VALID_NAMESPACES.entity());
                 if (distance <= EDIT_DISTANCE_THRESHOLD) {
                     log.error("Probably a typo: {}", object);
                     invalid.add(object);
@@ -256,9 +253,7 @@ public class WikibaseDataModelValidator {
     public AbstractMap.SimpleImmutableEntry<Model, List<String>> handleDataset(Model dataset) {
         Model valid = new TreeModel();
         List<String> invalid = new ArrayList<>();
-        Iterator<Statement> statementIterator = dataset.iterator();
-        while (statementIterator.hasNext()) {
-            Statement statement = statementIterator.next();
+        for (Statement statement : dataset) {
             handleSubject(valid, invalid, statement);
         }
         if (invalid.isEmpty()) {
@@ -332,8 +327,9 @@ public class WikibaseDataModelValidator {
 
     /**
      * Perform an HTTP GET to check that the given resource is resolvable in the Internet.
+     *
+     * @deprecated unreliable, it heavily impacts the validation time
      */
-    @SuppressWarnings("CheckStyle")
     private boolean validateURL(String resource) {
         java.net.URI uri;
         try {
@@ -363,12 +359,12 @@ public class WikibaseDataModelValidator {
     /**
      * Validate the given triple component.
      */
-    private boolean isValidTripleComponent(String tripleComponent, String expectedNamespace, String expectedTerm) {
+    private boolean isInvalidTripleComponent(String tripleComponent, String expectedNamespace, String expectedTerm) {
         if (tripleComponent.startsWith(expectedNamespace)) {
             String term = tripleComponent.substring(expectedNamespace.length());
-            return isValidTerm(term, expectedTerm);
+            return !isValidTerm(term, expectedTerm);
         } else {
-            return false;
+            return true;
         }
     }
 
@@ -385,8 +381,8 @@ public class WikibaseDataModelValidator {
      * The edit distance of a given resource is computed between its namespace and a valid one.
      * Note that the term is not involved here.
      */
-    private int computeNamespaceDistance(String resource, String expectedNamespace, String expectedTerm) {
-        Pattern pattern = TERM_VALIDATORS.get(expectedTerm);
+    private int computeNamespaceDistance(String resource, String expectedNamespace) {
+        Pattern pattern = TERM_VALIDATORS.get("item");
         // Don't match start-of-line + end-of-line
         String regex = pattern.pattern().replace("^", "").replace("$", "");
         String[] split = resource.split(regex);

@@ -29,7 +29,7 @@ public class CacheUpdater implements ServletContextListener {
     private static ScheduledExecutorService scheduleEntitiesUpdate() {
         ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("entities-cache-update-scheduler-%d").build();
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
-        service.scheduleAtFixedRate(() -> EntitiesCache.dumpAllEntities(), Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
+        service.scheduleAtFixedRate(EntitiesCache::dumpAllEntities, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
             .CACHE_UPDATE_UNIT);
         log.info("Primary sources tool entities cache update scheduled: will run every {} {}, {} {} after the server starts.",
             Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
@@ -39,7 +39,7 @@ public class CacheUpdater implements ServletContextListener {
     private static ScheduledExecutorService scheduleDatasetsStatsUpdate() {
         ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("datasets-statistics-cache-update-scheduler-%d").build();
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
-        service.scheduleAtFixedRate(() -> DatasetsStatisticsCache.dumpStatistics(), Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
+        service.scheduleAtFixedRate(DatasetsStatisticsCache::dumpStatistics, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
             .CACHE_UPDATE_UNIT);
         log.info("Primary sources tool dataset statistics cache update scheduled: will run every {} {}, {} {} after the server starts.",
             Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);

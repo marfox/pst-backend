@@ -314,8 +314,8 @@ public class CurateServlet extends HttpServlet {
                 .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
                 .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
             query = parameters.value instanceof org.openrdf.model.URI
-                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+                ? query.replace(SparqlQueries.VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.VALUE_PLACE_HOLDER, parameters.value.toString());
             break;
         case "qualifier":
             query = SparqlQueries.QUALIFIER_CURATION_QUERY
@@ -326,8 +326,8 @@ public class CurateServlet extends HttpServlet {
                 .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
                 .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
             query = parameters.value instanceof org.openrdf.model.URI
-                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+                ? query.replace(SparqlQueries.VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.VALUE_PLACE_HOLDER, parameters.value.toString());
             break;
         case "reference":
             query = SparqlQueries.REFERENCE_CURATION_QUERY
@@ -338,8 +338,8 @@ public class CurateServlet extends HttpServlet {
                 .replace(SparqlQueries.MAIN_PID_PLACE_HOLDER, parameters.mainPId)
                 .replace(SparqlQueries.PID_PLACE_HOLDER, parameters.pId);
             query = parameters.value instanceof org.openrdf.model.URI
-                ? query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
-                : query.replace(SparqlQueries.ITEM_VALUE_PLACE_HOLDER, parameters.value.toString());
+                ? query.replace(SparqlQueries.VALUE_PLACE_HOLDER, "<" + parameters.value.toString() + ">")
+                : query.replace(SparqlQueries.VALUE_PLACE_HOLDER, parameters.value.toString());
             break;
         }
         log.debug("SPARQL update query to be sent to Blazegraph: {}", query);

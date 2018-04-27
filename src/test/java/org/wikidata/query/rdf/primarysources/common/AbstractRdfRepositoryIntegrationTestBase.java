@@ -34,7 +34,7 @@ public abstract class AbstractRdfRepositoryIntegrationTestBase extends Randomize
         this(WikibaseUris.getURISystem());
     }
 
-    public AbstractRdfRepositoryIntegrationTestBase(WikibaseUris uris) {
+    private AbstractRdfRepositoryIntegrationTestBase(WikibaseUris uris) {
         this.uris = uris;
         rdfRepository = new RdfRepositoryForTesting("wdq");
     }
@@ -90,7 +90,7 @@ public abstract class AbstractRdfRepositoryIntegrationTestBase extends Randomize
          */
         private final String namespace;
 
-        public RdfRepositoryForTesting(String namespace) {
+        RdfRepositoryForTesting(String namespace) {
             super(url("/namespace/" + namespace + "/sparql"), WikibaseUris.WIKIDATA);
             this.namespace = namespace;
         }
@@ -98,7 +98,7 @@ public abstract class AbstractRdfRepositoryIntegrationTestBase extends Randomize
         /**
          * Clear's the whole repository.
          */
-        public void clear() {
+        void clear() {
             execute("update", RdfRepository.UPDATE_COUNT_RESPONSE, "CLEAR ALL");
         }
 

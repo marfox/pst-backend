@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -33,8 +34,8 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.google.common.io.Resources;
 
 /**
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Jun 19, 2017.
  */
 @RunWith(RandomizedRunner.class)
@@ -84,7 +85,7 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
     }
 
     @Test
-    public void testValidateItemTriple() throws Exception {
+    public void testValidateItemTriple() {
         ValueFactory vf = ValueFactoryImpl.getInstance();
 
         // Invalid triple components
@@ -110,16 +111,16 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(invalidSubject.stringValue(), invalidProperty.stringValue(), invalidObject.stringValue()),
             validator.validateItemTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateItemTriple(totallyValid));
-        assertEquals(Arrays.asList(invalidSubject.stringValue()), validator.validateItemTriple(withInvalidSubject));
-        assertEquals(Arrays.asList(invalidProperty.stringValue()), validator.validateItemTriple(withInvalidProperty));
-        assertEquals(Arrays.asList(invalidObject.stringValue()), validator.validateItemTriple(withInvalidObject));
+        assertEquals(Collections.singletonList(invalidSubject.stringValue()), validator.validateItemTriple(withInvalidSubject));
+        assertEquals(Collections.singletonList(invalidProperty.stringValue()), validator.validateItemTriple(withInvalidProperty));
+        assertEquals(Collections.singletonList(invalidObject.stringValue()), validator.validateItemTriple(withInvalidObject));
         assertEquals(Arrays.asList(invalidSubject.stringValue(), invalidProperty.stringValue()), validator.validateItemTriple(withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(invalidProperty.stringValue(), invalidObject.stringValue()), validator.validateItemTriple(withInvalidPropertyAndObject));
         assertEquals(Arrays.asList(invalidSubject.stringValue(), invalidObject.stringValue()), validator.validateItemTriple(withInvalidSubjectAndObject));
     }
 
     @Test
-    public void testValidatePropertyTriple() throws Exception {
+    public void testValidatePropertyTriple() {
         ValueFactory vf = ValueFactoryImpl.getInstance();
 
         // Tricky invalid triple components
@@ -152,10 +153,10 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
             validator.validatePropertyTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validatePropertyTriple(totallyValid));
-        assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validatePropertyTriple(withInvalidSubject));
-        assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidProperty));
-        assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidNamespaceObject));
-        assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validatePropertyTriple(withTypoObject));
+        assertEquals(Collections.singletonList(subjectWithInvalidUUID.stringValue()), validator.validatePropertyTriple(withInvalidSubject));
+        assertEquals(Collections.singletonList(propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidProperty));
+        assertEquals(Collections.singletonList(objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(withInvalidNamespaceObject));
+        assertEquals(Collections.singletonList(objectWithTypo.stringValue()), validator.validatePropertyTriple(withTypoObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
             withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validatePropertyTriple(
@@ -193,9 +194,9 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), invalidProperty.stringValue(), objectWithInvalidHash.stringValue()),
             validator.validateReferenceTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateReferenceTriple(totallyValid));
-        assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validateReferenceTriple(withInvalidSubject));
-        assertEquals(Arrays.asList(invalidProperty.stringValue()), validator.validateReferenceTriple(withInvalidProperty));
-        assertEquals(Arrays.asList(objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(withInvalidNamespaceObject));
+        assertEquals(Collections.singletonList(subjectWithInvalidUUID.stringValue()), validator.validateReferenceTriple(withInvalidSubject));
+        assertEquals(Collections.singletonList(invalidProperty.stringValue()), validator.validateReferenceTriple(withInvalidProperty));
+        assertEquals(Collections.singletonList(objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), invalidProperty.stringValue()), validator.validateReferenceTriple(
             withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(invalidProperty.stringValue(), objectWithInvalidHash.stringValue()), validator.validateReferenceTriple(
@@ -206,7 +207,7 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
     }
 
     @Test
-    public void testValidateQualifierTriple() throws Exception {
+    public void testValidateQualifierTriple() {
         ValueFactory vf = ValueFactoryImpl.getInstance();
 
         // Tricky invalid triple components
@@ -237,9 +238,9 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
             validator.validateQualifierTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateQualifierTriple(totallyValid));
-        assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue()), validator.validateQualifierTriple(withInvalidSubject));
-        assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidProperty));
-        assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidNamespaceObject));
+        assertEquals(Collections.singletonList(subjectWithInvalidUUID.stringValue()), validator.validateQualifierTriple(withInvalidSubject));
+        assertEquals(Collections.singletonList(propertyWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidProperty));
+        assertEquals(Collections.singletonList(objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(withInvalidNamespaceObject));
         assertEquals(Arrays.asList(subjectWithInvalidUUID.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(
             withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator.validateQualifierTriple(
@@ -280,10 +281,10 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()),
             validator.validateReferenceValueTriple(totallyInvalid));
         assertEquals(new ArrayList<>(), validator.validateReferenceValueTriple(totallyValid));
-        assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue()), validator.validateReferenceValueTriple(withInvalidSubject));
-        assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidProperty));
-        assertEquals(Arrays.asList(objectWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidNamespaceObject));
-        assertEquals(Arrays.asList(objectWithTypo.stringValue()), validator.validateReferenceValueTriple(withTypoObject));
+        assertEquals(Collections.singletonList(subjectWithInvalidHash.stringValue()), validator.validateReferenceValueTriple(withInvalidSubject));
+        assertEquals(Collections.singletonList(propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidProperty));
+        assertEquals(Collections.singletonList(objectWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(withInvalidNamespaceObject));
+        assertEquals(Collections.singletonList(objectWithTypo.stringValue()), validator.validateReferenceValueTriple(withTypoObject));
         assertEquals(Arrays.asList(subjectWithInvalidHash.stringValue(), propertyWithInvalidNamespace.stringValue()), validator.validateReferenceValueTriple(
             withInvalidSubjectAndProperty));
         assertEquals(Arrays.asList(propertyWithInvalidNamespace.stringValue(), objectWithInvalidNamespace.stringValue()), validator
@@ -294,7 +295,7 @@ public class WikibaseDataModelValidatorUnitTest extends RandomizedTest {
     }
 
     @Test
-    public void testHandleDataset() throws Exception {
+    public void testHandleDataset() {
         Model good = validator.handleDataset(goodParsedDataset).getKey();
         Model bad = validator.handleDataset(badParsedDataset).getKey();
         assertEquals(goodParsedDataset, good);

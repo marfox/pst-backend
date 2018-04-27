@@ -47,7 +47,7 @@ public class StatisticsServlet extends HttpServlet {
         if (parameters.dataset != null) {
             JSONObject datasetStatistics = getDatasetStatistics(parameters.dataset);
             if (datasetStatistics == null) {
-                sendResponse(response, datasetStatistics, ApiParameters.DATASET_PARAMETER, parameters);
+                sendResponse(response, null, ApiParameters.DATASET_PARAMETER, parameters);
                 return;
             } else {
                 log.info("Loaded datasets statistics from cache");

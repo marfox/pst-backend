@@ -126,6 +126,7 @@ public final class EntitiesCache {
         JSONObject entitiesJson = new JSONObject();
         Map<String, Set<String>> entitiesMap = new HashMap<>();
         TupleQueryResult results = Utils.runSparqlQuery(query);
+        if (results == null) return null;
         try {
             while (results.hasNext()) {
                 BindingSet result = results.next();
@@ -230,6 +231,7 @@ public final class EntitiesCache {
             return null;
         }
         TupleQueryResult results = Utils.runSparqlQuery(query);
+        if (results == null) return null;
         try {
             while (results.hasNext()) {
                 BindingSet result = results.next();

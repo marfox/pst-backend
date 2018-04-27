@@ -71,6 +71,7 @@ public final class DatasetsStatisticsCache {
         JSONObject stats = new JSONObject();
         String query = statementsOrReferences.equals("statements") ? SparqlQueries.STATEMENTS_COUNT_QUERY : SparqlQueries.REFERENCES_COUNT_QUERY;
         TupleQueryResult rawStats = Utils.runSparqlQuery(query);
+        if (rawStats == null) return null;
         try {
             while (rawStats.hasNext()) {
                 BindingSet result = rawStats.next();

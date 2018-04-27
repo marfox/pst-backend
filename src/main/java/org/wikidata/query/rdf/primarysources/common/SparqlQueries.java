@@ -27,7 +27,7 @@ public final class SparqlQueries {
     public static final String CLAIM_APPROVAL_QUERY =
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
-            "    ?claim ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ;" +
+            "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
             "           ?pq ?qualifier ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
@@ -36,7 +36,7 @@ public final class SparqlQueries {
             "}" +
             "INSERT {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/approved> {" +
-            "    ?claim ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ;" +
+            "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
             "           ?pq ?qualifier ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
@@ -45,7 +45,7 @@ public final class SparqlQueries {
             "}" +
             "WHERE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
-            "    ?claim ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?claim ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "    OPTIONAL {" +
             "      ?claim ?pq ?qualifier ." +
             "      FILTER (?pq != prov:wasDerivedFrom) ." +
@@ -63,7 +63,7 @@ public final class SparqlQueries {
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
             "    wd:" + QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ;" +
+            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
             "             prov:wasDerivedFrom ?ref_node ;" +
             "             ?qualif_p ?qualif_v ." +
             "    ?ref_node ?ref_p ?ref_v" +
@@ -75,7 +75,7 @@ public final class SparqlQueries {
             "INSERT {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
             "    wd:" + QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ;" +
+            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
             "             prov:wasDerivedFrom ?ref_node ;" +
             "             ?qualif_p ?qualif_v ." +
             "    ?ref_node ?ref_p ?ref_v" +
@@ -87,7 +87,7 @@ public final class SparqlQueries {
             "WHERE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
             "    wd:" + QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
-            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ;" +
+            "    ?st_node ps:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ;" +
             "    OPTIONAL {" +
             "      ?st_node prov:wasDerivedFrom ?ref_node ." +
             "      ?ref_node ?ref_p ?ref_v ." +
@@ -111,7 +111,7 @@ public final class SparqlQueries {
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
             "             prov:wasDerivedFrom ?ref_node ;" +
             "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
             "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?activities . " +
@@ -123,7 +123,7 @@ public final class SparqlQueries {
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
             "             prov:wasDerivedFrom ?ref_node ;" +
             "             ?qualif_p ?qualif_v ." +
-            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
             "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?incremented ." +
@@ -134,7 +134,7 @@ public final class SparqlQueries {
             "    wd:" + QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
             "             prov:wasDerivedFrom ?ref_node ." +
-            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?ref_node pr:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "    OPTIONAL {" +
             "      ?st_node ?qualif_p ?qualif_v ." +
             "      FILTER (?qualif_p != prov:wasDerivedFrom) ." +
@@ -153,7 +153,7 @@ public final class SparqlQueries {
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
             "             prov:wasDerivedFrom ?ref_node ." +
-            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
             "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?activities . " +
@@ -163,7 +163,7 @@ public final class SparqlQueries {
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/" + STATE_PLACE_HOLDER + "> {" +
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ;" +
             "             prov:wasDerivedFrom ?ref_node ." +
-            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "  }" +
             "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
             "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?incremented ." +
@@ -173,7 +173,7 @@ public final class SparqlQueries {
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
             "    wd:" + QID_PLACE_HOLDER + " p:" + MAIN_PID_PLACE_HOLDER + " ?st_node ." +
             "    ?st_node ps:" + MAIN_PID_PLACE_HOLDER + " ?st_value ." +
-            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + ITEM_VALUE_PLACE_HOLDER + " ." +
+            "    ?qualifier pq:" + PID_PLACE_HOLDER + " " + VALUE_PLACE_HOLDER + " ." +
             "    OPTIONAL {" +
             "      ?st_node prov:wasDerivedFrom ?ref_node ." +
             "      ?ref_node ?ref_p ?ref_v ." +

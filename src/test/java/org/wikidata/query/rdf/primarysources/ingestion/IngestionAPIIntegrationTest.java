@@ -28,6 +28,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.TupleQueryResult;
 import org.wikidata.query.rdf.common.uri.Ontology;
@@ -36,13 +37,15 @@ import org.wikidata.query.rdf.primarysources.common.ApiParameters;
 import org.wikidata.query.rdf.primarysources.common.EntitiesCache;
 import org.wikidata.query.rdf.primarysources.common.RdfVocabulary;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.google.common.io.Resources;
 
 /**
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.4
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5
  * Created on Jul 10, 2017.
  */
+@RunWith(RandomizedRunner.class)
 public class IngestionAPIIntegrationTest extends AbstractRdfRepositoryIntegrationTestBase {
 
     public static final String DATASET_NAME = "chuck berry";
