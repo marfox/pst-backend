@@ -68,9 +68,9 @@ public class WikibaseDataModelValidator {
      * Check the RDF syntax correctness of a given dataset.
      * Note that parsing is done in memory over the whole dataset.
      *
-     * @param dataset - the input stream of the dataset to check
-     * @param baseURI - the base URI
-     * @param format  - the RDF format used to serialize the input dataset
+     * @param dataset the input stream of the dataset to check
+     * @param baseURI the base URI
+     * @param format  the RDF format used to serialize the input dataset
      * @return the successfully parsed RDF {@link Model}
      * @throws IOException       - if there are troubles reading the input stream
      * @throws RDFParseException - if the dataset is not valid RDF
@@ -86,7 +86,7 @@ public class WikibaseDataModelValidator {
      * wd:Q5921     p:P18       wds:Q5921-{uuid}
      * Taken from https://www.wikidata.org/wiki/Special:EntityData/Q5921.ttl
      *
-     * @param itemTriple - the Item triple to be validated
+     * @param itemTriple the Item triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
     List<String> validateItemTriple(Statement itemTriple) {
@@ -113,7 +113,7 @@ public class WikibaseDataModelValidator {
      * wds:Q5921-{uuid}  ps:P18      <http://commons.wikimedia.org/wiki/Special:FilePath/Chuck-berry-2007-07-18.jpg>
      * Taken from https://www.wikidata.org/wiki/Special:EntityData/Q5921.ttl
      *
-     * @param propertyTriple - the Item triple to be validated
+     * @param propertyTriple the Item triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
     List<String> validatePropertyTriple(Statement propertyTriple) {
@@ -155,7 +155,7 @@ public class WikibaseDataModelValidator {
      * wds:Qn-uuid      prov:wasDerivedFrom     wdref:{hash}
      * Taken from https://www.wikidata.org/wiki/Special:EntityData/Q5921.ttl
      *
-     * @param referenceTriple - the reference triple to be validated
+     * @param referenceTriple the reference triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
     List<String> validateReferenceTriple(Statement referenceTriple) {
@@ -182,7 +182,7 @@ public class WikibaseDataModelValidator {
      * wds:Q666-{uuid}  pq:P2096            "Chuck Berry (2007)"@ca
      * Taken from https://www.wikidata.org/wiki/Special:EntityData/Q5921.ttl
      *
-     * @param qualifierTriple - the qualifier triple to be validated
+     * @param qualifierTriple the qualifier triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
     List<String> validateQualifierTriple(Statement qualifierTriple) {
@@ -212,7 +212,7 @@ public class WikibaseDataModelValidator {
      * reified reference    was imported from   Russian Wikipedia
      * wdref:{hash}         pr:P143             wd:Q206855
      *
-     * @param referenceValueTriple - the reference value triple to be validated
+     * @param referenceValueTriple the reference value triple to be validated
      * @return a {@link List} of invalid triple components or empty if everything is valid
      */
     List<String> validateReferenceValueTriple(Statement referenceValueTriple) {
@@ -247,7 +247,7 @@ public class WikibaseDataModelValidator {
     /**
      * Validate the given dataset, remove invalid triples, and log the list of invalid components.
      *
-     * @param dataset - the RDF dataset to be validated, which has already undergone syntax check
+     * @param dataset the RDF dataset to be validated, which has already undergone syntax check
      * @return a sub-set of the input dataset, pruned from invalid triples
      */
     public AbstractMap.SimpleImmutableEntry<Model, List<String>> handleDataset(Model dataset) {
@@ -370,9 +370,13 @@ public class WikibaseDataModelValidator {
 
     /**
      * Validate the given resource term.
+     *
+     * @param term             the resource term to validate
+     * @param expectedTermType one of {@code item}, {@code property}, {@code statement}, {@code reference}
+     * @return {@code true} if the term is valid, {@code false} otherwise
      */
-    public boolean isValidTerm(String term, String expectedTerm) {
-        Pattern regex = TERM_VALIDATORS.get(expectedTerm);
+    public boolean isValidTerm(String term, String expectedTermType) {
+        Pattern regex = TERM_VALIDATORS.get(expectedTermType);
         Matcher matcher = regex.matcher(term);
         return matcher.matches();
     }
