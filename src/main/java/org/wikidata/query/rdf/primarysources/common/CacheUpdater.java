@@ -13,11 +13,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
- * A scheduler to periodically update the entity and datasets statistics cache files.
+ * A scheduler to periodically update entity and datasets statistics cache files.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Dec 12, 2017.
+ * @since 0.2.5 - created on Dec 12, 2017.
  */
 public class CacheUpdater implements ServletContextListener {
 
@@ -30,9 +29,9 @@ public class CacheUpdater implements ServletContextListener {
         ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("entities-cache-update-scheduler-%d").build();
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
         service.scheduleAtFixedRate(EntitiesCache::dumpAllEntities, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
-            .CACHE_UPDATE_UNIT);
+            .CACHE_UPDATE_TIME_UNIT);
         log.info("Primary sources tool entities cache update scheduled: will run every {} {}, {} {} after the server starts.",
-            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
+            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_TIME_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_TIME_UNIT);
         return service;
     }
 
@@ -40,9 +39,9 @@ public class CacheUpdater implements ServletContextListener {
         ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("datasets-statistics-cache-update-scheduler-%d").build();
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(tf);
         service.scheduleAtFixedRate(DatasetsStatisticsCache::dumpStatistics, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_INTERVAL, Config
-            .CACHE_UPDATE_UNIT);
+            .CACHE_UPDATE_TIME_UNIT);
         log.info("Primary sources tool dataset statistics cache update scheduled: will run every {} {}, {} {} after the server starts.",
-            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_UNIT);
+            Config.CACHE_UPDATE_INTERVAL, Config.CACHE_UPDATE_TIME_UNIT, Config.CACHE_UPDATE_INITIAL_DELAY, Config.CACHE_UPDATE_TIME_UNIT);
         return service;
     }
 

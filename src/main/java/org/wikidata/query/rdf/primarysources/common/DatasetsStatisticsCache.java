@@ -15,18 +15,18 @@ import org.slf4j.LoggerFactory;
  * A caching system for datasets statistics.
  * It stores total and missing statements and references count per dataset.
  * The cache file is serialized in JSON and looks like this:
- * <code>{
- * "http://a-dataset-URI": {
- * "total_statements": 2001,
- * "missing_statements": 666,
- * "missing_references": 1984,
- * "total_references": 1269
- * }
+ * <br />
+ * <code>{ <br />
+ * &nbsp;&nbsp; "http://a-dataset-URI": { <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "total_statements": 2001, <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "missing_statements": 666, <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "missing_references": 1984, <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "total_references": 1269 <br />
+ * &nbsp;&nbsp; } <br />
  * }</code>
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Dec 20, 2017.
+ * @since 0.2.5 - created on Dec 20, 2017.
  */
 public final class DatasetsStatisticsCache {
 
@@ -37,7 +37,8 @@ public final class DatasetsStatisticsCache {
 
     /**
      * Dump datasets statistics to a cache file.
-     * The task runs on an independent thread, see {@link CacheUpdater#scheduleDatasetsStatsUpdate()}
+     * <p>
+     * The task runs on an independent thread, see private method {@code scheduleDatasetsStatsUpdate} in {@link CacheUpdater}.
      * Log anything that may be thrown to avoid a silent death if something goes wrong.
      */
     public static void dumpStatistics() {
@@ -53,10 +54,10 @@ public final class DatasetsStatisticsCache {
                 if (referencesValue == null) referencesStats.put(key, statementsStats.get(key));
                 else referencesValue.putAll(statementsValue);
             }
-            try (BufferedWriter writer = Files.newBufferedWriter(Config.DATASETS_CACHE_PATH)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(Config.DATASETS_CACHE)) {
                 referencesStats.writeJSONString(writer);
             } catch (IOException ioe) {
-                log.error("Something went wrong when dumping datasets statistics to '" + Config.DATASETS_CACHE_PATH + "'.", ioe);
+                log.error("Something went wrong when dumping datasets statistics to '" + Config.DATASETS_CACHE + "'.", ioe);
                 return;
             }
         } catch (Throwable t) {

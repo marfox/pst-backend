@@ -16,8 +16,7 @@ import org.slf4j.LoggerFactory;
  * This service is part of the Wikidata primary sources tool <i>Statistics API</i>.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Feb 27, 2018.
+ * @since 0.2.5 - created on Feb 27, 2018.
  */
 public class ValuesServlet extends HttpServlet {
 

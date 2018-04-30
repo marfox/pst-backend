@@ -27,8 +27,7 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
  * for an overview of the tool architecture.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Dec 13, 2017.
+ * @since 0.2.5 - created on Dec 13, 2017.
  */
 public class DatasetsServlet extends HttpServlet {
 
@@ -58,7 +57,7 @@ public class DatasetsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Sorry, no datasets available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_CONTENT_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 output.writeJSONString(pw);
             }

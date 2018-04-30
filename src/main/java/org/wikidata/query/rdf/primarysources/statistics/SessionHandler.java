@@ -73,7 +73,7 @@ class SessionHandler {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No " + entityType + " available.");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_CONTENT_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 entities.writeJSONString(pw);
             }

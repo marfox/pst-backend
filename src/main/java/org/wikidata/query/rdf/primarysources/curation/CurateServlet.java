@@ -40,15 +40,15 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
  * </ul>
  * The curator can label a statement with one of the following states:
  * <ul>
- * <li>approved;</li>
- * <li>rejected;</li>
- * <li>duplicate;</li>
- * <li>blacklisted.</li>
+ * <li>{@code approved};</li>
+ * <li>{@code rejected};</li>
+ * <li>{@code duplicate};</li>
+ * <li>{@code blacklisted}.</li>
  * </ul>
  * <p>
  * The statement should be serialized in <i>QuickStatements</i>.
  * See the <a href="https://www.wikidata.org/wiki/Help:QuickStatements#Command_sequence_syntax">syntax specifications</a>.
- * <i>Wikidata JSON</i> is also supported (see {@link CurateServlet#processMwApiBodyRequest(HttpServletRequest, RequestParameters, HttpServletResponse)}),
+ * <i>Wikidata JSON</i> is also supported (see the private method {@code processMwApiBodyRequest} in {@link CurateServlet}),
  * although the request handling logic must be implemented in {@link CurateServlet#doPost(HttpServletRequest, HttpServletResponse)}.
  * <p>
  * This service is part of the Wikidata primary sources tool <i>Curation API</i>:
@@ -56,8 +56,7 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
  * for an overview of the tool architecture.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Aug 30, 2017.
+ * @since 0.2.5 - created on Aug 30, 2017.
  */
 public class CurateServlet extends HttpServlet {
 
@@ -348,9 +347,9 @@ public class CurateServlet extends HttpServlet {
         try {
             uri = builder
                 .setScheme("http")
-                .setHost(Config.BLAZEGRAPH_HOST)
-                .setPort(Config.BLAZEGRAPH_PORT)
-                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .setHost(Config.HOST)
+                .setPort(Config.PORT)
+                .setPath(Config.CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
                 .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the URI to query Blazegraph: {}. Parse error at index {}", use.getInput(), use.getIndex());
@@ -361,7 +360,7 @@ public class CurateServlet extends HttpServlet {
         log.debug("URI built for Blazegraph SPARQL endpoint: {}", uri);
         HttpResponse response;
         response = Request.Post(uri)
-            .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
+            .setHeader("Accept", ApiParameters.DEFAULT_IO_CONTENT_TYPE)
             .bodyForm(Form.form().add("update", query).build())
             .execute()
             .returnResponse();
@@ -389,7 +388,7 @@ public class CurateServlet extends HttpServlet {
         if (blazegraphResponse == null) response.setStatus(HttpServletResponse.SC_OK);
         else {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_CONTENT_TYPE);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             try (PrintWriter pw = response.getWriter()) {
                 blazegraphResponse.writeJSONString(pw);

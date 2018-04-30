@@ -31,8 +31,7 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
  * This service is part of the Wikidata primary sources tool <i>Statistics API</i>.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Dec 20, 2017.
+ * @since 0.2.5 - created on Dec 20, 2017.
  */
 public class StatisticsServlet extends HttpServlet {
 
@@ -122,7 +121,7 @@ public class StatisticsServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, errorMessage);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_CONTENT_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 output.writeJSONString(pw);
             }
@@ -132,15 +131,15 @@ public class StatisticsServlet extends HttpServlet {
     private JSONObject getDatasetStatistics(String dataset) {
         JSONParser parser = new JSONParser();
         Object parsed;
-        try (BufferedReader reader = Files.newBufferedReader(Config.DATASETS_CACHE_PATH)) {
+        try (BufferedReader reader = Files.newBufferedReader(Config.DATASETS_CACHE)) {
             try {
                 parsed = parser.parse(reader);
             } catch (ParseException pe) {
-                log.error("Malformed JSON datasets statistics. Parse error at index {}. Please check {}", pe.getPosition(), Config.DATASETS_CACHE_PATH);
+                log.error("Malformed JSON datasets statistics. Parse error at index {}. Please check {}", pe.getPosition(), Config.DATASETS_CACHE);
                 return null;
             }
         } catch (IOException ioe) {
-            log.error("Failed to load the datasets cache file: {}. Reason: {}", Config.DATASETS_CACHE_PATH, ioe.getClass().getSimpleName());
+            log.error("Failed to load the datasets cache file: {}. Reason: {}", Config.DATASETS_CACHE, ioe.getClass().getSimpleName());
             return null;
         }
         JSONObject allStats = (JSONObject) parsed;
@@ -148,7 +147,7 @@ public class StatisticsServlet extends HttpServlet {
         if (datasetStats == null) return new JSONObject();
         else {
             JSONObject stats = (JSONObject) datasetStats;
-            log.debug("Dataset statistics from cache file '{}:' {}", Config.DATASETS_CACHE_PATH, stats);
+            log.debug("Dataset statistics from cache file '{}:' {}", Config.DATASETS_CACHE, stats);
             // Get dataset description and uploader user name via SPARQL
             String query = SparqlQueries.DATASET_INFO_QUERY.replace(SparqlQueries.DATASET_PLACE_HOLDER, dataset);
             TupleQueryResult result = Utils.runSparqlQuery(query);

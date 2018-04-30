@@ -55,7 +55,7 @@ public class StatisticsAPIIntegrationTest extends AbstractRdfRepositoryIntegrati
 
     @AfterClass
     public static void deleteCache() throws Exception {
-        Files.deleteIfExists(Config.DATASETS_CACHE_PATH);
+        Files.deleteIfExists(Config.DATASETS_CACHE);
         Files.deleteIfExists(EntitiesCache.SUBJECTS_CACHE_FILE);
         Files.deleteIfExists(EntitiesCache.PROPERTIES_CACHE_FILE);
         Files.deleteIfExists(EntitiesCache.VALUES_CACHE_FILE);

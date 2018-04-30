@@ -32,33 +32,43 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
  * A caching system for entities: subjects, properties and value items.
  * It stores all the available QIDs or PIDs per dataset.
  * The cache file is serialized in JSON and looks like this:
- * <code>{
- * "http://a-dataset-URI": [
- * "Q1500155",
- * "Q4347501",
- * "Q4768592",
- * "Q2852786",
- * "Q356342",
- * ...
- * ]
+ * <br />
+ * <code>{ <br />
+ * &nbsp;&nbsp; "http://a-dataset-URI": [ <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q1500155", <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q4347501", <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q4768592", <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q2852786", <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q356342", <br />
+ * &nbsp;&nbsp;&nbsp;&nbsp; ... <br />
+ * &nbsp;&nbsp; ] <br />
  * }</code>
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Dec 07, 2017.
+ * @since 0.2.5 - created on Dec 07, 2017.
  */
 public final class EntitiesCache {
 
-    public static final Path SUBJECTS_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "subjects.json");
-    public static final Path PROPERTIES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "properties.json");
-    public static final Path VALUES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE_DIR, "values.json");
+    /**
+     * @see Config
+     */
+    public static final Path SUBJECTS_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE, "subjects.json");
+    /**
+     * @see Config
+     */
+    public static final Path PROPERTIES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE, "properties.json");
+    /**
+     * @see Config
+     */
+    public static final Path VALUES_CACHE_FILE = Paths.get(Config.ENTITIES_CACHE, "values.json");
     private static final Logger log = LoggerFactory.getLogger(EntitiesCache.class);
 
     private EntitiesCache() {
     }
 
     /**
-     * Dump datasets entities (subjects, properties, item values) to separate cache files.
+     * Dump dataset-specific entities (subjects, properties, item values) to separate cache files.
+     * <p>
      * Runs when a change to a dataset is made through the ingestion API,
      * see {@link org.wikidata.query.rdf.primarysources.ingestion.UploadServlet#doPost(HttpServletRequest, HttpServletResponse)}
      *
@@ -71,6 +81,7 @@ public final class EntitiesCache {
 
     /**
      * Dump all entities (subjects, properties, item values) to separate cache files.
+     * <p>
      * The task runs on an independent thread, see {@link CacheUpdater#scheduleEntitiesUpdate()}
      * Log anything that may be thrown to avoid a silent death if something goes wrong.
      */
@@ -99,7 +110,7 @@ public final class EntitiesCache {
         try (BufferedWriter writer = Files.newBufferedWriter(cache)) {
             entities.writeJSONString(writer);
         } catch (IOException ioe) {
-            log.error("Something went wrong when dumping all " + entityType + " entities to '" + Config.ENTITIES_CACHE_DIR + "'.", ioe);
+            log.error("Something went wrong when dumping all " + entityType + " entities to '" + Config.ENTITIES_CACHE + "'.", ioe);
         }
     }
 

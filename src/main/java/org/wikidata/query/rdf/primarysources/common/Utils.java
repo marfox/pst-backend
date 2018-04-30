@@ -48,14 +48,20 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
 /**
  * A set of static utility methods used across services for pre- and post-processing purposes.
  *
- * @author Marco Fossati - User:Hjfocs
- * @since 0.2.5
- * Created on Apr 17, 2018.
+ * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
+ * @since 0.2.5 - created on Apr 17, 2018.
  */
 public final class Utils {
 
+    /**
+     * Set of RDF namespaces to mint Wikidata URIs.
+     */
     public static final WikibaseUris WIKIBASE_URIS = WikibaseUris.getURISystem();
+    /**
+     * Validator for the Wikidata RDF data model.
+     */
     public static final WikibaseDataModelValidator VALIDATOR = new WikibaseDataModelValidator();
+
     private static final RDFFormat DEFAULT_RDF_FORMAT = RDFFormat.TURTLE;
     private static final String DEFAULT_GLOBE = "http://www.wikidata.org/entity/Q2";
     private static final Object DEFAULT_ALTITUDE = null;
@@ -65,12 +71,13 @@ public final class Utils {
     private static final int DEFAULT_TIME_PRECISION = 9;
     private static final String DEFAULT_CALENDAR_MODEL = "http://www.wikidata.org/entity/Q1985727";
     private static final String DEFAULT_UNIT = "1";
-    private static final Logger log = LoggerFactory.getLogger(Utils.class);
     // Value data types matchers
     private static final Pattern TIME = Pattern.compile("^[+-]\\d+-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ/\\d+$");
     private static final Pattern LOCATION = Pattern.compile("^@([+\\-]?\\d+(?:.\\d+)?)/([+\\-]?\\d+(?:.\\d+))?$");
     private static final Pattern QUANTITY = Pattern.compile("^[+-]\\d+(\\.\\d+)?$");
     private static final Pattern MONOLINGUAL_TEXT = Pattern.compile("^(\\w+):(\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\")$");
+
+    private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
     private Utils() {
     }
@@ -78,8 +85,8 @@ public final class Utils {
     /**
      * Run a SPARQL query to the Blazegraph internal endpoint.
      *
-     * @param query the SPARQL query
-     * @return the query result, or {@code null} if something goes wrong
+     * @param query the SPARQL query.
+     * @return the query result, or <i>null</i> if something goes wrong.
      */
     public static TupleQueryResult runSparqlQuery(String query) {
         log.debug("SPARQL query to be sent to Blazegraph: {}", query);
@@ -88,9 +95,9 @@ public final class Utils {
         try {
             uri = builder
                 .setScheme("http")
-                .setHost(Config.BLAZEGRAPH_HOST)
-                .setPort(Config.BLAZEGRAPH_PORT)
-                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .setHost(Config.HOST)
+                .setPort(Config.PORT)
+                .setPath(Config.CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
                 .setParameter("query", query)
                 .build();
         } catch (URISyntaxException use) {
@@ -101,7 +108,7 @@ public final class Utils {
         InputStream results;
         try {
             results = Request.Get(uri)
-                .setHeader("Accept", ApiParameters.DEFAULT_IO_MIME_TYPE)
+                .setHeader("Accept", ApiParameters.DEFAULT_IO_CONTENT_TYPE)
                 .execute()
                 .returnContent().asStream();
         } catch (IOException ioe) {
@@ -109,7 +116,7 @@ public final class Utils {
             return null;
         }
         try {
-            TupleQueryResult result = QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(ApiParameters.DEFAULT_IO_MIME_TYPE));
+            TupleQueryResult result = QueryResultIO.parse(results, QueryResultIO.getParserFormatForMIMEType(ApiParameters.DEFAULT_IO_CONTENT_TYPE));
             log.debug("SPARQL query result: {}", result);
             return result;
         } catch (QueryResultParseException qrpe) {
@@ -127,8 +134,8 @@ public final class Utils {
     /**
      * Convert a RDF value (i.e., the triple object) to a QuickStatement one.
      *
-     * @param value the RDF value
-     * @return the QuickStatement value
+     * @param value the RDF value.
+     * @return the QuickStatement value, or <i>null</i> if the RDF value does not map to any expected data type.
      */
     public static String rdfValueToQuickStatement(Value value) {
         if (value instanceof org.openrdf.model.URI) {
@@ -166,12 +173,12 @@ public final class Utils {
     }
 
     /**
-     * Convert a SPARQL query result into a JSON with QuickStatement suitable for the front end.
+     * Convert a SPARQL query result into a JSON with QuickStatement, suitable for the front end.
      *
-     * @param queryResult the SPARQL query result
-     * @param datasetUri  the dataset URI
-     * @param subjectQid  the subject QID
-     * @return an array of JSON objects, each representing a statement suggestion to be curated
+     * @param queryResult the SPARQL query result.
+     * @param datasetUri  the dataset URI.
+     * @param subjectQid  the subject QID.
+     * @return an array of JSON objects, each representing a statement suggestion to be curated; <i>null</i> if something went wrong.
      */
     public static JSONArray formatSuggestions(TupleQueryResult queryResult, String datasetUri, String subjectQid) {
         log.debug("Starting conversion of SPARQL results to QuickStatements");
@@ -245,8 +252,9 @@ public final class Utils {
      * Convert a RDF value (i.e., the triple object) to a JSON suitable for the Wikidata API.
      * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
      *
-     * @param value the RDF value
-     * @return the Wikidata API JSON <i>as a string</i>, as this is the weird way the API works
+     * @param value the RDF value.
+     * @return the Wikidata API JSON <i>as a string</i>, since this is the weird way the API works.
+     * Otherwise, an empty JSON string "<i>{}</i>" if the RDF value does not map to any expected data type.
      */
     public static String rdfValueToWikidataJson(Value value) {
         JSONObject jsonValue = new JSONObject();
@@ -295,26 +303,12 @@ public final class Utils {
         return jsonValue.toJSONString();
     }
 
-    private static double computeCoordinatesPrecision(String latitude, String longitude) {
-        return Math.min(Math.pow(10, -numberOfDecimalDigits(latitude)), Math.pow(10, -numberOfDecimalDigits(longitude)));
-    }
-
-    private static double numberOfDecimalDigits(String number) {
-        String[] parts = number.split("\\.");
-        return parts.length < 2 ? 0 : parts[1].length();
-    }
-
-    private static void addDatasetKey(BindingSet suggestion, JSONObject jsonSuggestion, String dataset) {
-        if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
-        else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
-    }
-
     /**
-     * Run a SPARQL query to the Blazegraph internal endpoint to retrieve all new statements of a subject item that need curation.
+     * Run a SPARQL query against the Blazegraph internal endpoint to retrieve all new statements of a subject item that need curation.
      *
-     * @param dataset    the dataset URI, or {@code all} to look into the whole database
-     * @param subjectQid the subject QID
-     * @return the query result, or {@code null} if something goes wrong
+     * @param dataset    the dataset URI, or <i>all</i> to look into the whole database.
+     * @param subjectQid the subject QID.
+     * @return the query result, or <i>null</i> if something goes wrong.
      */
     public static TupleQueryResult getSuggestions(String dataset, String subjectQid) {
         String query = dataset.equals("all") ? SparqlQueries.SUGGEST_ALL_DATASETS_QUERY.replace(SparqlQueries.QID_PLACE_HOLDER, subjectQid) : SparqlQueries
@@ -322,57 +316,11 @@ public final class Utils {
         return runSparqlQuery(query);
     }
 
-    private static JSONObject RdfReferenceToWikidataJson(BindingSet suggestion, String dataset) {
-        JSONObject jsonReference = new JSONObject();
-        JSONObject forMediaWikiApi = new JSONObject();
-        addDatasetKey(suggestion, jsonReference, dataset);
-        JSONObject snaks = new JSONObject();
-        JSONArray values = new JSONArray();
-        JSONObject dataValue = new JSONObject();
-        JSONObject finalValue = new JSONObject();
-        String referencePid = suggestion.getValue("reference_property").stringValue()
-            .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
-        Value referenceValue = suggestion.getValue("reference_value");
-        String finalValueType = null;
-        if (referenceValue instanceof org.openrdf.model.URI) {
-            org.openrdf.model.URI uri = (org.openrdf.model.URI) referenceValue;
-            // Yes, it's true, URLs have type "string"
-            finalValueType = uri.getNamespace().equals(WIKIBASE_URIS.entity()) ? "wikibase-entityid" : "string";
-        } else if (referenceValue instanceof Literal) {
-            Literal literal = (Literal) referenceValue;
-            finalValueType = literal.getLanguage() == null ? "string" : "monolingualtext";
-        }
-        finalValue.put("type", finalValueType);
-        finalValue.put("value", rdfValueToWikidataJson(referenceValue));
-        dataValue.put("snaktype", "value");
-        dataValue.put("property", referencePid);
-        dataValue.put("datavalue", finalValue);
-        values.add(dataValue);
-        snaks.put(referencePid, values);
-        forMediaWikiApi.put("snaks", snaks);
-        jsonReference.put("for_mw_api", forMediaWikiApi);
-        return jsonReference;
-    }
-
-    private static JSONObject RdfStatementToWikidataJson(BindingSet suggestion, String prefix, String property, String dataset) {
-        JSONObject jsonSuggestion = new JSONObject();
-        JSONObject forMediaWikiApi = new JSONObject();
-        addDatasetKey(suggestion, jsonSuggestion, dataset);
-        String pId = property.substring(prefix.length());
-        forMediaWikiApi.put("property", pId);
-        forMediaWikiApi.put("snaktype", "value");
-        Value value = suggestion.getValue("statement_value");
-        String stringJsonValue = rdfValueToWikidataJson(value);
-        forMediaWikiApi.put("value", stringJsonValue);
-        jsonSuggestion.put("for_mw_api", forMediaWikiApi);
-        return jsonSuggestion;
-    }
-
     /**
      * Convert a QuickStatement value to a RDF one.
      *
-     * @param qsValue the QuickStatement value
-     * @return the RDF value
+     * @param qsValue the QuickStatement value.
+     * @return the RDF value.
      */
     public static Value quickStatementValueToRdf(String qsValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
@@ -424,10 +372,10 @@ public final class Utils {
 
     /**
      * Convert a Wikidata API JSON <i>reference</i> value to a RDF one.
-     * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
+     * Handle the data type as per the <a href="https://www.wikidata.org/wiki/Special:ListDatatypes">specifications</a>.
      *
-     * @param jsonValue the Wikidata API JSON reference value
-     * @return the RDF value
+     * @param jsonValue the Wikidata API JSON reference value.
+     * @return the RDF value, or <i>null</i> if the Wikidata API JSON value does not map to any expected data type.
      */
     public static Value wikidataJsonReferenceValueToRdf(Object jsonValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
@@ -472,10 +420,10 @@ public final class Utils {
 
     /**
      * Convert a Wikidata API JSON value to a RDF one.
-     * Handle the data type as per https://www.wikidata.org/wiki/Special:ListDatatypes
+     * Handle the data type as per the <a href="https://www.wikidata.org/wiki/Special:ListDatatypes">specifications</a>.
      *
-     * @param jsonValue the Wikidata API JSON value
-     * @return the RDF value
+     * @param jsonValue the Wikidata API JSON value.
+     * @return the RDF value, or <i>null</i> if the Wikidata API JSON value does not map to any expected data type.
      */
     public static Value wikidataJsonValueToRdf(Object jsonValue) {
         ValueFactory vf = ValueFactoryImpl.getInstance();
@@ -520,10 +468,10 @@ public final class Utils {
 
     /**
      * Validate a Wiki user name.
-     * URI reserved characters are not allowed, see https://tools.ietf.org/html/rfc3986#section-2.2 .
+     * URI-reserved characters are not allowed, see the <a href="https://tools.ietf.org/html/rfc3986#section-2.2">specifications</a>.
      *
-     * @param userName the Wiki user name
-     * @return {@code true} if valid, {@code false} otherwise
+     * @param userName the Wiki user name.
+     * @return <i>true</i> if valid, <i>false</i> otherwise.
      */
     public static boolean validateUserName(String userName) {
         Pattern illegal = Pattern.compile("[:/?#\\[\\]@!$&'()*+,;=]");
@@ -537,11 +485,13 @@ public final class Utils {
 
     /**
      * Add an <i>instance-of</i> quad to each subject node in a RDF dataset. For instance:
+     * <br />
      * {@code wd:Q666 rdf:type wikibase:Item <http://strephit/new>}
+     * <br />
      * This should optimize the execution of queries on subject items.
      *
-     * @param dataset    the RDF dataset
-     * @param datasetUri the dataset URI
+     * @param dataset    the RDF dataset.
+     * @param datasetUri the dataset URI.
      */
     public static void addTypeToSubjectItems(Model dataset, String datasetUri) {
         Set<Resource> subjects = dataset.subjects();
@@ -558,11 +508,11 @@ public final class Utils {
     /**
      * Try to find a suitable RDF format for a given file name.
      * If the part has no content type, guess the format based on the file name extension.
-     * Fall back to Turtle if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
+     * Fall back to <i>Turtle</i> if the guess fails, as we cannot blame the client for uploading proper content with an arbitrary (or no) extension.
      *
-     * @param contentType the eventual content type declared in a HTTP request header
-     * @param fileName    the dataset file name
-     * @return the RDF format
+     * @param contentType the eventual content type declared in a HTTP request header.
+     * @param fileName    the dataset file name.
+     * @return the RDF format.
      */
     public static RDFFormat handleRdfFormat(String contentType, String fileName) {
         // If the content type is not explicilty RDF, still try to guess based on the file name extension
@@ -573,8 +523,8 @@ public final class Utils {
     /**
      * Build a sanitized ASCII URI out of a given dataset name.
      *
-     * @param datasetName the dataset name
-     * @return the sanitized dataset URI
+     * @param datasetName the dataset name.
+     * @return the sanitized dataset URI.
      */
     public static String mintDatasetURI(String datasetName) {
         // Delete any character that is not a letter, a number, or a whitespace, as we want to mint readable URIs
@@ -587,5 +537,65 @@ public final class Utils {
         String datasetURI = "http://" + clean.toLowerCase(Locale.ENGLISH) + "/new";
         log.info("Named graph URI: {}", datasetURI);
         return datasetURI;
+    }
+
+    private static double computeCoordinatesPrecision(String latitude, String longitude) {
+        return Math.min(Math.pow(10, -numberOfDecimalDigits(latitude)), Math.pow(10, -numberOfDecimalDigits(longitude)));
+    }
+
+    private static double numberOfDecimalDigits(String number) {
+        String[] parts = number.split("\\.");
+        return parts.length < 2 ? 0 : parts[1].length();
+    }
+
+    private static void addDatasetKey(BindingSet suggestion, JSONObject jsonSuggestion, String dataset) {
+        if (!dataset.equals("all")) jsonSuggestion.put("dataset", dataset);
+        else jsonSuggestion.put("dataset", suggestion.getValue("dataset").stringValue());
+    }
+
+    private static JSONObject rdfReferenceToWikidataJson(BindingSet suggestion, String dataset) {
+        JSONObject jsonReference = new JSONObject();
+        JSONObject forMediaWikiApi = new JSONObject();
+        addDatasetKey(suggestion, jsonReference, dataset);
+        JSONObject snaks = new JSONObject();
+        JSONArray values = new JSONArray();
+        JSONObject dataValue = new JSONObject();
+        JSONObject finalValue = new JSONObject();
+        String referencePid = suggestion.getValue("reference_property").stringValue()
+            .substring(WIKIBASE_URIS.property(WikibaseUris.PropertyType.REFERENCE).length());
+        Value referenceValue = suggestion.getValue("reference_value");
+        String finalValueType = null;
+        if (referenceValue instanceof org.openrdf.model.URI) {
+            org.openrdf.model.URI uri = (org.openrdf.model.URI) referenceValue;
+            // Yes, it's true, URLs have type "string"
+            finalValueType = uri.getNamespace().equals(WIKIBASE_URIS.entity()) ? "wikibase-entityid" : "string";
+        } else if (referenceValue instanceof Literal) {
+            Literal literal = (Literal) referenceValue;
+            finalValueType = literal.getLanguage() == null ? "string" : "monolingualtext";
+        }
+        finalValue.put("type", finalValueType);
+        finalValue.put("value", rdfValueToWikidataJson(referenceValue));
+        dataValue.put("snaktype", "value");
+        dataValue.put("property", referencePid);
+        dataValue.put("datavalue", finalValue);
+        values.add(dataValue);
+        snaks.put(referencePid, values);
+        forMediaWikiApi.put("snaks", snaks);
+        jsonReference.put("for_mw_api", forMediaWikiApi);
+        return jsonReference;
+    }
+
+    private static JSONObject RdfStatementToWikidataJson(BindingSet suggestion, String prefix, String property, String dataset) {
+        JSONObject jsonSuggestion = new JSONObject();
+        JSONObject forMediaWikiApi = new JSONObject();
+        addDatasetKey(suggestion, jsonSuggestion, dataset);
+        String pId = property.substring(prefix.length());
+        forMediaWikiApi.put("property", pId);
+        forMediaWikiApi.put("snaktype", "value");
+        Value value = suggestion.getValue("statement_value");
+        String stringJsonValue = rdfValueToWikidataJson(value);
+        forMediaWikiApi.put("value", stringJsonValue);
+        jsonSuggestion.put("for_mw_api", forMediaWikiApi);
+        return jsonSuggestion;
     }
 }

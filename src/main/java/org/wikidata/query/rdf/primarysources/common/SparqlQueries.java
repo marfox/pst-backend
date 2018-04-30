@@ -2,10 +2,12 @@ package org.wikidata.query.rdf.primarysources.common;
 
 /**
  * A set of SPARQL queries used by the Wikidata primary sources tool.
+ * <p>
+ * Fields ending with {@code QUERY} are SPARQL query templates.
+ * Fields ending with {@code PLACE_HOLDER} serve as place holders inside queries, and are filled with actual values at run time.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Apr 17, 2018.
+ * @since 0.2.5 - created on Apr 17, 2018.
  */
 public final class SparqlQueries {
 
@@ -21,9 +23,12 @@ public final class SparqlQueries {
     public static final String OFFSET_PLACE_HOLDER = "${OFFSET}";
     public static final String LIMIT_PLACE_HOLDER = "${LIMIT}";
     public static final String QID_PLACE_HOLDER = "${QID}";
-    /* BEGIN: curation API */
+
+    /* BEGIN: Curation API */
     // Used by /curate
-    // Approve claim + eventual qualifiers
+    /**
+     * Approve a claim, together with eventual qualifiers.
+     */
     public static final String CLAIM_APPROVAL_QUERY =
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
@@ -58,7 +63,9 @@ public final class SparqlQueries {
             "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
             "  }" +
             "}";
-    // Reject everything. Note that the state may be one of 'rejected', 'duplicate', or 'blacklisted'
+    /**
+     * Reject a claim, together with eventual qualifiers and eventual references.
+     */
     public static final String CLAIM_REJECTION_QUERY =
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
@@ -103,7 +110,10 @@ public final class SparqlQueries {
             "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
             "  }" +
             "}";
-    // Approve/reject everything but sibling references
+    /**
+     * Change the state of a reference, together with its main claim and eventual qualifiers.
+     * Keep sibling references unchanged.
+     */
     public static final String REFERENCE_CURATION_QUERY =
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
@@ -147,7 +157,10 @@ public final class SparqlQueries {
             "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
             "  }" +
             "}";
-    // Approve/reject everything but main node + sibling qualifiers
+    /**
+     * Change the state of a qualifier, together with its main claim and eventual references.
+     * Keep sibling qualifiers unchanged.
+     */
     public static final String QUALIFIER_CURATION_QUERY =
         "DELETE {" +
             "  GRAPH <" + DATASET_PLACE_HOLDER + "/new> {" +
@@ -186,7 +199,11 @@ public final class SparqlQueries {
             "    BIND (IF (BOUND (?activities), ?activities + 1, 1) AS ?incremented) ." +
             "  }" +
             "}";
+
     // Used by /search
+    /**
+     * Search dataset-specific statements to be curated, filtered by an item value.
+     */
     public static final String SEARCH_ONE_DATASET_VALUE_QUERY =
         "SELECT * " +
             "WHERE {" +
@@ -206,6 +223,9 @@ public final class SparqlQueries {
             "}" +
             "OFFSET " + OFFSET_PLACE_HOLDER + " " +
             "LIMIT " + LIMIT_PLACE_HOLDER;
+    /**
+     * Search dataset-specific statements to be curated.
+     */
     public static final String SEARCH_ONE_DATASET_QUERY =
         "SELECT * " +
             "WHERE {" +
@@ -220,6 +240,9 @@ public final class SparqlQueries {
             "}" +
             "OFFSET " + OFFSET_PLACE_HOLDER + " " +
             "LIMIT " + LIMIT_PLACE_HOLDER;
+    /**
+     * Search all statements to be curated, filtered by an item value.
+     */
     public static final String SEARCH_ALL_DATASETS_VALUE_QUERY =
         "SELECT * " +
             "WHERE {" +
@@ -240,6 +263,9 @@ public final class SparqlQueries {
             "}" +
             "OFFSET " + OFFSET_PLACE_HOLDER + " " +
             "LIMIT " + LIMIT_PLACE_HOLDER;
+    /**
+     * Search all statements to be curated.
+     */
     public static final String SEARCH_ALL_DATASETS_QUERY =
         "SELECT * " +
             "WHERE {" +
@@ -255,23 +281,6 @@ public final class SparqlQueries {
             "}" +
             "OFFSET " + OFFSET_PLACE_HOLDER + " " +
             "LIMIT " + LIMIT_PLACE_HOLDER;
-    /* BEGIN: statistics API */
-    // Used by /statistics
-    public static final String USER_INFO_QUERY =
-        "SELECT ?activities " +
-            "WHERE {" +
-            "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
-            "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?activities ." +
-            "  }" +
-            "}";
-    public static final String DATASET_INFO_QUERY =
-        "SELECT ?description_or_uploader " +
-            "WHERE {" +
-            "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
-            "    <" + DATASET_PLACE_HOLDER + "> ?p ?description_or_uploader ." +
-            "  }" +
-            "}";
-    /* END: curation API */
     // Used by /suggest and /random
     static final String SUGGEST_ALL_DATASETS_QUERY =
         "SELECT ?dataset ?property ?statement_node ?statement_property ?statement_value ?reference_property ?reference_value " +
@@ -298,12 +307,40 @@ public final class SparqlQueries {
             "    }" +
             "  }" +
             "}";
-    /* END: statistics API */
+    /* END: Curation API */
+
+
+    /* BEGIN: Statistics API */
+    // Used by /statistics
+    /**
+     * Get the count of user curation activities.
+     */
+    public static final String USER_INFO_QUERY =
+        "SELECT ?activities " +
+            "WHERE {" +
+            "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
+            "    <" + RdfVocabulary.USER_URI_PREFIX + USER_PLACE_HOLDER + "> <" + RdfVocabulary.METADATA_NAMESPACE + "/activities> ?activities ." +
+            "  }" +
+            "}";
+    /**
+     * Get the dataset uploader Wiki user name and the eventual dataset description.
+     */
+    public static final String DATASET_INFO_QUERY =
+        "SELECT ?description_or_uploader " +
+            "WHERE {" +
+            "  GRAPH <" + RdfVocabulary.METADATA_NAMESPACE + "> {" +
+            "    <" + DATASET_PLACE_HOLDER + "> ?p ?description_or_uploader ." +
+            "  }" +
+            "}";
+    /* END: Statistics API */
+
     /* BEGIN: datasets statistics cache */
     static final String REFERENCES_COUNT_QUERY = "select ?graph (count(?reference) as ?count) where { graph ?graph { ?statement prov:wasDerivedFrom " +
         "?reference } } group by ?graph";
     static final String STATEMENTS_COUNT_QUERY = "select ?graph (count(?statement) as ?count) where { graph ?graph { ?entity ?property ?statement . FILTER " +
         "STRSTARTS(str(?statement), \"http://www.wikidata.org/entity/statement/\") . } } group by ?graph";
+    /* END: datasets statistics cache */
+
     /* BEGIN: entities cache */
     // Also include qualifier values
     static final String VALUES_ONE_DATASET_QUERY =
@@ -316,7 +353,6 @@ public final class SparqlQueries {
             "  }" +
             "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
             "}";
-    /* END: datasets statistics cache */
     // Only consider main PIDs, not qualifiers or references
     static final String PROPERTIES_ONE_DATASET_QUERY =
         "SELECT DISTINCT ?property " +
@@ -364,9 +400,9 @@ public final class SparqlQueries {
             "  FILTER STRSTARTS(str(?value), \"" + Utils.WIKIBASE_URIS.entity() + "Q\") ." +
             "  FILTER STRENDS(str(?dataset), \"new\") ." +
             "}";
+    /* END: entities cache */
 
     private SparqlQueries() {
     }
-    /* END: entities cache */
 
 }

@@ -50,9 +50,8 @@ import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
 import com.google.common.io.Resources;
 
 /**
- * Allow a third-party data provider to update an existing dataset.
- * This service accepts the upload of 2 files, one with the data to be removed, and one with the data to be added.
- * Both must comply with the Wikidata RDF data model.
+ * Allow a third-party data provider to upload a dataset.
+ * This service accepts one or more files, which must comply with the Wikidata RDF data model.
  * See the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">specifications</a>.
  * <p>
  * This service is part of the Wikidata primary sources tool <i>Ingestion API</i>:
@@ -60,12 +59,10 @@ import com.google.common.io.Resources;
  * for an overview of the tool architecture.
  * <p>
  * It interacts with the Blazegraph storage engine via the
- * <a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29">update with multi-part request body</a>
- * service.
+ * <a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#Bulk_Data_Load">bulk data load</a> service.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Jul 04, 2017.
+ * @since 0.2.5 - created on Jul 20, 2017.
  */
 public class UploadServlet extends HttpServlet {
 
@@ -112,13 +109,6 @@ public class UploadServlet extends HttpServlet {
         return dataLoaderProperties;
     }
 
-    /**
-     * Upload a RDF dataset to Blazegraph, upon Wikidata data model validation.
-     *
-     * @param request  the client HTTP request
-     * @param response the servlet HTTP response
-     * @throws IOException if an input or output error is detected when the servlet handles the request
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         RequestParameters parameters = new RequestParameters();
@@ -398,9 +388,9 @@ public class UploadServlet extends HttpServlet {
         try {
             uri = builder
                 .setScheme("http")
-                .setHost(Config.BLAZEGRAPH_HOST)
-                .setPort(Config.BLAZEGRAPH_PORT)
-                .setPath(Config.BLAZEGRAPH_CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
+                .setHost(Config.HOST)
+                .setPort(Config.PORT)
+                .setPath(Config.CONTEXT + BLAZEGRAPH_DATA_LOADER_ENDPOINT)
                 .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph data loader URI: {}. Parse error at index {}", use.getInput(), use.getIndex());
@@ -455,9 +445,9 @@ public class UploadServlet extends HttpServlet {
         try {
             uri = builder
                 .setScheme("http")
-                .setHost(Config.BLAZEGRAPH_HOST)
-                .setPort(Config.BLAZEGRAPH_PORT)
-                .setPath(Config.BLAZEGRAPH_CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
+                .setHost(Config.HOST)
+                .setPort(Config.PORT)
+                .setPath(Config.CONTEXT + Config.BLAZEGRAPH_SPARQL_ENDPOINT)
                 .build();
         } catch (URISyntaxException use) {
             log.error("Failed building the Blazegraph SPARQL endpoint URI: {}. Parse error at index {}", use.getInput(), use.getIndex());

@@ -24,8 +24,8 @@ import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
  * The output statements are serialized in <i>QuickStatements</i>.
  * See the <a href="https://www.wikidata.org/wiki/Help:QuickStatements#Command_sequence_syntax">syntax specifications</a>.
  * <p>
- * Support for <i>Wikidata JSON</i> output can be implemented as a method similar to {@link Utils#formatSuggestions(TupleQueryResult, String, String)} in
- * {@link SuggestServlet#sendResponse(HttpServletResponse, RequestParameters, TupleQueryResult)}.
+ * Support for <i>Wikidata JSON</i> output can be implemented as a method similar to {@link Utils#formatSuggestions(TupleQueryResult, String, String)}
+ * in the private method {@code sendResponse} of this servlet.
  * The conversion logic between Wikidata RDF and Wikidata JSON is already available, see for instance {@link Utils#rdfValueToWikidataJson(Value)}.
  * <p>
  * This service is part of the Wikidata primary sources tool <i>Curation API</i>:
@@ -33,8 +33,7 @@ import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
  * for an overview of the tool architecture.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Aug 04, 2017.
+ * @since 0.2.5 - created on Aug 04, 2017.
  */
 public class SuggestServlet extends HttpServlet {
 
@@ -89,7 +88,7 @@ public class SuggestServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No suggestions available for item " + parameters.qId + " .");
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(ApiParameters.DEFAULT_IO_MIME_TYPE);
+            response.setContentType(ApiParameters.DEFAULT_IO_CONTENT_TYPE);
             try (PrintWriter pw = response.getWriter()) {
                 jsonSuggestions.writeJSONString(pw);
             }

@@ -27,12 +27,11 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * Validates a given dataset against the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">Wikidata RDF data model</a>
+ * Validate a given dataset against the <a href="https://www.mediawiki.org/wiki/Wikibase/Indexing/RDF_Dump_Format#Data_model">Wikidata RDF data model</a>.
  * The dataset undergoes RDF syntax check first, then the actual data model validation.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Jun 19, 2017.
+ * @since 0.2.5 - created on Jun 19, 2017.
  */
 public class WikibaseDataModelValidator {
 
@@ -68,15 +67,35 @@ public class WikibaseDataModelValidator {
      * Check the RDF syntax correctness of a given dataset.
      * Note that parsing is done in memory over the whole dataset.
      *
-     * @param dataset the input stream of the dataset to check
-     * @param baseURI the base URI
-     * @param format  the RDF format used to serialize the input dataset
-     * @return the successfully parsed RDF {@link Model}
-     * @throws IOException       - if there are troubles reading the input stream
-     * @throws RDFParseException - if the dataset is not valid RDF
+     * @param dataset the input stream of the dataset to check.
+     * @param baseURI the base URI.
+     * @param format  the RDF format used to serialize the input dataset.
+     * @return the successfully parsed RDF {@link Model}.
+     * @throws IOException       if there are troubles reading the input stream.
+     * @throws RDFParseException if the dataset is not valid RDF.
      */
     public Model checkSyntax(InputStream dataset, String baseURI, RDFFormat format) throws IOException, RDFParseException {
         return Rio.parse(dataset, baseURI, format);
+    }
+
+    /**
+     * Validate the given dataset, remove invalid triples, and log the list of invalid components.
+     *
+     * @param dataset the RDF dataset to be validated, which has already undergone syntax check.
+     * @return a subset of the input dataset, pruned from invalid triples.
+     */
+    public AbstractMap.SimpleImmutableEntry<Model, List<String>> handleDataset(Model dataset) {
+        Model valid = new TreeModel();
+        List<String> invalid = new ArrayList<>();
+        for (Statement statement : dataset) {
+            handleSubject(valid, invalid, statement);
+        }
+        if (invalid.isEmpty()) {
+            log.info("Your dataset is valid and will be fully uploaded");
+        } else {
+            log.warn("Your dataset has issues, only valid triples will be uploaded. List of invalid triples: {}", invalid);
+        }
+        return new AbstractMap.SimpleImmutableEntry<>(valid, invalid);
     }
 
     /**
@@ -242,26 +261,6 @@ public class WikibaseDataModelValidator {
             }
         }
         return invalid;
-    }
-
-    /**
-     * Validate the given dataset, remove invalid triples, and log the list of invalid components.
-     *
-     * @param dataset the RDF dataset to be validated, which has already undergone syntax check
-     * @return a sub-set of the input dataset, pruned from invalid triples
-     */
-    public AbstractMap.SimpleImmutableEntry<Model, List<String>> handleDataset(Model dataset) {
-        Model valid = new TreeModel();
-        List<String> invalid = new ArrayList<>();
-        for (Statement statement : dataset) {
-            handleSubject(valid, invalid, statement);
-        }
-        if (invalid.isEmpty()) {
-            log.info("Your dataset is valid and will be fully uploaded");
-        } else {
-            log.warn("Your dataset has issues, only valid triples will be uploaded. List of invalid triples: {}", invalid);
-        }
-        return new AbstractMap.SimpleImmutableEntry<>(valid, invalid);
     }
 
     /**
