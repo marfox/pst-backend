@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -444,8 +445,10 @@ public class CurateServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("statement type = %s; state = %s; QID = %s; main PID = %s; %s PID = %s; value = %s; dataset = %s; user = %s", type, state,
-                qId, mainPId, type, pId, value, dataset, user);
+            return String.format(
+                Locale.ENGLISH,
+                "statement type = %s; state = %s; QID = %s; main PID = %s; %s PID = %s; value = %s; dataset = %s; user = %s",
+                type, state, qId, mainPId, type, pId, value, dataset, user);
         }
     }
 

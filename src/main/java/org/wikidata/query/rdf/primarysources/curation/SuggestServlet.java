@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -101,7 +102,7 @@ public class SuggestServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("dataset = %s; QID = %s", dataset, qId);
+            return String.format(Locale.ENGLISH, "dataset = %s; QID = %s", dataset, qId);
         }
     }
 

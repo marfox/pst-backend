@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -454,9 +455,12 @@ public class UpdateServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("user = %s; target URI = %s; dataset to be removed: file name = %s; format = %s; valid RDF model = %s; dataset to be added: " +
-                    "file name = %s; format = %s; valid RDF model = %s", user, targetDatasetURI, removeDatasetFileName, removeDatasetFormat,
-                removeDatasetWithValidSyntax, addDatasetFileName, addDatasetFormat, addDatasetWithValidSyntax);
+            return String.format(
+                Locale.ENGLISH,
+                "user = %s; target URI = %s; dataset to be removed: file name = %s; format = %s; valid RDF model = %s; dataset to be added: " +
+                    "file name = %s; format = %s; valid RDF model = %s",
+                user, targetDatasetURI, removeDatasetFileName, removeDatasetFormat, removeDatasetWithValidSyntax,
+                addDatasetFileName, addDatasetFormat, addDatasetWithValidSyntax);
         }
     }
 }

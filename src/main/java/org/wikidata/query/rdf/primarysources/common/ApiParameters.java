@@ -93,16 +93,16 @@ public final class ApiParameters {
      * Internally required query parameter for the Blazegraph update service. Expected value: URI of the target dataset that undergoes deletion.
      * This is <b><a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29">not documented</a></b>,
      * but can be found in the
-     * <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L896" target="_blank">
-     * source code</a>.
+     * <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L896"
+     * target="_blank">source code</a>.
      */
     public static final String BLAZEGRAPH_UPDATE_DELETE_NAMED_GRAPH_PARAMETER = "context-uri-delete";
     /**
      * Internally required query parameter for the Blazegraph update service. Expected value: URI of the target dataset that undergoes addition.
      * This is <b><a href="https://wiki.blazegraph.com/wiki/index.php/REST_API#UPDATE_.28POST_with_Multi-Part_Request_Body.29">not documented</a></b>,
      * but can be found in the
-     * <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L877" target="_blank">
-     * source code</a>.
+     * <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata-sails/src/java/com/bigdata/rdf/sail/webapp/UpdateServlet.java#L877"
+     * target="_blank">source code</a>.
      */
     public static final String BLAZEGRAPH_UPDATE_INSERT_NAMED_GRAPH_PARAMETER = "context-uri-insert";
     /**

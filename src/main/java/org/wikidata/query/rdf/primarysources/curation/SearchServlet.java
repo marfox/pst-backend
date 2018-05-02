@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServlet;
@@ -242,7 +243,10 @@ public class SearchServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("dataset = %s; PID filter = %s; value filter = %s; SPARQL offset = %d; limit = %d", dataset, property, value, offset, limit);
+            return String.format(
+                Locale.ENGLISH,
+                "dataset = %s; PID filter = %s; value filter = %s; SPARQL offset = %d; limit = %d",
+                dataset, property, value, offset, limit);
         }
     }
 

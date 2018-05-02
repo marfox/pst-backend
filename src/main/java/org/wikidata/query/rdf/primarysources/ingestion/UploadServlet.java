@@ -15,6 +15,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -483,8 +484,10 @@ public class UploadServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("user = %s; dataset file name = %s; URI = %s; description = %s; Blazegraph data loader properties = %s", user,
-                datasetFileName, datasetURI, datasetDescription, dataLoaderProperties);
+            return String.format(
+                Locale.ENGLISH,
+                "user = %s; dataset file name = %s; URI = %s; description = %s; Blazegraph data loader properties = %s",
+                user, datasetFileName, datasetURI, datasetDescription, dataLoaderProperties);
         }
     }
 }

@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -196,7 +197,7 @@ public class StatisticsServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("dataset = %s; user = %s", dataset, user);
+            return String.format(Locale.ENGLISH, "dataset = %s; user = %s", dataset, user);
         }
     }
 }

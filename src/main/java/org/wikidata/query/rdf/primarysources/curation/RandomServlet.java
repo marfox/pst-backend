@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
@@ -137,7 +138,7 @@ public class RandomServlet extends HttpServlet {
 
         @Override
         public String toString() {
-            return String.format("dataset = %s; QID = %s", dataset, qId);
+            return String.format(Locale.ENGLISH, "dataset = %s; QID = %s", dataset, qId);
         }
     }
 }
