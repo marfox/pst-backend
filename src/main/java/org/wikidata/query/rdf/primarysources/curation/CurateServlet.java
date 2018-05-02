@@ -36,7 +36,7 @@ import org.wikidata.query.rdf.primarysources.common.Utils;
  * <ul>
  * <li>{@code claim}, an unreferenced claim;</li>
  * <li>{@code reference}, a referenced claim;</li>
- * <li>{@code qualifier}, a claim qualifier.</li>
+ * <li>{@code qualifier}, a qualifier.</li>
  * </ul>
  * The curator can label a statement with one of the following states:
  * <ul>

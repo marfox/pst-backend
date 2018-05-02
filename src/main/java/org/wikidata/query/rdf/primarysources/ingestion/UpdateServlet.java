@@ -60,8 +60,7 @@ import org.wikidata.query.rdf.primarysources.common.WikibaseDataModelValidator;
  * service.
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
- * @since 0.2.5
- * Created on Jul 04, 2017.
+ * @since 0.2.5 - created on Jul 04, 2017.
  */
 public class UpdateServlet extends HttpServlet {
     // Temporary file name of the dataset to be removed, which must be stored in the server local file system.

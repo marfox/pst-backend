@@ -15,14 +15,14 @@ import org.slf4j.LoggerFactory;
  * A caching system for datasets statistics.
  * It stores total and missing statements and references count per dataset.
  * The cache file is serialized in JSON and looks like this:
- * <br />
- * <code>{ <br />
- * &nbsp;&nbsp; "http://a-dataset-URI": { <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "total_statements": 2001, <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "missing_statements": 666, <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "missing_references": 1984, <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "total_references": 1269 <br />
- * &nbsp;&nbsp; } <br />
+ * <br>
+ * <code>{ <br>
+ * &nbsp;&nbsp; "http://a-dataset-URI": { <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "total_statements": 2001, <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "missing_statements": 666, <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "missing_references": 1984, <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "total_references": 1269 <br>
+ * &nbsp;&nbsp; } <br>
  * }</code>
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>

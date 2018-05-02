@@ -32,16 +32,16 @@ import org.wikidata.query.rdf.common.uri.WikibaseUris;
  * A caching system for entities: subjects, properties and value items.
  * It stores all the available QIDs or PIDs per dataset.
  * The cache file is serialized in JSON and looks like this:
- * <br />
- * <code>{ <br />
- * &nbsp;&nbsp; "http://a-dataset-URI": [ <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "Q1500155", <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "Q4347501", <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "Q4768592", <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "Q2852786", <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; "Q356342", <br />
- * &nbsp;&nbsp;&nbsp;&nbsp; ... <br />
- * &nbsp;&nbsp; ] <br />
+ * <br>
+ * <code>{ <br>
+ * &nbsp;&nbsp; "http://a-dataset-URI": [ <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q1500155", <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q4347501", <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q4768592", <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q2852786", <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; "Q356342", <br>
+ * &nbsp;&nbsp;&nbsp;&nbsp; ... <br>
+ * &nbsp;&nbsp; ] <br>
  * }</code>
  *
  * @author Marco Fossati - <a href="https://meta.wikimedia.org/wiki/User:Hjfocs">User:Hjfocs</a>
@@ -70,9 +70,9 @@ public final class EntitiesCache {
      * Dump dataset-specific entities (subjects, properties, item values) to separate cache files.
      * <p>
      * Runs when a change to a dataset is made through the ingestion API,
-     * see {@link org.wikidata.query.rdf.primarysources.ingestion.UploadServlet#doPost(HttpServletRequest, HttpServletResponse)}
+     * see {@link org.wikidata.query.rdf.primarysources.ingestion.UploadServlet#doPost(HttpServletRequest, HttpServletResponse)}.
      *
-     * @param dataset the dataset URI
+     * @param dataset the dataset URI.
      */
     public static void cacheDatasetEntities(String dataset) {
         ExecutorService service = ForkJoinPool.commonPool();
@@ -82,7 +82,7 @@ public final class EntitiesCache {
     /**
      * Dump all entities (subjects, properties, item values) to separate cache files.
      * <p>
-     * The task runs on an independent thread, see {@link CacheUpdater#scheduleEntitiesUpdate()}
+     * The task runs on an independent thread, see {@link CacheUpdater#scheduleEntitiesUpdate()}.
      * Log anything that may be thrown to avoid a silent death if something goes wrong.
      */
     public static void dumpAllEntities() {

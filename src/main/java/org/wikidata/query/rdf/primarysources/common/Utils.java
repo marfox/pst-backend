@@ -485,9 +485,9 @@ public final class Utils {
 
     /**
      * Add an <i>instance-of</i> quad to each subject node in a RDF dataset. For instance:
-     * <br />
+     * <br>
      * {@code wd:Q666 rdf:type wikibase:Item <http://strephit/new>}
-     * <br />
+     * <br>
      * This should optimize the execution of queries on subject items.
      *
      * @param dataset    the RDF dataset.

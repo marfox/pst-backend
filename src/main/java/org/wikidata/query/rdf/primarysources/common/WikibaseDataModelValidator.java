@@ -82,7 +82,7 @@ public class WikibaseDataModelValidator {
      * Validate the given dataset, remove invalid triples, and log the list of invalid components.
      *
      * @param dataset the RDF dataset to be validated, which has already undergone syntax check.
-     * @return a subset of the input dataset, pruned from invalid triples.
+     * @return a subset of the input dataset, together with the list of pruned invalid triples.
      */
     public AbstractMap.SimpleImmutableEntry<Model, List<String>> handleDataset(Model dataset) {
         Model valid = new TreeModel();
@@ -370,9 +370,9 @@ public class WikibaseDataModelValidator {
     /**
      * Validate the given resource term.
      *
-     * @param term             the resource term to validate
-     * @param expectedTermType one of {@code item}, {@code property}, {@code statement}, {@code reference}
-     * @return {@code true} if the term is valid, {@code false} otherwise
+     * @param term             the resource term to validate.
+     * @param expectedTermType one of <i>item</i>, <i>property</i>, <i>statement</i>, <i>reference</i>.
+     * @return <i>true</i> if the term is valid, <i>false</i> otherwise.
      */
     public boolean isValidTerm(String term, String expectedTermType) {
         Pattern regex = TERM_VALIDATORS.get(expectedTermType);
