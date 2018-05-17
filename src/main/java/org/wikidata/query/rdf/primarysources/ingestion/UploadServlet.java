@@ -160,7 +160,7 @@ public class UploadServlet extends HttpServlet {
     /**
      * The Blazegraph data loader needs a file to be stored on the server local file system, so use a temporary file.
      *
-     * @throws IOException if an error is detected when writing the temp
+     * @throws IOException if an error is detected when writing the temporary file.
      */
     private File writeTempDataset(HttpServletResponse response, RDFFormat format, Model toBeUploaded) throws IOException {
         File tempDataset;
@@ -257,7 +257,7 @@ public class UploadServlet extends HttpServlet {
     /**
      * Process a form field uploaded by the client, firing a bad request if it is not expected.
      *
-     * @throws IOException in case of troubles when reading the field value or sending the bad request
+     * @throws IOException in case of troubles when reading the field value or sending the bad request.
      */
     private boolean handleFormField(FileItemStream item, InputStream fieldStream, RequestParameters parameters, HttpServletResponse response) throws
         IOException {
@@ -274,9 +274,13 @@ public class UploadServlet extends HttpServlet {
                 defaultGraph));
             return true;
         case ApiParameters.DATASET_DESCRIPTION_FORM_FIELD:
-            log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
-            parameters.datasetDescription = value;
-            log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
+            if (value.isEmpty()) {
+                log.info("Dataset description detected, but its value is empty. Nothing will happen.");
+            } else {
+                log.info("Dataset description detected. Will be stored in the metadata graph <{}>", RdfVocabulary.METADATA_NAMESPACE);
+                parameters.datasetDescription = value;
+                log.debug("Named graph URI added to the Blazegraph data loader properties: {} = {}", parameters.datasetDescription);
+            }
             return true;
         case ApiParameters.USER_NAME_PARAMETER:
             log.info("User name detected. Will store the value '{}' as the uploader of the dataset", value);
@@ -293,7 +297,7 @@ public class UploadServlet extends HttpServlet {
      * Process a file uploaded by the client, firing a bad request if the format is not recognized as RDF.
      * If a file looks like RDF, then check its syntax.
      *
-     * @throws IOException if an error is detected when operating on the file
+     * @throws IOException if an error is detected when operating on the file.
      */
     private AbstractMap.SimpleImmutableEntry<RDFFormat, Model> handleFileField(FileItemStream item, InputStream fieldStream, RequestParameters parameters,
                                                                                WikibaseDataModelValidator validator, HttpServletResponse response) throws
